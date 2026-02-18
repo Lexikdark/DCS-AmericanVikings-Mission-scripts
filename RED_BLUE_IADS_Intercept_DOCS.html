@@ -1,0 +1,658 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RED/BLUE IADS + GCI System — Documentation</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --surface:  #181c26;
+    --border:   #2a2f3e;
+    --accent:   #4a90e2;
+    --red:      #e05555;
+    --blue:     #4a90e2;
+    --green:    #5cb85c;
+    --yellow:   #e0a020;
+    --purple:   #9b59b6;
+    --text:     #d4d8e2;
+    --muted:    #868d9e;
+    --code-bg:  #12151e;
+    --sidebar:  180px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.65 "Segoe UI", system-ui, sans-serif; display: flex; min-height: 100vh; }
+  nav {
+    width: var(--sidebar); min-width: var(--sidebar); background: var(--surface);
+    border-right: 1px solid var(--border); position: fixed; top: 0; left: 0;
+    height: 100vh; overflow-y: auto; padding: 18px 0;
+  }
+  nav .logo { padding: 0 14px 16px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--accent); border-bottom: 1px solid var(--border); }
+  nav .logo span { color: var(--red); }
+  nav a { display: block; padding: 6px 14px; font-size: 12px; color: var(--muted);
+    text-decoration: none; border-left: 2px solid transparent; transition: .15s; }
+  nav a:hover, nav a.active { color: var(--text); border-left-color: var(--accent); background: rgba(74,144,226,.07); }
+  nav .group { padding: 10px 14px 4px; font-size: 10px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--border); }
+  main { margin-left: var(--sidebar); padding: 36px 48px 80px; max-width: 1060px; width: 100%; }
+  h1 { font-size: 26px; color: #fff; margin-bottom: 6px; }
+  h1 span.red  { color: var(--red); }
+  h1 span.blue { color: var(--blue); }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .subtitle b { color: var(--text); }
+  h2 { font-size: 16px; color: var(--accent); margin: 40px 0 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 14px; color: #c8cfe0; margin: 22px 0 8px; }
+  p  { margin-bottom: 10px; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  a  { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  pre, code { font-family: "Cascadia Code", "Fira Code", "Consolas", monospace; }
+  pre  { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; margin: 10px 0 14px; }
+  code { background: #1e2230; border-radius: 4px; padding: 1px 6px; font-size: 12.5px; color: #b8c0d8; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 18px; }
+  th { background: #1d2233; color: var(--muted); font-weight: 600; padding: 7px 12px;
+    text-align: left; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 7px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: #13161f; }
+  td code { font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-red    { background: rgba(224,85,85,.18);  color: var(--red); }
+  .badge-blue   { background: rgba(74,144,226,.18); color: var(--blue); }
+  .badge-green  { background: rgba(92,184,92,.18);  color: var(--green); }
+  .badge-yellow { background: rgba(224,160,32,.18); color: var(--yellow); }
+  .badge-purple { background: rgba(155,89,182,.18); color: var(--purple); }
+  .badge-grey   { background: rgba(134,141,158,.18); color: var(--muted); }
+  .box { border-radius: 6px; padding: 12px 16px; margin: 12px 0; font-size: 13px; }
+  .box-info    { background: rgba(74,144,226,.1);  border-left: 3px solid var(--blue); }
+  .box-warn    { background: rgba(224,160,32,.1);  border-left: 3px solid var(--yellow); }
+  .box-tip     { background: rgba(92,184,92,.1);   border-left: 3px solid var(--green); }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0; }
+  .flow-box { background: var(--surface); border: 1px solid var(--border); border-radius: 5px;
+    padding: 6px 12px; font-size: 12px; white-space: nowrap; }
+  .flow-box.red  { border-color: var(--red);   color: var(--red); }
+  .flow-box.blue { border-color: var(--blue);  color: var(--blue); }
+  .flow-box.green{ border-color: var(--green); color: var(--green); }
+  .flow-arrow { color: var(--muted); font-size: 16px; line-height: 1; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0; }
+  @media (max-width: 780px) { .cols2 { grid-template-columns: 1fr; } }
+  .sqd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 12px; margin: 12px 0; }
+  .sqd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .sqd-card .cs { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .sqd-card .cs.red  { color: var(--red); }
+  .sqd-card .cs.blue { color: var(--blue); }
+  .sqd-card table { margin: 0; font-size: 12px; }
+  .sqd-card td { padding: 3px 8px; border-color: #222736; }
+  .sqd-card tr:nth-child(even) td { background: #12151e; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span>RED</span> / BLUE IADS<br>+ GCI System</div>
+  <div class="group">Overview</div>
+  <a href="#overview">What This Script Does</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <a href="#changelog">What&#39;s New v1.1</a>
+  <div class="group">Mission Editor</div>
+  <a href="#naming">Group Naming</a>
+  <a href="#zones">Trigger Zones</a>
+  <a href="#awacs">AWACS Groups</a>
+  <a href="#squadrons">Squadrons</a>
+  <a href="#manual-zones">Manual Zones</a>
+  <div class="group">Systems</div>
+  <a href="#detection">Detection</a>
+  <a href="#iads-net">IADS Network</a>
+  <a href="#sam-scoring">SAM Scoring</a>
+  <a href="#arm-defence">ARM Defence</a>
+  <a href="#gci">GCI &amp; Scramble</a>
+  <a href="#awacs-pic">AWACS Picture</a>
+  <a href="#rtb">RTB Logic</a>
+  <a href="#noderefresh">Node Refresh</a>
+  <div class="group">Reference</div>
+  <a href="#cfg-table">Config Table</a>
+  <a href="#arm-list">ARM Types</a>
+  <a href="#agm-list">AGM Types</a>
+  <a href="#loops">Update Loops</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+
+<main>
+
+<h1><span class="red">RED</span> / <span class="blue">BLUE</span> IADS + GCI System</h1>
+<p class="subtitle">
+  <b>RED_BLUE_IADS_Intercept.lua</b> &nbsp;&#xb7;&nbsp; Version 1.1 &nbsp;&#xb7;&nbsp; Map: Syria &nbsp;&#xb7;&nbsp; Requires: MIST 4.5
+</p>
+
+<h2 id="overview">What This Script Does</h2>
+<p>A fully scripted, bilateral Integrated Air Defence and Ground Controlled Intercept system for DCS World.
+Both <span class="badge badge-red">RED</span> and <span class="badge badge-blue">BLUE</span> coalitions run identical, independent systems simultaneously.</p>
+<div class="cols2">
+  <div>
+    <h3>IADS Network</h3>
+    <ul>
+      <li>EWR nodes share contacts across the SAM network</li>
+      <li>SAMs scored per-engagement; best scorer fires, others go EMCON</li>
+      <li>ARM inbound &#x2192; suppress radar, optionally relocate</li>
+      <li>SHORAD alerted to incoming AGMs within 15 km</li>
+    </ul>
+  </div>
+  <div>
+    <h3>GCI / Intercept</h3>
+    <ul>
+      <li>Threat detected in a zone &#x2192; scramble squadron flights</li>
+      <li>DCS radar sensor model used as primary detection</li>
+      <li>AWACS groups extend detection to 420 km</li>
+      <li>AWACS broadcasts picture call every 3 minutes</li>
+      <li>RTB triggered by zone clear <em>or</em> Bingo fuel</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td><code>mist_4_5_126.lua</code></td><td>Must be loaded <strong>before</strong> this script. Used for zone discovery (<code>mist.DBs.zonesByName</code>), group DB (<code>mist.DBs.groupsByName</code>), and unit-in-zone queries.</td></tr>
+  <tr><td>DCS World stable</td><td>Uses <code>coalition.getDetectedTargets()</code>, <code>Group:activate()</code>, <code>Controller:setTask()</code>, <code>Unit:getFuel()</code>.</td></tr>
+  <tr><td>Syria map</td><td>Airbase names and squadron config are Syria-specific. Adapt <code>IADS_CFG.SQUADRONS</code> and zone names for other maps.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<p>Create a <strong>MISSION START</strong> trigger with <em>DO SCRIPT FILE</em> actions in this order:</p>
+<pre>1.  mist_4_5_126.lua
+2.  RED_BLUE_IADS_Intercept.lua</pre>
+<div class="box box-warn">Both files must be in the same folder as your <code>.miz</code> file. The IADS script waits 1 second before initialising, giving MIST time to populate its databases.</div>
+
+<h2 id="changelog">What&#39;s New &#x2014; Version 1.1</h2>
+<table>
+  <tr><th>Area</th><th>Change</th></tr>
+  <tr><td><span class="badge badge-blue">Detection</span></td><td>Primary detection uses <code>coalition.getDetectedTargets(coalID, Unit.SensorType.RADAR)</code> &#x2014; real DCS sensor model with LOS, RCS and ECM. Range-sphere fallback still runs as a supplement. Toggle via <code>USE_DCS_DETECTION</code>.</td></tr>
+  <tr><td><span class="badge badge-blue">BLUE GCI</span></td><td>BLUE coalition now has a full GCI intercept system identical to RED&#39;s. Configure via <code>IADS_CFG.SQUADRONS.BLUE</code>.</td></tr>
+  <tr><td><span class="badge badge-purple">AWACS</span></td><td>AWACS aircraft groups (<code>RED_AWACS_</code> / <code>BLUE_AWACS_</code>) extend detection to 420 km and broadcast picture calls every <code>GCI_PICTURE_INTERVAL</code> seconds.</td></tr>
+  <tr><td><span class="badge badge-yellow">Fuel RTB</span></td><td>Airborne flights monitored for fuel. Any unit below <code>GCI_FUEL_RTB_THRESHOLD</code> (default 20%) triggers a Bingo RTB with GCI radio message.</td></tr>
+  <tr><td><span class="badge badge-green">Home Base RTB</span></td><td>Each squadron has a <code>homeBase</code> field. RTB routes to the designated airbase.</td></tr>
+  <tr><td><span class="badge badge-yellow">Callsigns</span></td><td>GCI and AWACS messages carry configurable callsigns (e.g. <em>OVERLORD</em>, <em>MAGIC</em>, <em>GCI MOSCOW</em>). Text goes only to the relevant coalition.</td></tr>
+  <tr><td><span class="badge badge-grey">Node Refresh</span></td><td>SAM/EWR node list rebuilt every 15 minutes (<code>NODE_REFRESH_INTERVAL</code>). Dead sites are silently pruned.</td></tr>
+</table>
+
+<h2 id="naming">Group Naming Conventions</h2>
+<table>
+  <tr><th>Prefix</th><th>Coalition</th><th>Category</th><th>Example</th></tr>
+  <tr><td><code>RED_SAM_</code></td><td><span class="badge badge-red">RED</span></td><td>SAM / SHORAD</td><td><code>RED_SAM_S300_DAMASCUS</code></td></tr>
+  <tr><td><code>BLUE_SAM_</code></td><td><span class="badge badge-blue">BLUE</span></td><td>SAM / SHORAD</td><td><code>BLUE_SAM_PATRIOT_INCIRLIK</code></td></tr>
+  <tr><td><code>RED_EWR_</code></td><td><span class="badge badge-red">RED</span></td><td>Early Warning Radar</td><td><code>RED_EWR_55G6_LATAKIA</code></td></tr>
+  <tr><td><code>BLUE_EWR_</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Early Warning Radar</td><td><code>BLUE_EWR_MPDR_INCIRLIK</code></td></tr>
+  <tr><td><code>RED_AWACS_</code></td><td><span class="badge badge-red">RED</span></td><td>AWACS aircraft</td><td><code>RED_AWACS_A50_KHMEIMIM</code></td></tr>
+  <tr><td><code>BLUE_AWACS_</code></td><td><span class="badge badge-blue">BLUE</span></td><td>AWACS aircraft</td><td><code>BLUE_AWACS_E3_INCIRLIK</code></td></tr>
+  <tr><td><code>RED_AIR_&lt;SQD&gt;_NN</code></td><td><span class="badge badge-red">RED</span></td><td>Intercept flights</td><td><code>RED_AIR_DAMASCUS_01</code></td></tr>
+  <tr><td><code>BLUE_AIR_&lt;SQD&gt;_NN</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Intercept flights</td><td><code>BLUE_AIR_NORTH_01</code></td></tr>
+</table>
+<div class="box box-warn"><strong>Intercept flight naming:</strong> <code>groupPrefix</code> in the squadron table must exactly match the start of the ME group name. E.g. <code>groupPrefix = "RED_AIR_DAMASCUS"</code> picks up <code>RED_AIR_DAMASCUS_01</code>, <code>RED_AIR_DAMASCUS_02</code>, etc.</div>
+
+<h2 id="zones">Trigger Zones</h2>
+<p>Each zone acts as a sector defended by one squadron. Zone names must match exactly (case-sensitive) between ME and the <code>zone</code> field in each squadron definition.</p>
+<div class="cols2">
+  <div>
+    <h3><span class="badge badge-red">RED</span> Syria Sectors</h3>
+    <table>
+      <tr><th>Zone Name</th><th>Area</th></tr>
+      <tr><td><code>RED_ZONE_DAMASCUS</code></td><td>Damascus / SW Syria</td></tr>
+      <tr><td><code>RED_ZONE_ALEPPO</code></td><td>Aleppo / NW Syria</td></tr>
+      <tr><td><code>RED_ZONE_LATAKIA</code></td><td>Coastal / Khmeimim area</td></tr>
+      <tr><td><code>RED_ZONE_HOMS</code></td><td>Homs / central corridor</td></tr>
+      <tr><td><code>RED_ZONE_PALMYRA</code></td><td>Palmyra / T4 / eastern central</td></tr>
+      <tr><td><code>RED_ZONE_DEIR_EZ_ZOR</code></td><td>Eastern Syria / Euphrates valley</td></tr>
+      <tr><td><code>RED_ZONE_RAQQA</code></td><td>Northern Euphrates</td></tr>
+      <tr><td><code>RED_ZONE_HAMA</code></td><td>Hama area</td></tr>
+    </table>
+  </div>
+  <div>
+    <h3><span class="badge badge-blue">BLUE</span> Default Zones</h3>
+    <table>
+      <tr><th>Zone Name</th><th>Area</th></tr>
+      <tr><td><code>BLUE_ZONE_NORTH</code></td><td>N. Syria / Turkish border</td></tr>
+      <tr><td><code>BLUE_ZONE_HATAY</code></td><td>Hatay / Iskenderun Gulf</td></tr>
+      <tr><td><code>BLUE_ZONE_SOUTH</code></td><td>S. Lebanon / Israeli buffer</td></tr>
+    </table>
+    <div class="box box-tip" style="margin-top:10px">Add more BLUE zones by placing trigger zones in ME and adding matching entries to <code>IADS_CFG.SQUADRONS.BLUE</code>.</div>
+  </div>
+</div>
+<h3>Zone Radius Guidance</h3>
+<ul>
+  <li><strong>Country-sized sectors:</strong> 80&#x2013;120 km radius</li>
+  <li><strong>Airbase sectors:</strong> 60&#x2013;80 km radius</li>
+  <li>The threat buffer adds an extra <strong>80 km</strong> around the zone before scramble &#x2014; effective trigger distance = zone radius + 80 km.</li>
+</ul>
+
+<h2 id="awacs">AWACS Groups</h2>
+<p>Any group whose name starts with <code>RED_AWACS_</code> or <code>BLUE_AWACS_</code> is automatically treated as an AWACS node:</p>
+<ul>
+  <li>Adds a <strong>420 km detection radius</strong> to the sphere supplement scan</li>
+  <li>Acts as the GCI reference point for bearing/range in picture calls</li>
+  <li>Triggers coalition-wide picture broadcasts every <code>GCI_PICTURE_INTERVAL</code> seconds, <em>only while alive</em></li>
+</ul>
+<div class="box box-info"><strong>No AWACS alive?</strong> Picture calls are suppressed. IADS detection still works via DCS radar model + ground EWR sphere fallback.</div>
+<table>
+  <tr><th>Side</th><th>Group Name Example</th><th>Aircraft</th><th>Suggested Orbit</th></tr>
+  <tr><td><span class="badge badge-red">RED</span></td><td><code>RED_AWACS_A50_KHMEIMIM</code></td><td>A-50 Mainstay</td><td>Latakia coast, ~8 000 m</td></tr>
+  <tr><td><span class="badge badge-blue">BLUE</span></td><td><code>BLUE_AWACS_E3_INCIRLIK</code></td><td>E-3 Sentry</td><td>Southern Turkey, ~9 000 m</td></tr>
+</table>
+
+<h2 id="squadrons">Squadron Configuration</h2>
+<p>Defined in <code>IADS_CFG.SQUADRONS.RED</code> and <code>IADS_CFG.SQUADRONS.BLUE</code>. Each entry:</p>
+<pre>{ callsign   = "FOXBAT",            -- GCI radio callsign text
+  homeBase   = "Mezzeh",            -- Exact DCS airbase name for Airbase.getByName()
+  zone       = "RED_ZONE_DAMASCUS", -- Trigger zone this squadron defends
+  groupPrefix = "RED_AIR_DAMASCUS", -- All flight groups start with this string
+  maxFlights  = 3,                  -- Max simultaneous airborne flights
+}</pre>
+
+<h3><span class="badge badge-red">RED</span> Default Squadrons</h3>
+<div class="sqd-grid">
+  <div class="sqd-card"><div class="cs red">FOXBAT</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_DAMASCUS</code></td></tr>
+    <tr><td>Base</td><td>Mezzeh</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_DAMASCUS</code></td></tr>
+    <tr><td>Max</td><td>3</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">FULCRUM</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_ALEPPO</code></td></tr>
+    <tr><td>Base</td><td>Aleppo</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_ALEPPO</code></td></tr>
+    <tr><td>Max</td><td>3</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">FLANKER</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_LATAKIA</code></td></tr>
+    <tr><td>Base</td><td>Bassel Al-Assad</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_LATAKIA</code></td></tr>
+    <tr><td>Max</td><td>3</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">FENCER</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_PALMYRA</code></td></tr>
+    <tr><td>Base</td><td>Tiyas</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_PALMYRA</code></td></tr>
+    <tr><td>Max</td><td>2</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">FROGFOOT</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_HOMS</code></td></tr>
+    <tr><td>Base</td><td>Hama</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_HOMS</code></td></tr>
+    <tr><td>Max</td><td>2</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">SOKOL</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_DEIR_EZ_ZOR</code></td></tr>
+    <tr><td>Base</td><td>Deir ez-Zor</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_DEIR_EZ_ZOR</code></td></tr>
+    <tr><td>Max</td><td>2</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">VYMPEL</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_RAQQA</code></td></tr>
+    <tr><td>Base</td><td>Tabqa</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_RAQQA</code></td></tr>
+    <tr><td>Max</td><td>2</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs red">BERKUT</div><table>
+    <tr><td>Zone</td><td><code>RED_ZONE_HAMA</code></td></tr>
+    <tr><td>Base</td><td>Hama</td></tr>
+    <tr><td>Prefix</td><td><code>RED_AIR_HAMA</code></td></tr>
+    <tr><td>Max</td><td>2</td></tr>
+  </table></div>
+</div>
+
+<h3><span class="badge badge-blue">BLUE</span> Default Squadrons</h3>
+<div class="sqd-grid">
+  <div class="sqd-card"><div class="cs blue">VIPER</div><table>
+    <tr><td>Zone</td><td><code>BLUE_ZONE_NORTH</code></td></tr>
+    <tr><td>Base</td><td>Incirlik</td></tr>
+    <tr><td>Prefix</td><td><code>BLUE_AIR_NORTH</code></td></tr>
+    <tr><td>Max</td><td>4</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs blue">HORNET</div><table>
+    <tr><td>Zone</td><td><code>BLUE_ZONE_HATAY</code></td></tr>
+    <tr><td>Base</td><td>Hatay</td></tr>
+    <tr><td>Prefix</td><td><code>BLUE_AIR_HATAY</code></td></tr>
+    <tr><td>Max</td><td>3</td></tr>
+  </table></div>
+  <div class="sqd-card"><div class="cs blue">EAGLE</div><table>
+    <tr><td>Zone</td><td><code>BLUE_ZONE_SOUTH</code></td></tr>
+    <tr><td>Base</td><td>Ramat David</td></tr>
+    <tr><td>Prefix</td><td><code>BLUE_AIR_SOUTH</code></td></tr>
+    <tr><td>Max</td><td>3</td></tr>
+  </table></div>
+</div>
+
+<h3>Intercept Flight Setup in ME</h3>
+<ul>
+  <li><strong>Late Activation: ON</strong> &#x2014; required so the script can activate them on demand</li>
+  <li><strong>Uncontrolled: OFF</strong></li>
+  <li>2 aircraft per group recommended</li>
+  <li>Starting location: parking at the squadron&#39;s home airbase</li>
+  <li>No waypoints needed &#x2014; the script assigns the task after activation</li>
+</ul>
+
+<h2 id="detection">Detection System</h2>
+<p>Detection runs in two passes every IADS update cycle. Both passes contribute to the final contact list, deduplicated by unit name.</p>
+
+<h3>Pass 1 &#x2014; DCS Radar Sensor Model <span class="badge badge-green">PRIMARY</span></h3>
+<p>Calls <code>coalition.getDetectedTargets(coalID, Unit.SensorType.RADAR)</code>. Uses DCS built-in radar simulation:</p>
+<ul>
+  <li>Beam shape, pulse repetition, radar cross-section of target</li>
+  <li>Line-of-sight terrain masking</li>
+  <li>ECM / jamming effects</li>
+  <li>Target aspect and doppler</li>
+</ul>
+<p>Any radar-equipped SAM or EWR in the coalition contributes, regardless of whether it&#39;s named in the script. Disable with <code>USE_DCS_DETECTION = false</code>.</p>
+
+<h3>Pass 2 &#x2014; Range Sphere Supplement <span class="badge badge-yellow">SECONDARY</span></h3>
+<p>Always runs. Iterates named EWR nodes (250 km), SAM nodes (150 km) and AWACS groups (420 km). Captures aircraft the physics model may miss (e.g. SAM radar was off for EMCON, or target is within AWACS range but outside ground coverage).</p>
+
+<h2 id="iads-net">IADS Network</h2>
+<p>The shared air picture is the same for all SAM nodes in a coalition. Any EWR or SAM that detects a contact adds it to the coalition picture &#x2014; all SAMs can be tasked against it without needing their own sensor lock.</p>
+<h3>SAM Behaviour</h3>
+<ul>
+  <li>SAMs with an assigned engagement target: radar <strong>ON</strong>, EngageUnit task pushed</li>
+  <li>SAMs with no target: radar <strong>OFF</strong> (EMCON / standby) &#x2014; reduces SEAD exposure</li>
+  <li>Fire delay randomised between <code>SAM_FIRE_DELAY_MIN</code> and <code>SAM_FIRE_DELAY_MAX</code> to stagger launches</li>
+</ul>
+
+<h2 id="sam-scoring">SAM Engagement Scoring</h2>
+<p>When multiple SAMs can engage a contact, the highest scorer fires; others remain on standby.</p>
+<pre>Score = PKill_BASE x rangeFactor x altFactor x healthFactor</pre>
+<table>
+  <tr><th>Factor</th><th>Formula</th><th>Notes</th></tr>
+  <tr><td><code>rangeFactor</code></td><td><code>1 - |d/maxRange - 0.4|</code></td><td>Peaks at 40% of max range; near-zero at extremes</td></tr>
+  <tr><td><code>altFactor</code></td><td>Linear ramp below 500 m and above 12 000 m</td><td>Prefers targets 500&#x2013;12 000 m AGL</td></tr>
+  <tr><td><code>healthFactor</code></td><td><code>alive_units / total_units</code></td><td>Degraded sites score lower</td></tr>
+  <tr><td><code>PKill_BASE</code></td><td>Config value (default 0.75)</td><td>Global tuning multiplier</td></tr>
+</table>
+<p>Suppressed SAMs (ARM evasion window active) are skipped &#x2014; score forced to 0.</p>
+
+<h2 id="arm-defence">ARM &amp; AGM Defence</h2>
+<p>Monitored on every <code>S_EVENT_SHOT</code>. Weapons are classified by checking <code>getTypeName()</code> against <code>ARM_TYPES</code> and <code>AGM_TYPES</code> using <code>string.find()</code> (partial match; both hyphen and underscore forms listed).</p>
+
+<h3>ARM Response</h3>
+<div class="flow">
+  <div class="flow-box red">ARM detected</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">Extrapolate trajectory 60 s forward</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">Find nearest SAM to projected impact</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box red">Suppress radar for ARM_SHUTDOWN_TIME (45 s)</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">Mobile SAM relocates up to ARM_MOVE_RADIUS (800 m)</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box green">Radar back online after window</div>
+</div>
+
+<h3>AGM Response</h3>
+<p>Tracked in the weapon loop (every 1 second). Any SHORAD node within <strong>15 km</strong> of the weapon&#39;s current position is alerted and set Weapons Free.</p>
+
+<h2 id="gci">GCI &amp; Scramble System</h2>
+<p>Runs for both coalitions every <code>AIR_INTERCEPT_INTERVAL</code> seconds (default 10 s).</p>
+
+<h3>Scramble Flow</h3>
+<div class="flow">
+  <div class="flow-box">Enemy contacts in coalition picture</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">Filter contacts within 80 km of squadron zone</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box red">threats &gt; 0 &#x2192; check airborne vs maxFlights</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">Get available late-activate groups (MIST DB)</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box green">Activate + assign EngageUnit or Orbit task</div>
+  <div class="flow-arrow">&#x2192;</div>
+  <div class="flow-box">GCI scramble message to coalition</div>
+</div>
+
+<h3>Scramble Message Format</h3>
+<pre>[GCI MOSCOW]  FOXBAT, SCRAMBLE. Vector 287 / 62 nm, 2 high, 1 medium. 3 hostile(s). Cleared to engage.</pre>
+
+<h3>Task Assignment (4 s after activation)</h3>
+<ul>
+  <li><strong>Lead threat unit still alive:</strong> <code>EngageUnit</code> task assigned</li>
+  <li><strong>Threat gone:</strong> <code>Orbit</code> task over zone centre at <code>INTERCEPT_ALTITUDE</code></li>
+  <li>ROE set to Weapons Free, threat reaction set to aggressive</li>
+</ul>
+
+<h2 id="awacs-pic">AWACS Picture Call</h2>
+<p>Broadcasts to the coalition every <code>GCI_PICTURE_INTERVAL</code> seconds (default 3 min), only while at least one AWACS group is alive.</p>
+<h3>Message Format</h3>
+<pre>[MAGIC]  PICTURE: 4 contact(s), 287 / 62 nm, 2 high, 2 medium.
+[OVERLORD]  PICTURE CLEAR. No enemy contacts.</pre>
+<p>Bearing is from the AWACS aircraft&#39;s current position (or first EWR node if no AWACS is alive). Range in nautical miles.</p>
+<table>
+  <tr><th>Band</th><th>AGL</th></tr>
+  <tr><td>low</td><td>Below 3 000 m</td></tr>
+  <tr><td>medium</td><td>3 000 &#x2013; 7 500 m</td></tr>
+  <tr><td>high</td><td>Above 7 500 m</td></tr>
+</table>
+
+<h2 id="rtb">RTB Logic</h2>
+<table>
+  <tr><th>Trigger</th><th>Condition</th><th>GCI Message</th></tr>
+  <tr>
+    <td><span class="badge badge-green">Zone clear</span></td>
+    <td>No threats within 80 km for <code>RTB_LOITER_TIME</code> seconds (default 120 s)</td>
+    <td><code>[GCI MOSCOW] FOXBAT, RTB. Zone clear.</code></td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-yellow">Bingo fuel</span></td>
+    <td>Any unit drops below <code>GCI_FUEL_RTB_THRESHOLD</code> (default 20%)</td>
+    <td><code>[GCI MOSCOW] FOXBAT, RTB. Bingo fuel (18%).</code></td>
+  </tr>
+</table>
+<h3>RTB Sequence</h3>
+<ol>
+  <li>ROE set to Return Fire Only</li>
+  <li>Task assigned: waypoint to <code>homeBase</code> &#x2192; Land action</li>
+  <li>600 seconds later: group destroyed, status set to <code>"standby"</code></li>
+  <li>Group is now eligible for re-dispatch if threats return</li>
+</ol>
+<div class="box box-warn">Groups are destroyed after landing &#x2014; not deactivated. They cannot be re-activated after destruction. Plan your late-activate pool accordingly (3 groups per sector is a good baseline for a 4-hour mission).</div>
+
+<h2 id="noderefresh">Node Refresh Loop</h2>
+<p>Runs every <code>NODE_REFRESH_INTERVAL</code> seconds (default 900 s / 15 min). Calls <code>buildNodeList()</code> for both coalitions &#x2014; scans all groups by prefix and keeps only those with at least one alive unit.</p>
+<ul>
+  <li>Dead SAM / EWR groups silently removed</li>
+  <li>No respawn &#x2014; SAM sites are one-and-done</li>
+  <li>log output: <code>[NodeRefresh] Done. RED nodes: 12  BLUE nodes: 4</code></li>
+</ul>
+
+<h2 id="cfg-table">Full Configuration Table Reference</h2>
+<table>
+  <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>UPDATE_INTERVAL</code></td><td>5 s</td><td>Main IADS loop frequency</td></tr>
+  <tr><td><code>AIR_INTERCEPT_INTERVAL</code></td><td>10 s</td><td>GCI scramble check frequency</td></tr>
+  <tr><td><code>WEAPON_TRACK_INTERVAL</code></td><td>1 s</td><td>ARM / AGM weapon tracking frequency</td></tr>
+  <tr><td><code>RTB_CHECK_INTERVAL</code></td><td>15 s</td><td>Fuel monitoring / flight maintenance frequency</td></tr>
+  <tr><td><code>NODE_REFRESH_INTERVAL</code></td><td>900 s</td><td>Full node-list rebuild period</td></tr>
+  <tr><td><code>EWR_DETECTION_RANGE</code></td><td>250 000 m</td><td>Sphere detection radius for ground EWR nodes</td></tr>
+  <tr><td><code>SAM_ENGAGE_SHARE_RANGE</code></td><td>180 000 m</td><td>Max range SAM is scored for engagement</td></tr>
+  <tr><td><code>SAM_MIN_ENGAGE_ALT</code></td><td>30 m</td><td>Ignore contacts below this altitude AGL</td></tr>
+  <tr><td><code>SAM_FIRE_DELAY_MIN</code></td><td>2 s</td><td>Min random launch delay</td></tr>
+  <tr><td><code>SAM_FIRE_DELAY_MAX</code></td><td>8 s</td><td>Max random launch delay</td></tr>
+  <tr><td><code>PKill_BASE</code></td><td>0.75</td><td>Base Pk multiplier for scoring</td></tr>
+  <tr><td><code>ARM_SHUTDOWN_TIME</code></td><td>45 s</td><td>Radar suppression window after ARM detect</td></tr>
+  <tr><td><code>ARM_MOVE_RADIUS</code></td><td>800 m</td><td>Random relocation radius for mobile SAMs</td></tr>
+  <tr><td><code>INTERCEPT_ALTITUDE</code></td><td>6 000 m</td><td>Climb / orbit altitude for interceptors</td></tr>
+  <tr><td><code>INTERCEPT_SPEED</code></td><td>900 km/h</td><td>Intercept speed assigned to task</td></tr>
+  <tr><td><code>RTB_LOITER_TIME</code></td><td>120 s</td><td>Seconds after zone clear before RTB is ordered</td></tr>
+  <tr><td><code>USE_DCS_DETECTION</code></td><td>true</td><td>Enable DCS radar sensor model as primary detection pass</td></tr>
+  <tr><td><code>GCI_PICTURE_INTERVAL</code></td><td>180 s</td><td>Interval between AWACS picture broadcasts</td></tr>
+  <tr><td><code>GCI_FUEL_RTB_THRESHOLD</code></td><td>0.20</td><td>Fuel fraction (0&#x2013;1) that triggers Bingo RTB</td></tr>
+  <tr><td><code>AWACS_DETECTION_RANGE</code></td><td>420 000 m</td><td>Sphere detection radius for airborne AWACS nodes</td></tr>
+  <tr><td><code>AWACS_PREFIX_RED</code></td><td><code>"RED_AWACS_"</code></td><td>Group name prefix for RED AWACS aircraft</td></tr>
+  <tr><td><code>AWACS_PREFIX_BLUE</code></td><td><code>"BLUE_AWACS_"</code></td><td>Group name prefix for BLUE AWACS aircraft</td></tr>
+  <tr><td><code>AWACS_CALLSIGN.RED</code></td><td><code>"OVERLORD"</code></td><td>RED AWACS message callsign</td></tr>
+  <tr><td><code>AWACS_CALLSIGN.BLUE</code></td><td><code>"MAGIC"</code></td><td>BLUE AWACS message callsign</td></tr>
+  <tr><td><code>GCI_CALLSIGN.RED</code></td><td><code>"GCI MOSCOW"</code></td><td>RED GCI scramble/RTB callsign</td></tr>
+  <tr><td><code>GCI_CALLSIGN.BLUE</code></td><td><code>"GCI CONTROL"</code></td><td>BLUE GCI scramble/RTB callsign</td></tr>
+  <tr><td><code>SQUADRONS</code></td><td>See Squadron section</td><td>Squadron definitions for RED and BLUE</td></tr>
+  <tr><td><code>ARM_TYPES</code></td><td>See ARM list</td><td>Weapon type name substrings for ARM classification</td></tr>
+  <tr><td><code>AGM_TYPES</code></td><td>See AGM list</td><td>Weapon type name substrings for AGM classification</td></tr>
+</table>
+
+<h2 id="arm-list">ARM Types Reference</h2>
+<div class="cols2">
+  <div>
+    <h3>NATO / Western</h3>
+    <table>
+      <tr><th>Weapon</th><th>Platform</th></tr>
+      <tr><td>AGM-88 / 88C / 88E (HARM)</td><td>F-16C, F/A-18C, AV-8B, A-10C II</td></tr>
+      <tr><td>AGM-45 / 45A / 45B (Shrike)</td><td>A-4E, older modules</td></tr>
+      <tr><td>AGM-122 / 122A (Sidearm)</td><td>AV-8B</td></tr>
+      <tr><td>ALARM</td><td>Tornado GR4</td></tr>
+    </table>
+  </div>
+  <div>
+    <h3>Russian / Soviet</h3>
+    <table>
+      <tr><th>Weapon</th><th>Platform</th></tr>
+      <tr><td>Kh-58 / 58U / 58UShE</td><td>Su-24M, Su-25T, Su-34</td></tr>
+      <tr><td>Kh-31P</td><td>Su-27, Su-30, MiG-29G</td></tr>
+      <tr><td>Kh-25MP / 25MPU</td><td>Su-25T, Su-24M</td></tr>
+      <tr><td>Kh-28</td><td>Su-24M</td></tr>
+    </table>
+  </div>
+</div>
+<div class="box box-info">Both the DCS underscore form (<code>X_58U</code>) and the hyphen display form (<code>Kh-58U</code>) are listed for Russian weapons. Detection uses <code>string.find()</code> partial match so minor DCS version differences in type names are handled automatically.</div>
+
+<h2 id="agm-list">AGM / Guided Bomb Types Reference</h2>
+<div class="cols2">
+  <div>
+    <h3>NATO Missiles</h3>
+    <table>
+      <tr><th>Weapon</th></tr>
+      <tr><td>AGM-65A/B/D/E/F/G/H/K (Maverick)</td></tr>
+      <tr><td>AGM-84 / 84D / 84E / 84H (Harpoon / SLAM)</td></tr>
+      <tr><td>AGM-154A / 154C (JSOW)</td></tr>
+      <tr><td>AGM-158 / 158A (JASSM)</td></tr>
+      <tr><td>Storm Shadow / SCALP</td></tr>
+    </table>
+    <h3>NATO Guided Bombs</h3>
+    <table>
+      <tr><th>Weapon</th></tr>
+      <tr><td>GBU-10 / 12 / 16 / 24 / 49 (Paveway)</td></tr>
+      <tr><td>GBU-31 V1&#x2013;V4 / 32 / 38 / 54 (JDAM)</td></tr>
+      <tr><td>GBU-39 / 39/B (Small Diameter Bomb)</td></tr>
+      <tr><td>Durandal (runway penetrator)</td></tr>
+    </table>
+  </div>
+  <div>
+    <h3>Russian Missiles</h3>
+    <table>
+      <tr><th>Weapon</th></tr>
+      <tr><td>Kh-29T / L / TE</td></tr>
+      <tr><td>Kh-59 / 59M / 59MK / 59MK2</td></tr>
+      <tr><td>Kh-25ML / 25MR</td></tr>
+      <tr><td>Kh-31A</td></tr>
+      <tr><td>Kh-35 / 35U</td></tr>
+      <tr><td>S-25L</td></tr>
+    </table>
+    <h3>Russian Guided Bombs</h3>
+    <table>
+      <tr><th>Weapon</th></tr>
+      <tr><td>KAB-500Kr / 500L / 500S</td></tr>
+      <tr><td>KAB-1500Kr / 1500L</td></tr>
+      <tr><td>BetAB-500 / 500ShP</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2 id="loops">Update Loop Summary</h2>
+<table>
+  <tr><th>Loop</th><th>Interval</th><th>Function</th></tr>
+  <tr><td>IADS Update</td><td>5 s</td><td>Rebuild nodes, gather contacts, score and assign SAM engagements</td></tr>
+  <tr><td>Weapon Tracking</td><td>1 s</td><td>Track live ARMs/AGMs, trigger radar suppression, alert SHORAD</td></tr>
+  <tr><td>GCI Intercept</td><td>10 s</td><td>Check both coalitions&#39; zones, scramble/RTB flights, broadcast AWACS picture</td></tr>
+  <tr><td>Flight Maintenance</td><td>15 s</td><td>Fuel check on all airborne flights, Bingo RTB, dead-flight cleanup</td></tr>
+  <tr><td>Node Refresh</td><td>900 s</td><td>Full rebuild of SAM/EWR node lists, prune destroyed sites</td></tr>
+</table>
+
+<h2 id="manual-zones">Manual Zone Registration</h2>
+<p>If MIST&#39;s zone DB is unavailable, add a <em>DO SCRIPT</em> trigger at <strong>T+2 seconds</strong>:</p>
+<pre>-- RED zones
+registerRedZone("RED_ZONE_DAMASCUS")
+registerRedZone("RED_ZONE_ALEPPO")
+registerRedZone("RED_ZONE_LATAKIA")
+registerRedZone("RED_ZONE_HOMS")
+registerRedZone("RED_ZONE_PALMYRA")
+registerRedZone("RED_ZONE_DEIR_EZ_ZOR")
+registerRedZone("RED_ZONE_RAQQA")
+registerRedZone("RED_ZONE_HAMA")
+-- BLUE zones
+registerBlueZone("BLUE_ZONE_NORTH")
+registerBlueZone("BLUE_ZONE_HATAY")
+registerBlueZone("BLUE_ZONE_SOUTH")</pre>
+
+<h3>Adding a New Squadron</h3>
+<pre>-- In IADS_CFG.SQUADRONS.RED (or BLUE):
+{ callsign    = "GRIZZLY",
+  homeBase    = "Tabqa",
+  zone        = "RED_ZONE_RAQQA_EAST",
+  groupPrefix  = "RED_AIR_RAQQA_EAST",
+  maxFlights   = 2,
+},
+-- In ME: create trigger zone "RED_ZONE_RAQQA_EAST"
+-- Place groups: RED_AIR_RAQQA_EAST_01, RED_AIR_RAQQA_EAST_02  (Late Activate ON)</pre>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Likely Cause &amp; Fix</th></tr>
+  <tr>
+    <td>No intercept flights launch</td>
+    <td>1. Check groups have <strong>Late Activate = ON</strong>.<br>
+        2. <code>groupPrefix</code> in SQUADRONS must exactly match the start of the ME group name.<br>
+        3. Verify MIST is loaded first.<br>
+        4. Zone name in SQUADRONS must match ME trigger zone exactly (case-sensitive).</td>
+  </tr>
+  <tr>
+    <td>No AWACS picture calls</td>
+    <td>Verify at least one <code>RED_AWACS_</code> / <code>BLUE_AWACS_</code> group is alive. Check prefix matches <code>AWACS_PREFIX_RED</code> / <code>AWACS_PREFIX_BLUE</code>.</td>
+  </tr>
+  <tr>
+    <td>SAMs not engaging</td>
+    <td>Check SAM groups start with <code>RED_SAM_</code> / <code>BLUE_SAM_</code>. Verify at least one EWR is alive within 250 km, or <code>USE_DCS_DETECTION = true</code> and coalition radar is active.</td>
+  </tr>
+  <tr>
+    <td>ARM not detected</td>
+    <td>Confirm weapon&#39;s <code>getTypeName()</code> appears in <code>ARM_TYPES</code>. Use <code>env.info(</code>tostring(weapon:getTypeName())<code>)</code> in a test script to print the exact string.</td>
+  </tr>
+  <tr>
+    <td>Zones not discovered</td>
+    <td>MIST version may not expose <code>mist.DBs.zonesByName</code>. Manually register via <code>registerRedZone()</code> / <code>registerBlueZone()</code> in a DO Script at T+2 s.</td>
+  </tr>
+  <tr>
+    <td>Flights RTB immediately</td>
+    <td>Check <code>GCI_FUEL_RTB_THRESHOLD</code>. If set too high and aircraft spawn with partial fuel, they Bingo at start. Default 0.20 is safe for most aircraft.</td>
+  </tr>
+  <tr>
+    <td>All script errors</td>
+    <td>Search <code>dcs.log</code> for <code>[IADS]</code> &#x2014; all script output is prefixed with this tag. Most common issue: loading IADS script before MIST (check trigger order).</td>
+  </tr>
+</table>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll("h2[id]");
+  const links    = document.querySelectorAll("nav a");
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove("active"));
+        const a = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (a) a.classList.add("active");
+      }
+    });
+  }, { rootMargin: "0px 0px -60% 0px" });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
