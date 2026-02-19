@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SYRIA AirbaseCapture — Documentation</title>
 <style>
-  :root{--bg:#0f1117;--surface:#181c26;--surface2:#1d2233;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--purple:#9b59b6;--neutral:#868d9e;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:185px}
+  :root{--bg:#0f1117;--surface:#181c26;--surface2:#1d2233;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--purple:#9b59b6;--neutral:#868d9e;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:195px}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
   nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
   nav .logo{padding:0 14px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
   nav .logo span{color:var(--red)}
-  nav a{display:block;padding:6px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
   nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
-  nav .grp{padding:10px 14px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
   main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1080px;width:100%}
   h1{font-size:26px;color:#fff;margin-bottom:6px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
@@ -39,7 +39,7 @@
   .g{background:rgba(92,184,92,.18);color:var(--green)}
   .y{background:rgba(224,160,32,.18);color:var(--yellow)}
   .n{background:rgba(134,141,158,.18);color:var(--neutral)}
-  .d{background:rgba(74,48,64,.5);color:#c07090}
+  .d{background:rgba(20,20,20,.8);color:#909090;border:1px solid #444}
   .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
   .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
   .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
@@ -75,7 +75,7 @@
   .sm-s.red{background:rgba(224,85,85,.18);border:2px solid var(--red);color:var(--red)}
   .sm-s.blue{background:rgba(74,144,226,.18);border:2px solid var(--blue);color:var(--blue)}
   .sm-s.grey{background:rgba(134,141,158,.18);border:2px solid var(--neutral);color:var(--neutral)}
-  .sm-s.dest{background:rgba(74,48,64,.4);border:2px solid #c07090;color:#c07090}
+  .sm-s.dest{background:rgba(20,20,20,.6);border:2px solid #606060;color:#909090}
   .sm-a{padding:0 8px;color:var(--muted);font-size:20px;display:flex;align-items:center}
   .sm-lbl{font-size:10px;color:var(--muted);display:block;font-weight:400;margin-top:3px}
 </style>
@@ -95,28 +95,30 @@
   <a href="#cfg-marks">Mark IDs</a>
   <div class="grp">Functions</div>
   <a href="#fn-getowner">getOwner</a>
+  <a href="#fn-setowner">setOwner</a>
   <a href="#fn-forcecoal">forceCoalition</a>
   <a href="#fn-setdest">setDestroyed</a>
   <a href="#fn-regfarp">registerFARP</a>
   <a href="#fn-redrawall">redrawAll</a>
   <a href="#fn-oncapture">onCapture</a>
-  <div class="grp">Setup</div>
-  <a href="#airbase-table">Airbase Table</a>
+  <div class="grp">Registries</div>
+  <a href="#registry-airbase">Airbase Registry</a>
+  <a href="#registry-destroy">Destroy Zones</a>
   <a href="#me-setup">ME Checklist</a>
   <a href="#troubleshoot">Troubleshooting</a>
 </nav>
 <main>
 <h1>SYRIA AirbaseCapture</h1>
-<p class="sub"><b>SYRIA_AirbaseCapture.lua</b> &nbsp;&#xb7;&nbsp; Dynamic ownership &amp; F10 map drawing &nbsp;&#xb7;&nbsp; Syria map &nbsp;&#xb7;&nbsp; Requires MIST 4.5</p>
+<p class="sub"><b>SYRIA_AirbaseCapture.lua</b> &nbsp;&#xb7;&nbsp; Dynamic ownership &amp; F10 map drawing &nbsp;&#xb7;&nbsp; Syria map &nbsp;&#xb7;&nbsp; <b>Standalone — no dependencies</b></p>
 
 <h2 id="overview">How It Works</h2>
 <p>Three things happen, in this order:</p>
 <ol>
-  <li><strong>Script loads</strong> &#x2014; reads the hard-coded <code>ABC.REGISTRY</code> list, looks up every airbase position via <code>Airbase.getByName()</code>, and draws a coloured circle on the F10 map for each one.</li>
-  <li><strong>Every 180 seconds</strong> &#x2014; counts ground units of each coalition inside each base&#39;s trigger zone. If one side has units there and the other doesn&#39;t, a capture tick increments. After 3 ticks it flips.</li>
-  <li><strong>On flip</strong> &#x2014; recolours the circle, announces to all players, fires the optional <code>ABC.onCapture</code> callback.</li>
+  <li><strong>Script loads</strong> &#x2014; reads <code>ABC.REGISTRY</code> and <code>ABC.DESTROY_REGISTRY</code>, runs a quick unit scan to correct any bases that start without defenders, then draws a coloured circle on the F10 map for every entry using the matching <code>CAPTURE_ZONE_*</code> / <code>DESTROY_ZONE_*</code> trigger zone in the ME for exact position and radius.</li>
+  <li><strong>Every 180 seconds</strong> &#x2014; counts ground units of each coalition inside each zone. Capture bases: accumulate ticks when one side has units and the other doesn't, flip after 3 consecutive ticks. Destroy zones: permanently flip to black when RED unit count reaches zero.</li>
+  <li><strong>On flip</strong> &#x2014; recolours the circle, announces to all players, fires the optional <code>ABC.onCapture</code> callback (capture zones only).</li>
 </ol>
-<div class="box box-info"><strong>You provide:</strong> Trigger zones in the ME (one per base, named exactly as in the registry). <strong>The script provides:</strong> everything else &#x2014; circles, scanning, state tracking, announcements.</div>
+<div class="box box-info"><strong>You provide:</strong> Trigger zones in the ME — one <code>CAPTURE_ZONE_*</code> per base and one <code>DESTROY_ZONE_*</code> per target set. <strong>The script provides:</strong> everything else — circles, scanning, state tracking, announcements. No MIST required.</div>
 
 <div class="sm">
   <div class="sm-s red">RED<span class="sm-lbl">holds</span></div>
@@ -131,25 +133,25 @@
 <h2 id="requirements">Requirements</h2>
 <table>
   <tr><th>Dependency</th><th>Notes</th></tr>
-  <tr><td><code>mist_4_5_126.lua</code></td><td>Must load first. Used for unit-in-zone queries.</td></tr>
-  <tr><td>DCS World stable</td><td>Uses <code>trigger.action.circleToAll</code>, <code>trigger.action.textToAll</code>, <code>Airbase.getByName</code>.</td></tr>
+  <tr><td>None</td><td>The script is fully standalone. It uses only native DCS Lua APIs — no MIST, no MOOSE, no external libraries.</td></tr>
+  <tr><td>DCS World 2.7+</td><td>Uses <code>trigger.action.circleToAll</code>, <code>trigger.action.textToAll</code>, <code>Airbase.getByName</code>, <code>trigger.misc.getZone</code>.</td></tr>
   <tr><td>Syria map</td><td>Airbase names are Syria-specific. Edit <code>ABC.REGISTRY</code> for other maps.</td></tr>
 </table>
 
 <h2 id="load-order">Load Order</h2>
-<pre>MISSION START trigger  →  DO SCRIPT FILE  →  mist_4_5_126.lua
-                       →  DO SCRIPT FILE  →  SYRIA_AirbaseCapture.lua</pre>
-<div class="box box-warn">AirbaseCapture auto-calls <code>ABC.init()</code> on load. Do not call it manually a second time.</div>
+<pre>MISSION START trigger  →  DO SCRIPT FILE  →  SYRIA_AirbaseCapture.lua</pre>
+<div class="box box-warn">AirbaseCapture auto-calls <code>ABC.init()</code> on load. Do <strong>not</strong> call it manually a second time.</div>
+<div class="box box-info">If you are also loading <code>RED_BLUE_IADS_Intercept.lua</code>, load AirbaseCapture first so its state table is available to the IADS script's optional <code>ABC.getOwner()</code> calls.</div>
 
 <h2 id="states">Ownership States</h2>
 <table>
-  <tr><th>State</th><th>Meaning</th><th>Circle colour</th><th>Capturable</th></tr>
-  <tr><td><span class="badge r">RED</span></td><td>Held by RED. Flips to NEUTRAL when all RED defenders die.</td><td>Red</td><td>Yes &#x2014; by BLUE</td></tr>
-  <tr><td><span class="badge n">NEUTRAL</span></td><td>Up for grabs. Either side can accumulate ticks to claim it.</td><td>Grey</td><td>Yes &#x2014; by either</td></tr>
-  <tr><td><span class="badge b">BLUE</span></td><td>Held by BLUE. Flips to NEUTRAL when all BLUE defenders die.</td><td>Blue</td><td>Yes &#x2014; by RED</td></tr>
-  <tr><td><span class="badge d">DESTROYED</span></td><td>Out of action. Set by script only. Cannot be recaptured.</td><td>Dark grey</td><td>No</td></tr>
+  <tr><th>State</th><th>Meaning</th><th>Ring colour</th><th>Fill colour</th><th>Label</th></tr>
+  <tr><td><span class="badge r">RED</span></td><td>Held by RED. Flips to NEUTRAL when all RED defenders die.</td><td>Red</td><td>Dark red, α 0.15</td><td>Base name (black text)</td></tr>
+  <tr><td><span class="badge n">NEUTRAL</span></td><td>Up for grabs. Either side can accumulate ticks to claim it.</td><td>White</td><td>Mid-gray, α 0.15</td><td>Base name + "Capturing…%" during tick</td></tr>
+  <tr><td><span class="badge b">BLUE</span></td><td>Held by BLUE. Flips to NEUTRAL when all BLUE defenders die.</td><td>Blue</td><td>Dark blue, α 0.15</td><td>Base name (black text)</td></tr>
+  <tr><td><span class="badge d">DESTROYED</span></td><td>Out of action. Terminal state — cannot be recaptured by any coalition.</td><td>Black</td><td>Black, α 0.15</td><td>Base name + "Destroyed" (yellow text)</td></tr>
 </table>
-<p>Bases with <code>capturable = false</code> in the registry are permanently locked to their starting coalition regardless of what happens on the ground.</p>
+<p>Bases with <code>capturable = false</code> in the registry are permanently locked to their starting coalition regardless of ground activity. Destroy zone entries are always RED at start and can only transition to DESTROYED — never capturable.</p>
 
 <!-- ═══════════ CONFIG ═══════════ -->
 <h2 id="cfg-timing">Configuration &#x2014; Timing</h2>
@@ -224,33 +226,24 @@
 <div class="cfg-card">
   <div class="cc-head" onclick="tog(this)">
     <span class="cc-key">CIRCLE_RADIUS</span>
-    <span class="cc-default">6500 m</span>
-    <span class="cc-quick">Radius of the F10 map circle drawn around each base. Does NOT affect the capture zone.</span>
+    <span class="cc-default">6500 m (fallback only)</span>
+    <span class="cc-quick">Fallback radius used only when no matching trigger zone is found in the ME.</span>
     <span class="cc-toggle">&#x25BC; details</span>
   </div>
   <div class="cc-body">
-    <p>This is <strong>purely cosmetic</strong> &#x2014; it controls how large the coloured circle looks on the F10 map. It has no effect on what counts as "inside the zone" for unit scanning. Zone size for capture is determined by the trigger zone radius you set in the Mission Editor.</p>
-    <p>The text label is offset from the centre by roughly half this value so it sits just inside the circle edge. If you change this value significantly, the label position adjusts automatically.</p>
-    <p><strong>Recommended values:</strong><br>
-    &bull; Major international airport: 8000&#x2013;10000 m<br>
-    &bull; Military airbase: 5000&#x2013;7000 m (current default 6500 m)<br>
-    &bull; FARP / small strip: 2000&#x2013;4000 m</p>
-  </div>
-</div>
-
+    <p><strong>Normally this value is never used.</strong> The script reads the radius directly from the trigger zone you placed in the ME (<code>trigger.misc.getZone(entry.zone).radius</code>), so the drawn circle always exactly matches your ME zone. <code>CIRCLE_RADIUS</code> is only the fallback when a zone name is missing from the ME.</p>
+    <p>To change the visual size of a circle, resize the trigger zone in the ME — not this config value.</p>
 <div class="cfg-card">
   <div class="cc-head" onclick="tog(this)">
-    <span class="cc-key">COLOR_RED / FILL_RED (etc.)</span>
-    <span class="cc-default">{r,g,b,a}</span>
-    <span class="cc-quick">RGBA colour values for each state&#39;s circle outline and fill.</span>
+    <span class="cc-key">COLOR_* / FILL_*</span>
+    <span class="cc-default">{r, g, b, a}</span>
+    <span class="cc-quick">RGBA colour arrays for each state's ring outline and fill.</span>
     <span class="cc-toggle">&#x25BC; details</span>
   </div>
   <div class="cc-body">
-    <p>Each state has two colour entries: <code>COLOR_*</code> for the circle outline/border and <code>FILL_*</code> for the transparent interior fill. Both use DCS&#39;s <code>{r, g, b, a}</code> format where all values are between 0 and 1.</p>
-    <p>The <code>a</code> (alpha) value controls opacity. Outline colours use <code>a=0.90&#x2013;0.95</code> for a strong visible edge. Fill colours use <code>a=0.08&#x2013;0.13</code> to keep the interior faintly tinted without obscuring the map underneath.</p>
-    <p>All four state pairs are: <code>COLOR_RED</code>, <code>FILL_RED</code>, <code>COLOR_BLUE</code>, <code>FILL_BLUE</code>, <code>COLOR_NEUTRAL</code>, <code>FILL_NEUTRAL</code>, <code>COLOR_DESTROYED</code>, <code>FILL_DESTROYED</code>.</p>
-  </div>
-</div>
+    <p>Eight entries total — an outline (<code>COLOR_*</code>) and fill (<code>FILL_*</code>) pair for each of the four states: RED, BLUE, NEUTRAL, DESTROYED. All use DCS positional array format <code>{r, g, b, a}</code> where values are 0–1.</p>
+    <p><strong>Important:</strong> DCS requires positional arrays (numeric indices). Named keys like <code>{r=1, g=0, b=0, a=1}</code> are silently ignored and produce invisible marks. Always use <code>{1.0, 0.0, 0.0, 1.0}</code> format.</p>
+    <p>Ring outlines use <code>a=1.0</code> for full opacity. Fill colours use <code>a=0.15</code> to keep the interior diffuse without obscuring the map terrain.</p>
 
 <div class="cfg-card">
   <div class="cc-head" onclick="tog(this)">
@@ -283,29 +276,37 @@
   <div class="cc-head" onclick="tog(this)">
     <span class="cc-key">BASE_MARK_OFFSET</span>
     <span class="cc-default">6000</span>
-    <span class="cc-quick">Starting integer ID for all F10 map marks placed by this script.</span>
+    <span class="cc-quick">Starting integer ID block for all capture zone F10 marks.</span>
     <span class="cc-toggle">&#x25BC; details</span>
   </div>
   <div class="cc-body">
-    <p>DCS F10 map marks are identified by integer IDs. This script allocates a block of <code>MARKS_PER_BASE</code> (4) IDs per base, starting from <code>BASE_MARK_OFFSET</code>.</p>
-    <p>So with the default 6000 offset and ~35 bases in the registry:<br>
-    &bull; Base 1 uses IDs 6004, 6005, 6006, 6007<br>
-    &bull; Base 2 uses IDs 6008, 6009, 6010, 6011<br>
-    &bull; Base 35 uses IDs 6144&#x2013;6147</p>
-    <p><strong>Conflict risk:</strong> If another script in your mission uses <code>trigger.action.markToAll</code> / <code>circleToAll</code> with IDs in this range, marks will collide (one script deletes the other&#39;s marks). Change <code>BASE_MARK_OFFSET</code> to a safely different range, e.g. <code>10000</code>.</p>
-    <p>IDs 0 and 1 within each block are used; 2 and 3 are reserved for future expansion.</p>
+    <p>Each capture base reserves <code>MARKS_PER_BASE</code> (3) consecutive IDs starting at <code>BASE_MARK_OFFSET + (index × 3)</code>. With 22 registry entries, IDs 6003–6069 are used. Slot 0 = <code>circleToAll</code>, slot 1 = <code>textToAll</code>, slot 2 = spare.</p>
+    <p>Change this value if another script in your mission uses overlapping mark IDs. A collision causes one script to silently delete the other's marks every redraw.</p>
+  </div>
+</div>
+
+<div class="cfg-card">
+  <div class="cc-head" onclick="tog(this)">
+    <span class="cc-key">DESTROY_MARK_OFFSET</span>
+    <span class="cc-default">7000</span>
+    <span class="cc-quick">Separate starting ID block for all DESTROY_ZONE_* F10 marks.</span>
+    <span class="cc-toggle">&#x25BC; details</span>
+  </div>
+  <div class="cc-body">
+    <p>Destroy zone marks use a completely separate ID range starting at 7000 so they never conflict with capture zone marks. The same 3-slot-per-entry layout applies. With the defaults, IDs 7003–7999 are available — enough for up to 333 destroy zones.</p>
+    <p>Increase if you have another script using IDs in that range.</p>
   </div>
 </div>
 
 <div class="cfg-card">
   <div class="cc-head" onclick="tog(this)">
     <span class="cc-key">MARKS_PER_BASE</span>
-    <span class="cc-default">4</span>
-    <span class="cc-quick">How many mark IDs are reserved per base (circle + label + 2 spare).</span>
+    <span class="cc-default">3</span>
+    <span class="cc-quick">How many mark IDs are reserved per entry (circle + label + 1 spare).</span>
     <span class="cc-toggle">&#x25BC; details</span>
   </div>
   <div class="cc-body">
-    <p>Currently only 2 marks are used per base (circle at offset 0, text label at offset 1) but 4 are reserved to allow future additions without changing the ID layout. Do not reduce this below 2.</p>
+    <p>Currently 2 marks are used per entry (circle at slot 0, text label at slot 1). Slot 2 is reserved for future expansion. Do not reduce this below 2. This setting applies to both <code>BASE_MARK_OFFSET</code> and <code>DESTROY_MARK_OFFSET</code> blocks.</p>
   </div>
 </div>
 
@@ -314,23 +315,42 @@
 <div class="ref-card">
   <div class="rc-head" onclick="tog(this)">
     <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">getOwner</span>(<span class="args">baseName</span>)<span class="ret">&#x2192; "RED" | "BLUE" | "NEUTRAL" | "DESTROYED" | nil</span></div>
-    <div class="rc-quick">Ask the script who currently owns a base.</div>
+    <div class="rc-quick">Query who currently owns a capture base.</div>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> Looks up the internal state table for the given base name and returns its current coalition string. Returns <code>nil</code> if the name is not in the registry.</p>
-    <p><strong>When to use it:</strong> From any other script that needs to gate logic on airbase ownership. For example, only spawn a logistics convoy if a friendly base is upstream, or trigger a mission objective complete when BLUE captures all three northern bases.</p>
-    <pre>-- Example: check before spawning a convoy
+    <p>Returns the current coalition string for the named base. Returns <code>nil</code> if the name is not in the registry. Name is case-sensitive and must match the <code>name</code> field in <code>ABC.REGISTRY</code> exactly.</p>
+    <pre>-- Spawn a convoy only if Aleppo is BLUE-held
 if ABC.getOwner("Aleppo") == "BLUE" then
   GROUP_Convoy:activate()
 end
 
--- Example: count how many bases RED holds
-local redCount = 0
-for _, name in ipairs({"Mezzeh","Hama","Tiyas","Tabqa"}) do
-  if ABC.getOwner(name) == "RED" then redCount = redCount + 1 end
+-- Count RED-held bases
+local n = 0
+for _, name in ipairs({"Mezzeh","Hama","Palmyra","Tabqa"}) do
+  if ABC.getOwner(name) == "RED" then n = n + 1 end
 end</pre>
-    <p><strong>Note:</strong> The name must match exactly (case-sensitive) as written in <code>ABC.REGISTRY</code>. Use the <code>name</code> field, not the zone name.</p>
+  </div>
+</div>
+
+<h2 id="fn-setowner">Function &#x2014; <code>ABC.setOwner()</code></h2>
+<div class="ref-card">
+  <div class="rc-head" onclick="tog(this)">
+    <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">setOwner</span>(<span class="args">baseName, coalition</span>)</div>
+    <div class="rc-quick">Force a base to a specific coalition instantly, bypassing capture ticks. Announces and redraws.</div>
+    <div class="rc-toggle">&#x25BC; details</div>
+  </div>
+  <div class="rc-body">
+    <p>Immediately assigns the given coalition (<code>"RED"</code>, <code>"BLUE"</code>, or <code>"NEUTRAL"</code>) to the base, redraws the F10 circle, broadcasts an [AIRBASE CAPTURE] message to all players, and fires the optional <code>ABC.onCapture</code> callback.</p>
+    <p>This is the preferred function for scripted ownership changes from DO SCRIPT triggers. It replaces the older <code>forceCoalition()</code> which does the same thing but with a less clear name.</p>
+    <pre>-- Blue secured Palmyra via a mission objective
+ABC.setOwner("Palmyra",  "BLUE")
+
+-- Reset Tabqa after a RED counter-attack
+ABC.setOwner("Tabqa",    "RED")
+
+-- Contested — neither side holds it anymore
+ABC.setOwner("At Tanf",  "NEUTRAL")</pre>
   </div>
 </div>
 
@@ -338,24 +358,12 @@ end</pre>
 <div class="ref-card">
   <div class="rc-head" onclick="tog(this)">
     <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">forceCoalition</span>(<span class="args">baseName, coalStr</span>)</div>
-    <div class="rc-quick">Instantly set a base to any coalition, bypassing capture ticks.</div>
+    <div class="rc-quick">Identical to setOwner() — retained for backwards compatibility.</div>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> Skips the tick accumulation system entirely and immediately sets ownership to the given coalition string (<code>"RED"</code>, <code>"BLUE"</code>, or <code>"NEUTRAL"</code>). Redraws the F10 circle, announces the change to all players, and fires <code>ABC.onCapture</code> if set.</p>
-    <p><strong>When to use it:</strong></p>
-    <ul>
-      <li><strong>Mission start setup</strong> &#x2014; pre-position frontlines without waiting for the tick loop.</li>
-      <li><strong>Scripted narrative events</strong> &#x2014; e.g. a timed trigger flips an airbase as part of a campaign story beat.</li>
-      <li><strong>Player reward</strong> &#x2014; complete a bombing objective and then call <code>forceCoalition</code> to hand the base to BLUE immediately.</li>
-      <li><strong>Admin / testing</strong> &#x2014; reset a base mid-mission without restarting.</li>
-    </ul>
-    <pre>-- Instantly give Hama to BLUE (scripted assault complete)
-ABC.forceCoalition("Hama", "BLUE")
-
--- Reset Palmyra to neutral at a certain mission time
-ABC.forceCoalition("Palmyra", "NEUTRAL")</pre>
-    <p><strong>Important:</strong> This does NOT sync the DCS engine&#39;s internal airbase coalition (which affects ATC callsigns and parking). To sync that, you need to enable auto-capture in the ME airbase properties, which will fire <code>S_EVENT_BASE_CAPTURED</code> and the script will catch and sync it in the other direction.</p>
+    <p>Calls the same internal <code>applyCoalition()</code> function as <code>setOwner()</code>. Prefer <code>setOwner()</code> for new scripts; use <code>forceCoalition()</code> only if you have existing triggers already calling it.</p>
+    <pre>ABC.forceCoalition("Hama", "BLUE")   -- same as ABC.setOwner("Hama","BLUE")</pre>
   </div>
 </div>
 
@@ -363,20 +371,15 @@ ABC.forceCoalition("Palmyra", "NEUTRAL")</pre>
 <div class="ref-card">
   <div class="rc-head" onclick="tog(this)">
     <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">setDestroyed</span>(<span class="args">baseName</span>)</div>
-    <div class="rc-quick">Mark a base as destroyed and remove it from the capture system permanently.</div>
+    <div class="rc-quick">Mark a capture base as permanently destroyed. Black circle, yellow "Destroyed" label.</div>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> Sets the base state to <code>"DESTROYED"</code>, which is a terminal state. The scan loop skips destroyed bases entirely. The F10 circle recolours to dark grey. A "<code>[AIRBASE DESTROYED] X is no longer operational</code>" message is sent to all players.</p>
-    <p><strong>DESTROYED is final for the mission.</strong> There is no <code>ABC.setRestored()</code> function. The only way to bring a base back is to call <code>ABC.forceCoalition()</code> with a valid coalition, which will override the destroyed state.</p>
-    <p><strong>When to use it:</strong></p>
-    <ul>
-      <li>A runway-busting strike completes &#x2014; gate it on a trigger condition or DCS unit-dead event.</li>
-      <li>A SCUD or ballistic missile hits a base &#x2014; trigger it from a weapon impact event.</li>
-      <li>Decommissioning a base as a mission objective is completed.</li>
-    </ul>
-    <pre>-- Example: Inside a DO SCRIPT trigger when all runway objects are dead
-ABC.setDestroyed("Tiyas")    -- T-4 is now unusable</pre>
+    <p>Sets the base state to <code>"DESTROYED"</code> — a terminal state. The scan loop skips destroyed bases entirely. The F10 circle recolours to a black ring with black fill, and the label changes to the base name + "Destroyed" in yellow text. A <code>[AIRBASE DESTROYED]</code> message is sent to all players.</p>
+    <p><strong>DESTROYED is final for the mission</strong> unless you explicitly call <code>ABC.setOwner()</code> or <code>ABC.forceCoalition()</code> to override it.</p>
+    <p>This function operates on <code>ABC.REGISTRY</code> entries (capture bases). Destroy zone entries in <code>ABC.DESTROY_REGISTRY</code> transition to DESTROYED automatically when their zone empties — they don't use this function.</p>
+    <pre>-- From a DO SCRIPT trigger when runway objects are confirmed dead
+ABC.setDestroyed("Shayrat")</pre>
   </div>
 </div>
 
@@ -384,28 +387,26 @@ ABC.setDestroyed("Tiyas")    -- T-4 is now unusable</pre>
 <div class="ref-card">
   <div class="rc-head" onclick="tog(this)">
     <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">registerFARP</span>(<span class="args">farpName, zoneName, startCoal, pos</span>)</div>
-    <div class="rc-quick">Add a FARP to the capture system at runtime with a specific world position.</div>
+    <div class="rc-quick">Add a FARP to the capture system at runtime with an explicit world position.</div>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> FARPs are not DCS airbase objects with known positions, so they can&#39;t be auto-populated in the registry at load time. This function adds a FARP as a new entry mid-mission, allocates it a mark ID block, draws it on the F10 map immediately, and starts including it in the scan loop.</p>
-    <p><strong>Parameters:</strong></p>
+    <p>Use for FARPs that don't have a DCS Airbase object and whose position isn't known at script load time. Adds the FARP as a new registry entry, allocates mark IDs, draws it on the F10 map immediately, and includes it in all future scans.</p>
     <table>
       <tr><th>Param</th><th>Type</th><th>Description</th></tr>
-      <tr><td><code>farpName</code></td><td>string</td><td>Unique name used as the key everywhere (must match the DCS FARP unit name if you want <code>Airbase.getByName()</code> to work)</td></tr>
-      <tr><td><code>zoneName</code></td><td>string</td><td>Exact name of a trigger zone you placed in the ME</td></tr>
+      <tr><td><code>farpName</code></td><td>string</td><td>Unique name — also the key used for all API calls</td></tr>
+      <tr><td><code>zoneName</code></td><td>string</td><td>Exact name of a <code>CAPTURE_ZONE_*</code> trigger zone placed in the ME</td></tr>
       <tr><td><code>startCoal</code></td><td>string</td><td><code>"RED"</code>, <code>"BLUE"</code>, or <code>"NEUTRAL"</code></td></tr>
-      <tr><td><code>pos</code></td><td>Vec3</td><td>DCS world coordinates <code>{x, y, z}</code> &#x2014; get from <code>Airbase.getByName("FARP_x"):getPoint()</code> or a static object</td></tr>
+      <tr><td><code>pos</code></td><td>Vec3</td><td>World coordinates — from <code>Airbase.getByName(name):getPoint()</code> or a static object</td></tr>
     </table>
-    <pre>-- Triggered 5 s after mission start to ensure FARP objects exist
+    <pre>-- Delayed trigger at T+5s (FARP object must exist by then)
 ABC.registerFARP(
   "FARP_Khanasir",
-  "ZONE_FARP_Khanasir",
+  "CAPTURE_ZONE_FARP_Khanasir",
   "RED",
   Airbase.getByName("FARP_Khanasir"):getPoint()
 )</pre>
-    <p><strong>Safe to call repeatedly:</strong> Calling it for a name that&#39;s already registered logs a warning and returns without duplicating it.</p>
-    <p><strong>All FARPs are <code>capturable = true</code> by default.</strong> There is no way to register a locked FARP through this API; add it directly to the registry table as a static entry with <code>capturable = false</code> if needed.</p>
+    <p>Safe to call for an already-registered name — logs a warning and returns without duplicating it.</p>
   </div>
 </div>
 
@@ -417,14 +418,9 @@ ABC.registerFARP(
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> Iterates every entry in the registry, calls <code>clearMarks()</code> (removes old DCS marks), then calls <code>drawBase()</code> to replace them with fresh marks in the current coalition colour.</p>
-    <p><strong>When to use it:</strong></p>
-    <ul>
-      <li>After a batch of <code>forceCoalition</code> calls &#x2014; instead of N redraws, call one <code>redrawAll</code> at the end.</li>
-      <li>If you suspect marks have been accidentally deleted (e.g. another script with conflicting mark IDs).</li>
-      <li>On a scripted "brief" trigger where you want to force all circles to refresh for a new player who just connected.</li>
-    </ul>
-    <p><strong>Cost:</strong> Calls <code>removeMark</code> + <code>circleToAll</code> + <code>textToAll</code> for every registered base in a single frame. On a typical Syria setup with ~35 bases this is ~70 DCS API calls &#x2014; completely fine as a one-off call, but do not call it in a tight loop.</p>
+    <p>Iterates every entry in <code>ABC.REGISTRY</code>, removes all existing marks, and redraws fresh circles in the current coalition colour. Useful if marks have been accidentally deleted (e.g. another script with conflicting mark IDs) or after a batch of ownership changes.</p>
+    <p><strong>Note:</strong> Does not redraw destroy zone entries in <code>ABC.DESTROY_REGISTRY</code>. Those use a separate state table and are redrawn automatically by the scan loop when they change state.</p>
+    <p><strong>Cost:</strong> ~2 DCS API calls per registered base. On a typical Syria setup with 22 entries this is ~44 calls — fine as a one-off call, but do not call it in a tight loop.</p>
   </div>
 </div>
 
@@ -432,116 +428,156 @@ ABC.registerFARP(
 <div class="ref-card">
   <div class="rc-head" onclick="tog(this)">
     <div class="rc-name"><span>ABC.</span><span style="color:#e5c07b">onCapture</span> <span class="args">= function(baseName, prevCoal, newCoal) ... end</span></div>
-    <div class="rc-quick">Optional hook called every time any base changes ownership.</div>
+    <div class="rc-quick">Optional hook called on every capture zone ownership change.</div>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p><strong>What it does:</strong> If you assign a function to <code>ABC.onCapture</code>, the script calls it via <code>pcall</code> (so a crash in your callback won&#39;t bring down the capture loop) every time ownership changes &#x2014; whether via normal capture ticks, <code>forceCoalition</code>, or <code>setDestroyed</code>.</p>
-    <p><strong>Callback signature:</strong></p>
+    <p>If you assign a function here it is called (via <code>pcall</code>) every time a <em>capture zone</em> changes ownership — whether via normal ticks, <code>setOwner</code>, <code>forceCoalition</code>, or <code>setDestroyed</code>. A crash inside your callback will not break the capture loop.</p>
+    <p><strong>Does not fire for destroy zone transitions</strong> — those are independent of the capture system.</p>
     <table>
       <tr><th>Parameter</th><th>Type</th><th>Value</th></tr>
       <tr><td><code>baseName</code></td><td>string</td><td>Name of the base that changed</td></tr>
-      <tr><td><code>prevCoal</code></td><td>string</td><td>Previous coalition: <code>"RED"</code>, <code>"BLUE"</code>, <code>"NEUTRAL"</code></td></tr>
+      <tr><td><code>prevCoal</code></td><td>string</td><td>Previous coalition</td></tr>
       <tr><td><code>newCoal</code></td><td>string</td><td>New coalition after the change</td></tr>
     </table>
-    <pre>ABC.onCapture = function(base, from, to)
-  -- Award score
-  if to == "BLUE" then missionScore = missionScore + 100 end
-
-  -- Trigger IADS node rebuild immediately
+    <pre>-- Set in a DO SCRIPT trigger 1–2 seconds after the DO SCRIPT FILE load
+ABC.onCapture = function(base, from, to)
+  -- Trigger immediate IADS rebuild when a base changes hands
   if type(buildNodeList) == "function" then
     buildNodeList(coalition.side.RED)
     buildNodeList(coalition.side.BLUE)
   end
-
-  -- Announce on radio for specific asset
-  if base == "Mezzeh" and to == "BLUE" then
-    trigger.action.outTextForCoalition(coalition.side.BLUE,
-      "Mezzeh secured. ATC online.", 15)
+  -- Award points
+  if to == "BLUE" then
+    missionScore = (missionScore or 0) + 100
   end
 end</pre>
-    <p><strong>Only one callback at a time.</strong> Setting <code>ABC.onCapture</code> again overwrites the previous value. Wrap multiple actions in a single function.</p>
-    <p><strong>When to set it:</strong> In a DO SCRIPT trigger at T+1 s (after both MIST and AirbaseCapture have fully loaded), not in the same trigger as the DO SCRIPT FILE actions.</p>
+    <p>Only one callback at a time — assigning again overwrites the previous value. Set it in a separate DO SCRIPT trigger at T+1 s so it's assigned after <code>ABC.init()</code> has finished.</p>
   </div>
 </div>
 
-<!-- ═══════════ AIRBASE TABLE ═══════════ -->
-<h2 id="airbase-table">Default Airbase Registry</h2>
-<p>These are the entries in <code>ABC.REGISTRY</code> as shipped. The <code>zone</code> field is the trigger zone name you must place in the ME.</p>
+<!-- ═══════════ REGISTRIES ═══════════ -->
+<h2 id="registry-airbase">Airbase / FARP Registry (<code>ABC.REGISTRY</code>)</h2>
+<p>Each entry defines one capture zone. The <code>zone</code> field must exactly match a <code>CAPTURE_ZONE_*</code> trigger zone placed in the ME — the script reads that zone's centre position and radius for the drawn circle and unit counting.</p>
 <div class="cols2">
   <div>
-    <h3><span class="badge r">RED</span> Capturable (22)</h3>
+    <h3><span class="badge r">RED</span> Capturable (16)</h3>
     <table>
       <tr><th>name</th><th>zone</th></tr>
-      <tr><td>Aleppo</td><td><code>ZONE_Aleppo</code></td></tr>
-      <tr><td>Al Qusayr</td><td><code>ZONE_AlQusayr</code></td></tr>
-      <tr><td>Bassel Al-Assad</td><td><code>ZONE_Latakia</code></td></tr>
-      <tr><td>Damascus</td><td><code>ZONE_Damascus</code></td></tr>
-      <tr><td>Deir ez-Zor</td><td><code>ZONE_DeirEzZor</code></td></tr>
-      <tr><td>Hama</td><td><code>ZONE_Hama</code></td></tr>
-      <tr><td>Jirah</td><td><code>ZONE_Jirah</code></td></tr>
-      <tr><td>Khalkhalah</td><td><code>ZONE_Khalkhalah</code></td></tr>
-      <tr><td>Kuweires</td><td><code>ZONE_Kuweires</code></td></tr>
-      <tr><td>Marj As Sultan North</td><td><code>ZONE_MarjAsNorth</code></td></tr>
-      <tr><td>Marj As Sultan South</td><td><code>ZONE_MarjAsSouth</code></td></tr>
-      <tr><td>Mezzeh</td><td><code>ZONE_Mezzeh</code></td></tr>
-      <tr><td>Minakh</td><td><code>ZONE_Minakh</code></td></tr>
-      <tr><td>Palmyra</td><td><code>ZONE_Palmyra</code></td></tr>
-      <tr><td>Qabr as Sitt</td><td><code>ZONE_QabrAsSitt</code></td></tr>
-      <tr><td>Rasin al Aboud</td><td><code>ZONE_RasinAlAboud</code></td></tr>
-      <tr><td>Shayrat</td><td><code>ZONE_Shayrat</code></td></tr>
-      <tr><td>Tabqa</td><td><code>ZONE_Tabqa</code></td></tr>
-      <tr><td>Taftanaz</td><td><code>ZONE_Taftanaz</code></td></tr>
-      <tr><td>Tiyas</td><td><code>ZONE_Tiyas</code></td></tr>
-      <tr><td>Al-Dumayr</td><td><code>ZONE_AlDumayr</code></td></tr>
-      <tr><td>Marj Ruhayyil</td><td><code>ZONE_MarjRuhayyil</code></td></tr>
+      <tr><td>Mezzeh</td><td><code>CAPTURE_ZONE_MEZZEH</code></td></tr>
+      <tr><td>Damascus</td><td><code>CAPTURE_ZONE_DAMASCUS</code></td></tr>
+      <tr><td>Marj Ruhayyil</td><td><code>CAPTURE_ZONE_MARJ_RUHAYYIL</code></td></tr>
+      <tr><td>An Nasiriyah</td><td><code>CAPTURE_ZONE_AN_NASIRIYAH</code></td></tr>
+      <tr><td>Khalkhalah</td><td><code>CAPTURE_ZONE_KHALKHALAH</code></td></tr>
+      <tr><td>At Tanf</td><td><code>CAPTURE_ZONE_AT_TANF</code></td></tr>
+      <tr><td>Sayqal</td><td><code>CAPTURE_ZONE_SAYQAL</code></td></tr>
+      <tr><td>Tha'lah</td><td><code>CAPTURE_ZONE_THALAH</code></td></tr>
+      <tr><td>Palmyra</td><td><code>CAPTURE_ZONE_PALMYRA</code></td></tr>
+      <tr><td>Shayrat</td><td><code>CAPTURE_ZONE_SHAYRAT</code></td></tr>
+      <tr><td>Tabqa</td><td><code>CAPTURE_ZONE_TABQA</code></td></tr>
+      <tr><td>Hama</td><td><code>CAPTURE_ZONE_HAMA</code></td></tr>
+      <tr><td>Deir ez-Zor</td><td><code>CAPTURE_ZONE_DEIR_EZ-ZOR</code></td></tr>
+      <tr><td>Aleppo</td><td><code>CAPTURE_ZONE_ALEPPO</code></td></tr>
+      <tr><td>Al Qusayr</td><td><code>CAPTURE_ZONE_AL_QUSAYR</code></td></tr>
+      <tr><td>Bassel Al-Assad</td><td><code>CAPTURE_ZONE_BASSEL_AL_ASSAD</code></td></tr>
     </table>
   </div>
   <div>
-    <h3><span class="badge n">NEUTRAL</span> Locked (3)</h3>
+    <h3><span class="badge n">NEUTRAL</span> FOB Placeholders (6)</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Replace name/zone strings once FOBs are placed in the ME. Start NEUTRAL, capturable by either side.</p>
     <table>
       <tr><th>name</th><th>zone</th></tr>
-      <tr><td>Beirut-Rafic Hariri</td><td><code>ZONE_Beirut</code></td></tr>
-      <tr><td>Tel Aviv Yafo Ben Gurion</td><td><code>ZONE_BenGurion</code></td></tr>
-      <tr><td>Haifa</td><td><code>ZONE_Haifa</code></td></tr>
+      <tr><td>FOB_Alpha</td><td><code>CAPTURE_ZONE_FOB_Alpha</code></td></tr>
+      <tr><td>FOB_Bravo</td><td><code>CAPTURE_ZONE_FOB_Bravo</code></td></tr>
+      <tr><td>FOB_Charlie</td><td><code>CAPTURE_ZONE_FOB_Charlie</code></td></tr>
+      <tr><td>FOB_Delta</td><td><code>CAPTURE_ZONE_FOB_Delta</code></td></tr>
+      <tr><td>FOB_Echo</td><td><code>CAPTURE_ZONE_FOB_Echo</code></td></tr>
+      <tr><td>FOB_Foxtrot</td><td><code>CAPTURE_ZONE_FOB_Foxtrot</code></td></tr>
     </table>
-    <h3><span class="badge b">BLUE</span> Locked (8)</h3>
+    <h3>Registry Entry Fields</h3>
     <table>
-      <tr><th>name</th><th>zone</th></tr>
-      <tr><td>Incirlik</td><td><code>ZONE_Incirlik</code></td></tr>
-      <tr><td>Hatay</td><td><code>ZONE_Hatay</code></td></tr>
-      <tr><td>Adana Sakirpasa</td><td><code>ZONE_Adana</code></td></tr>
-      <tr><td>Ramat David</td><td><code>ZONE_RamatDavid</code></td></tr>
-      <tr><td>Ruwayshid</td><td><code>ZONE_Ruwayshid</code></td></tr>
-      <tr><td>King Hussein Air College</td><td><code>ZONE_KingHussein</code></td></tr>
-      <tr><td>H4</td><td><code>ZONE_H4</code></td></tr>
-      <tr><td>H3</td><td><code>ZONE_H3</code></td></tr>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td><code>name</code></td><td>Display name and lookup key for all API calls</td></tr>
+      <tr><td><code>zone</code></td><td><code>CAPTURE_ZONE_*</code> trigger zone name in ME</td></tr>
+      <tr><td><code>coalition</code></td><td>Starting coalition: <code>"RED"</code> / <code>"BLUE"</code> / <code>"NEUTRAL"</code></td></tr>
+      <tr><td><code>type</code></td><td><code>"AIRBASE"</code> or <code>"FARP"</code></td></tr>
+      <tr><td><code>capturable</code></td><td><code>false</code> = permanently locked to starting coalition</td></tr>
     </table>
   </div>
+</div>
+
+<h2 id="registry-destroy">Destroy Zone Registry (<code>ABC.DESTROY_REGISTRY</code>)</h2>
+<p>A separate list for RED target sets — SAM sites, command posts, fuel depots — that players are tasked with neutralising. These zones are <strong>never capturable</strong>. Once the RED units inside are destroyed, the zone is permanently black.</p>
+
+<div class="cols2">
+  <div>
+    <h3>Behaviour</h3>
+    <ul>
+      <li>Draws a <strong>red circle</strong> on the F10 map at mission start (same colour as RED airbases).</li>
+      <li>Every <code>CHECK_INTERVAL</code> seconds the script counts live RED units inside the zone.</li>
+      <li>When the count reaches <strong>zero</strong> the circle permanently turns <strong>black</strong>, the label gains a yellow "Destroyed" sub-line, and a <code>[TARGET DESTROYED]</code> message is broadcast to all players.</li>
+      <li>A zone that already has no RED units at mission start immediately draws as DESTROYED.</li>
+    </ul>
+    <h3>Current Entries (9)</h3>
+    <table>
+      <tr><th>name</th><th>zone</th></tr>
+      <tr><td>SAM Site Alpha</td><td><code>DESTROY_ZONE_SAM_ALPHA</code></td></tr>
+      <tr><td>SAM Site Bravo</td><td><code>DESTROY_ZONE_SAM_BRAVO</code></td></tr>
+      <tr><td>SAM Site Charlie</td><td><code>DESTROY_ZONE_SAM_CHARLIE</code></td></tr>
+      <tr><td>SAM Site Delta</td><td><code>DESTROY_ZONE_SAM_DELTA</code></td></tr>
+      <tr><td>SAM Site Echo</td><td><code>DESTROY_ZONE_SAM_ECHO</code></td></tr>
+      <tr><td>SAM Site Foxtrot</td><td><code>DESTROY_ZONE_SAM_FOXTROT</code></td></tr>
+      <tr><td>SAM Site Golf</td><td><code>DESTROY_ZONE_SAM_GOLF</code></td></tr>
+      <tr><td>SAM Site Hotel</td><td><code>DESTROY_ZONE_SAM_HOTEL</code></td></tr>
+      <tr><td>SAM Site India</td><td><code>DESTROY_ZONE_SAM_INDIA</code></td></tr>
+    </table>
+  </div>
+  <div>
+    <h3>Adding a Destroy Zone</h3>
+    <ol>
+      <li>Place your RED unit group in the ME.</li>
+      <li>Draw a circle trigger zone over all the units. Name it <code>DESTROY_ZONE_&lt;YourName&gt;</code>. Set the radius to cover all units in the group.</li>
+      <li>Add an entry to <code>ABC.DESTROY_REGISTRY</code>:
+<pre>{ name = "SA-10 North",  zone = "DESTROY_ZONE_SA10_NORTH" },</pre>
+      </li>
+    </ol>
+    <h3>Entry Fields</h3>
+    <table>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td><code>name</code></td><td>Display name shown on the F10 map label</td></tr>
+      <tr><td><code>zone</code></td><td>Exact <code>DESTROY_ZONE_*</code> trigger zone name in ME</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="box box-warn">
+  <strong>Zone sizing matters.</strong> A unit standing 1 m outside the zone radius is not counted. Make the zone radius comfortably larger than the unit spacing. The drawn circle on the F10 map will match the zone exactly, so a zone that's too small will produce a circle that doesn't visually cover the units.
 </div>
 
 <!-- ═══════════ ME SETUP ═══════════ -->
 <h2 id="me-setup">Mission Editor Setup Checklist</h2>
 <ol>
-  <li><strong>Load scripts</strong> &#x2014; MISSION START trigger &#x2192; DO SCRIPT FILE: <code>mist_4_5_126.lua</code> then <code>SYRIA_AirbaseCapture.lua</code></li>
-  <li><strong>Place trigger zones</strong> &#x2014; one per capturable base, named exactly as the <code>zone</code> field in the registry (e.g. <code>ZONE_Tiyas</code>). Locked bases still need zones if you want unit counting (even though they won&#39;t flip). You may omit zones for locked bases if you just want the F10 circle with no logic.</li>
-  <li><strong>Zone radius</strong> &#x2014; set in the ME trigger zone properties. Recommended 6&#x2013;10 km for airbases. This is independent of <code>CIRCLE_RADIUS</code> in the config.</li>
-  <li><strong>FARPs</strong> &#x2014; add a delayed DO SCRIPT trigger (T+5 s) calling <code>ABC.registerFARP(...)</code> for each one.</li>
-  <li><strong>Callback</strong> &#x2014; if using <code>ABC.onCapture</code>, set it in a DO SCRIPT trigger at T+1 s (not in the same trigger as the DO SCRIPT FILE).</li>
+  <li><strong>Load script</strong> &#x2014; MISSION START trigger &rarr; DO SCRIPT FILE: <code>SYRIA_AirbaseCapture.lua</code>. No MIST required.</li>
+  <li><strong>Capture zones</strong> &#x2014; place one trigger zone per capturable base, named exactly as the <code>zone</code> field in the registry (e.g. <code>CAPTURE_ZONE_PALMYRA</code>). Zone radius in ME sets the drawn circle size and the unit-scan area — recommended 6–10 km for airbases, 2–4 km for FARPs.</li>
+  <li><strong>Destroy zones</strong> &#x2014; place one trigger zone per RED target set, named <code>DESTROY_ZONE_&lt;Name&gt;</code>. Add a matching entry to <code>ABC.DESTROY_REGISTRY</code>. Zone radius should cover all units in the group.</li>
+  <li><strong>FARPs</strong> &#x2014; add a delayed DO SCRIPT trigger (T+5 s) calling <code>ABC.registerFARP(...)</code> for any FARP placed in the ME at runtime.</li>
+  <li><strong>Callback</strong> &#x2014; if using <code>ABC.onCapture</code>, assign it in a separate DO SCRIPT trigger at T+1 s (not in the same trigger as DO SCRIPT FILE).</li>
+  <li><strong>Ownership overrides</strong> &#x2014; use DO SCRIPT triggers calling <code>ABC.setOwner(name, coal)</code> to pre-set any ownership state before or during the mission.</li>
 </ol>
-<div class="box box-tip">Quick test: load the mission and open the F10 map. If the script loaded correctly you will see coloured circles over all registered airbases within the first few seconds, before any units have moved.</div>
+<div class="box box-tip">Quick test: load the mission and open the F10 map. You should see coloured circles immediately on mission start — red for RED airbases, white/grey for NEUTRAL FOBs, and red for destroy zones. Circles match the position and size of your ME trigger zones exactly.</div>
 
 <!-- ═══════════ TROUBLESHOOT ═══════════ -->
 <h2 id="troubleshoot">Troubleshooting</h2>
 <table>
   <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
-  <tr><td>No circles on F10 map</td><td>MIST not loaded before AirbaseCapture, or scripts not in the <code>.miz</code> folder. Check trigger order and file paths in dcs.log.</td></tr>
-  <tr><td>Circle appears but base never captures</td><td>Trigger zone name in ME doesn&#39;t match the <code>zone</code> field in the registry exactly (case-sensitive). Also check that units are ground units &#x2014; not ships or air.</td></tr>
-  <tr><td><code>ABC.getOwner()</code> returns nil</td><td>The name string must match the <code>name</code> field in the registry exactly, not the zone name.</td></tr>
-  <tr><td>onCapture doesn&#39;t fire</td><td>Set <code>ABC.onCapture</code> in a separate DO SCRIPT trigger at T+1 s. If set in the same trigger block as DO SCRIPT FILE, the script may overwrite it on init.</td></tr>
-  <tr><td>Another script&#39;s marks disappearing</td><td>Mark ID conflict. Change <code>BASE_MARK_OFFSET</code> in <code>ABC.CFG</code> to a range the other script doesn&#39;t use.</td></tr>
-  <tr><td>FARP not appearing on map</td><td>Check the <code>pos</code> Vec3 values are valid Syria map coordinates. A <code>y=0</code> value is fine. Verify you are calling <code>registerFARP</code> after T+2 s so the FARP object exists in DCS.</td></tr>
-  <tr><td>Script log output</td><td>All output is prefixed <code>[ABC]</code> in <code>dcs.log</code>. Search for this tag to trace init, warnings, and capture events.</td></tr>
+  <tr><td>No circles on F10 map at all</td><td>Script not loading — check the DO SCRIPT FILE trigger and that the file path is correct. Search <code>[ABC]</code> in dcs.log to confirm init ran.</td></tr>
+  <tr><td>Circle appears in wrong position or size</td><td>Trigger zone name in ME doesn't match the <code>zone</code> field exactly (case-sensitive). Script falls back to DCS Airbase position and <code>CIRCLE_RADIUS</code> when zone is not found.</td></tr>
+  <tr><td>Base never captures despite units present</td><td>Check trigger zone name matches. Also verify units are <em>ground</em> category — ships and fixed structures do not count unless <code>SCAN_AIR</code> is true.</td></tr>
+  <tr><td>Destroy zone stays red after all units are killed</td><td>Zone radius may not cover all the units — a unit outside the zone radius is not counted as destroyed. Check zone sizing in ME. Also verify the zone name matches exactly.</td></tr>
+  <tr><td><code>ABC.getOwner()</code> returns nil</td><td>The <code>baseName</code> string must match the <code>name</code> field in the registry exactly — not the zone name.</td></tr>
+  <tr><td>onCapture doesn't fire</td><td>Assign <code>ABC.onCapture</code> in a separate DO SCRIPT trigger at T+1 s, not in the same trigger block as the DO SCRIPT FILE action.</td></tr>
+  <tr><td>Another script's marks disappearing</td><td>Mark ID conflict. Change <code>BASE_MARK_OFFSET</code> and/or <code>DESTROY_MARK_OFFSET</code> to ranges the other script doesn't use.</td></tr>
+  <tr><td>Script log output</td><td>All output is prefixed <code>[ABC]</code> in dcs.log. Search this tag to trace init, warnings, zone misses, and capture/destroy events.</td></tr>
 </table>
 
 </main>
@@ -549,11 +585,12 @@ end</pre>
 function tog(head){
   var body=head.nextElementSibling;
   var open=body.classList.toggle("open");
-  head.querySelector(".cc-toggle,.rc-toggle").textContent=open?"▲ close":"▼ details";
+  var t=head.querySelector(".cc-toggle,.rc-toggle");
+  if(t) t.textContent=open?"▲ close":"▼ details";
 }
 const secs=document.querySelectorAll("h2[id]");
 const lnks=document.querySelectorAll("nav a");
-new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){lnks.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe&&secs.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){lnks.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+secs.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){lnks.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
 </script>
 </body>
 </html>

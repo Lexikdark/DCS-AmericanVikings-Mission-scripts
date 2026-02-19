@@ -3,10 +3,10 @@
 -- Dynamic Airbase & FARP Capture System — Syria Map
 -- Version : 1.0  |  Date : 2026-02-18
 ------------------------------------------------------------------------
--- REQUIRES : mist_4_5_126.lua loaded BEFORE this script
+-- STANDALONE — no other script required.
 -- LOAD ORDER in Mission Editor (DO SCRIPT FILE triggers):
---   1. mist_4_5_126.lua
---   2. SYRIA_AirbaseCapture.lua
+--   1. SYRIA_AirbaseCapture.lua
+--   (MIST is NOT required by this script)
 --
 -- HOW IT WORKS
 -- ─────────────────────────────────────────────────────────────────────
@@ -78,23 +78,24 @@ ABC.CFG = {
     LINE_TYPE         = 1,      -- 1=Solid 2=Dashed 3=Dotted 4=Dot-Dash
     LABEL_FONT_SIZE   = 14,
 
-    -- Outline colours  {r, g, b, a}  all values 0–1
-    COLOR_RED         = {r=1.00, g=0.15, b=0.15, a=0.95},
-    COLOR_BLUE        = {r=0.15, g=0.45, b=1.00, a=0.95},
-    COLOR_NEUTRAL     = {r=0.72, g=0.72, b=0.72, a=0.90},
-    COLOR_DESTROYED   = {r=0.28, g=0.28, b=0.28, a=0.90},
+    -- Outline colours  {r, g, b, a}  positional array — DCS requires numeric indices
+    COLOR_RED         = {1.00, 0.00, 0.00, 1.00},  -- normal red ring
+    COLOR_BLUE        = {0.00, 0.40, 1.00, 1.00},  -- normal blue ring
+    COLOR_NEUTRAL     = {1.00, 1.00, 1.00, 1.00},  -- white ring
+    COLOR_DESTROYED   = {0.00, 0.00, 0.00, 1.00},  -- black ring
 
-    -- Fill colours (keep alpha low for readability)
-    FILL_RED          = {r=1.00, g=0.15, b=0.15, a=0.13},
-    FILL_BLUE         = {r=0.15, g=0.45, b=1.00, a=0.13},
-    FILL_NEUTRAL      = {r=0.72, g=0.72, b=0.72, a=0.08},
-    FILL_DESTROYED    = {r=0.28, g=0.28, b=0.28, a=0.08},
+    -- Fill colours — diffuse, low alpha
+    FILL_RED          = {0.55, 0.00, 0.00, 0.15},  -- dark red
+    FILL_BLUE         = {0.00, 0.00, 0.65, 0.15},  -- dark blue
+    FILL_NEUTRAL      = {0.40, 0.40, 0.40, 0.15},  -- slightly darker gray
+    FILL_DESTROYED    = {0.00, 0.00, 0.00, 0.15},  -- black
 
     -- ── Mark ID Allocation ────────────────────────────────────────────
     -- Each base reserves MARKS_PER_BASE IDs starting from BASE_MARK_OFFSET.
     -- Change BASE_MARK_OFFSET if it conflicts with other scripts' mark IDs.
-    BASE_MARK_OFFSET  = 6000,
-    MARKS_PER_BASE    = 4,      -- 0=circle  1=label  2-3=reserved
+    BASE_MARK_OFFSET    = 6000,
+    MARKS_PER_BASE      = 3,      -- slot 0=circleToAll fill, 1=textToAll label, 2=spare
+    DESTROY_MARK_OFFSET = 7000,   -- separate ID block for DESTROY_ZONE_* entries (max 333 destroy zones)
 
     -- ── Messages ──────────────────────────────────────────────────────
     MSG_DURATION      = 12,     -- seconds the capture announcement shows
@@ -116,49 +117,53 @@ ABC.CFG = {
 ABC.REGISTRY = {
 
     -- ═══════════════════════════════════════════════════════════════════
-    -- SYRIAN / RUSSIAN-HELD AIRBASES  (start RED)
+    -- RED-HELD AIRBASES & FARP PADS  (start RED)
+    -- Uses CAPTURE_ZONE_* trigger zones placed in the ME to define capture areas.
+    -- used by RED_BLUE_IADS_Intercept.lua. Create these zones in the ME.
     -- ═══════════════════════════════════════════════════════════════════
-    { name = "Aleppo",               zone = "ZONE_Aleppo",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Al Qusayr",            zone = "ZONE_AlQusayr",         coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Bassel Al-Assad",      zone = "ZONE_Latakia",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Damascus",             zone = "ZONE_Damascus",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Deir ez-Zor",         zone = "ZONE_DeirEzZor",         coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Hama",                 zone = "ZONE_Hama",              coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Jirah",                zone = "ZONE_Jirah",             coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Khalkhalah",           zone = "ZONE_Khalkhalah",        coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Kuweires",             zone = "ZONE_Kuweires",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Marj As Sultan North", zone = "ZONE_MarjAsNorth",       coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Marj As Sultan South", zone = "ZONE_MarjAsSouth",       coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Mezzeh",               zone = "ZONE_Mezzeh",            coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Minakh",               zone = "ZONE_Minakh",            coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Palmyra",              zone = "ZONE_Palmyra",           coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Qabr as Sitt",         zone = "ZONE_QabrAsSitt",        coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Rasin al Aboud",       zone = "ZONE_RasinAlAboud",      coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Shayrat",              zone = "ZONE_Shayrat",           coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Tabqa",                zone = "ZONE_Tabqa",             coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Taftanaz",             zone = "ZONE_Taftanaz",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Tiyas",                zone = "ZONE_Tiyas",             coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Al-Dumayr",            zone = "ZONE_AlDumayr",          coalition = "RED",     type = "AIRBASE", capturable = true  },
-    { name = "Marj Ruhayyil",        zone = "ZONE_MarjRuhayyil",      coalition = "RED",     type = "AIRBASE", capturable = true  },
+
+    -- Damascus sector
+    { name = "Mezzeh",          zone = "CAPTURE_ZONE_MEZZEH",           coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Damascus",        zone = "CAPTURE_ZONE_DAMASCUS",         coalition = "RED", type = "AIRBASE", capturable = true },
+
+    -- Southern Syria / Jordan border
+    { name = "Marj Ruhayyil",   zone = "CAPTURE_ZONE_MARJ_RUHAYYIL",   coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "An Nasiriyah",    zone = "CAPTURE_ZONE_AN_NASIRIYAH",     coalition = "RED", type = "AIRBASE", capturable = true },
+
+    { name = "Khalkhalah",      zone = "CAPTURE_ZONE_KHALKHALAH",       coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "At Tanf",         zone = "CAPTURE_ZONE_AT_TANF",          coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Sayqal",          zone = "CAPTURE_ZONE_SAYQAL",           coalition = "RED", type = "AIRBASE", capturable = true },
+
+    -- Central Syria
+    { name = "Tha'lah",         zone = "CAPTURE_ZONE_THALAH",           coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Palmyra",         zone = "CAPTURE_ZONE_PALMYRA",          coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Shayrat",         zone = "CAPTURE_ZONE_SHAYRAT",          coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Tabqa",           zone = "CAPTURE_ZONE_TABQA",            coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Hama",            zone = "CAPTURE_ZONE_HAMA",             coalition = "RED", type = "AIRBASE", capturable = true },
+
+    -- Eastern Syria
+    { name = "Deir ez-Zor",     zone = "CAPTURE_ZONE_DEIR_EZ-ZOR",      coalition = "RED", type = "AIRBASE", capturable = true },
+
+    -- Northern Syria
+    { name = "Aleppo",          zone = "CAPTURE_ZONE_ALEPPO",           coalition = "RED", type = "AIRBASE", capturable = true },
+
+    -- Coastal / Latakia sector
+    { name = "Al Qusayr",       zone = "CAPTURE_ZONE_AL_QUSAYR",        coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Bassel Al-Assad", zone = "CAPTURE_ZONE_BASSEL_AL_ASSAD",  coalition = "RED", type = "AIRBASE", capturable = true },
 
     -- ═══════════════════════════════════════════════════════════════════
-    -- NEUTRAL / CIVILIAN AIRBASES  (start NEUTRAL)
+    -- BLUE FOB / FARP PLACEHOLDERS  (start NEUTRAL, capturable)
+    -- Replace name and zone strings once the FOBs are placed in the ME.
+    -- Call ABC.registerFARP(name, zone, "NEUTRAL", pos) at runtime,
+    -- or simply add them here and let init() handle them via AIRBASE lookup
+    -- if they have a proper DCS Airbase/FARP object.
     -- ═══════════════════════════════════════════════════════════════════
-    { name = "Beirut-Rafic Hariri",         zone = "ZONE_Beirut",           coalition = "NEUTRAL", type = "AIRBASE", capturable = false  },
-    { name = "Tel Aviv Yafo Ben Gurion",    zone = "ZONE_BenGurion",        coalition = "NEUTRAL", type = "AIRBASE", capturable = false }, -- Israeli sovereign, locked
-    { name = "Haifa",                       zone = "ZONE_Haifa",            coalition = "NEUTRAL", type = "AIRBASE", capturable = false }, -- Israeli sovereign, locked
-
-    -- ═══════════════════════════════════════════════════════════════════
-    -- NATO / COALITION AIRBASES  (start BLUE, non-capturable)
-    -- ═══════════════════════════════════════════════════════════════════
-    { name = "Incirlik",                    zone = "ZONE_Incirlik",         coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "Hatay",                       zone = "ZONE_Hatay",            coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "Adana Sakirpasa",             zone = "ZONE_Adana",            coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "Ramat David",                 zone = "ZONE_RamatDavid",       coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "Ruwayshid",                   zone = "ZONE_Ruwayshid",        coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "King Hussein Air College",    zone = "ZONE_KingHussein",      coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "H4",                          zone = "ZONE_H4",               coalition = "BLUE",    type = "AIRBASE", capturable = false },
-    { name = "H3",                          zone = "ZONE_H3",               coalition = "BLUE",    type = "AIRBASE", capturable = false },
+    { name = "FOB_Alpha",   zone = "CAPTURE_ZONE_FOB_Alpha",   coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Bravo",   zone = "CAPTURE_ZONE_FOB_Bravo",   coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Charlie", zone = "CAPTURE_ZONE_FOB_Charlie", coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true },
 
     -- ═══════════════════════════════════════════════════════════════════
     -- FARP SLOTS  — leave blank here; use ABC.registerFARP() at runtime
@@ -169,9 +174,50 @@ ABC.REGISTRY = {
 }
 
 ------------------------------------------------------------------------
+-- SECTION 2b : DESTROY ZONE REGISTRY
+------------------------------------------------------------------------
+-- These zones represent RED target sets (SAM sites, command posts, etc.)
+-- that players are tasked with destroying.
+--
+-- Fields:
+--   name  : Display name shown on the F10 map
+--   zone  : DESTROY_ZONE_* trigger zone in the Mission Editor
+--
+-- Behaviour:
+--   • Draws a RED circle on the F10 map (same style as RED airbases).
+--   • Every CHECK_INTERVAL seconds the script counts RED units inside.
+--   • When the RED unit count reaches 0 the circle permanently turns
+--     BLACK and the label shows "Destroyed".
+--   • The zone CANNOT be recaptured or flipped by any coalition.
+--
+-- ME SETUP:
+--   1. Place a Trigger Zone named  DESTROY_ZONE_<YourName>  over the
+--      unit group you want tracked.
+--   2. Add an entry below.  The zone radius should cover all units in
+--      the group (the drawn circle will match the zone exactly).
+------------------------------------------------------------------------
+ABC.DESTROY_REGISTRY = {
+
+    -- ═══════════════════════════════════════════════════════════════════
+    -- RED TARGET ZONES  (permanently destroyed when all units are killed)
+    -- ═══════════════════════════════════════════════════════════════════
+    -- Examples — uncomment and fill in your zone names:
+    { name = "SAM Site Alpha",    zone = "DESTROY_ZONE_SAM_ALPHA"    },
+    { name = "SAM Site Bravo",    zone = "DESTROY_ZONE_SAM_BRAVO"    },
+    { name = "SAM Site Charlie", zone = "DESTROY_ZONE_SAM_CHARLIE" },
+    { name = "SAM Site Delta",   zone = "DESTROY_ZONE_SAM_DELTA"   },
+    { name = "SAM Site Echo", zone = "DESTROY_ZONE_SAM_ECHO"     },
+    { name = "SAM Site Foxtrot", zone = "DESTROY_ZONE_SAM_FOXTROT"   },
+    { name = "SAM Site Golf",    zone = "DESTROY_ZONE_SAM_GOLF"     },
+    { name = "SAM Site Hotel",   zone = "DESTROY_ZONE_SAM_HOTEL"    },
+    { name = "SAM Site India",   zone = "DESTROY_ZONE_SAM_INDIA"    },
+}
+
+------------------------------------------------------------------------
 -- SECTION 3 : RUNTIME STATE  (internal — do not edit)
 ------------------------------------------------------------------------
 ABC._state        = {}   -- [baseName] = state table
+ABC._destroyState = {}   -- [name]     = destroy-zone state table
 ABC._eventHandler = {}   -- DCS world event handler object
 ABC._initialized  = false
 
@@ -222,13 +268,24 @@ local function countUnitsInZone(zone, coalId)
     return count
 end
 
--- Get (and cache) the world position of a base
+-- Get (and cache) the world position of a base.
+-- Priority: cached pos → DCS Airbase object → trigger zone centre.
 local function getBasePos(entry, st)
     if st.pos then return st.pos end
+    -- 1. Try DCS airbase object (works for all named Syria airbases)
     if entry.type == "AIRBASE" then
         local ab = Airbase.getByName(entry.name)
         if ab then
             st.pos = ab:getPoint()
+            return st.pos
+        end
+    end
+    -- 2. Fallback: use the centre of the trigger zone for drawing
+    --    (covers FARPs and any airbase whose DCS name didn't resolve)
+    if entry.zone and entry.zone ~= "" then
+        local z = trigger.misc.getZone(entry.zone)
+        if z and z.point then
+            st.pos = { x = z.point.x, y = z.point.y or 0, z = z.point.z }
             return st.pos
         end
     end
@@ -238,10 +295,18 @@ end
 ------------------------------------------------------------------------
 -- SECTION 5 : DRAWING SYSTEM
 ------------------------------------------------------------------------
+-- Previous attempts failed because colour tables used NAMED keys
+-- {r=..., g=..., b=..., a=...} — DCS requires POSITIONAL arrays
+-- {r, g, b, a} (indices 1,2,3,4).  CFG colours are now positional.
+--
+-- Mark ID layout per base  (MARKS_PER_BASE = 3):
+--   baseMarkId + 0  = circleToAll  (filled circle, solid outline)
+--   baseMarkId + 1  = textToAll    (name + coalition label)
+--   baseMarkId + 2  = spare
+------------------------------------------------------------------------
 
--- Colour/fill table per logical status
-local STATUS_COLORS = nil   -- built lazily after CFG is available
-
+-- Colour/fill table per logical status (built lazily after CFG loads)
+local STATUS_COLORS = nil
 local function getColors(status)
     if not STATUS_COLORS then
         local C = ABC.CFG
@@ -255,15 +320,7 @@ local function getColors(status)
     return STATUS_COLORS[status] or STATUS_COLORS["NEUTRAL"]
 end
 
--- Human-readable status tag shown on the F10 map label
-local STATUS_LABEL = {
-    RED       = "[ RED ]",
-    BLUE      = "[ BLUE ]",
-    NEUTRAL   = "[ NEUTRAL ]",
-    DESTROYED = "[ DESTROYED ]",
-}
-
--- Remove all F10 map marks belonging to a base state
+-- Remove every F10 mark belonging to a base state entry
 local function clearMarks(st)
     if st.markIds then
         for _, mid in ipairs(st.markIds) do
@@ -273,56 +330,83 @@ local function clearMarks(st)
     st.markIds = {}
 end
 
--- Draw (or redraw) the circle and label for a base
+-- Draw (or redraw) the filled circle + label for one base entry.
+-- Position and radius come from the CAPTURE_ZONE trigger zone in the ME,
+-- so the drawn circle exactly matches what is placed in the mission.
 local function drawBase(entry, st)
-    local pos = getBasePos(entry, st)
-    if not pos then return end
+    -- Primary: use the trigger zone's own centre and radius.
+    local drawPos    = nil
+    local drawRadius = ABC.CFG.CIRCLE_RADIUS  -- fallback if zone not found
+
+    if entry.zone and entry.zone ~= "" then
+        local z = trigger.misc.getZone(entry.zone)
+        if z and z.point then
+            drawPos    = { x = z.point.x, y = z.point.y or 0, z = z.point.z }
+            drawRadius = z.radius or ABC.CFG.CIRCLE_RADIUS
+        end
+    end
+
+    -- Fallback: DCS airbase object / previously cached position
+    if not drawPos then
+        drawPos = getBasePos(entry, st)
+    end
+
+    if not drawPos then
+        env.info("[ABC] drawBase: no position for " .. entry.name .. " — skipping.", false)
+        return
+    end
 
     clearMarks(st)
 
-    local cols     = getColors(st.coalition)
-    local circleId = st.baseMarkId
-    local textId   = st.baseMarkId + 1
-    local ALL      = -1   -- visible to all coalitions
+    local cols   = getColors(st.coalition)
+    local fillId = st.baseMarkId       -- slot 0: circleToAll
+    local textId = st.baseMarkId + 1   -- slot 1: textToAll
 
-    -- Filled circle outline
+    -- Filled circle — radius matches the ME trigger zone exactly
     trigger.action.circleToAll(
-        ALL,
-        circleId,
-        pos,
-        ABC.CFG.CIRCLE_RADIUS,
-        cols.line,
-        cols.fill,
-        ABC.CFG.LINE_TYPE,
-        true    -- readOnly: players cannot drag/delete it
-    )
+        -1, fillId, drawPos,
+        drawRadius,
+        cols.line, cols.fill,
+        ABC.CFG.LINE_TYPE, true)
 
-    -- Text label (name + status, with capture progress if applicable)
-    local labelText = entry.name .. "\n" .. (STATUS_LABEL[st.coalition] or "[ ? ]")
-    if (st.captureTicks or 0) > 0 and st.coalition == "NEUTRAL" then
+    -- Text label — black text, offset slightly right of centre.
+    -- Destroyed bases get a yellow "Destroyed" sub-line instead of a status tag.
+    local TEXT_BLACK  = {0.00, 0.00, 0.00, 1.00}
+    local TEXT_YELLOW = {1.00, 0.95, 0.00, 1.00}
+    local textColor   = (st.coalition == "DESTROYED") and TEXT_YELLOW or TEXT_BLACK
+
+    local labelText = entry.name
+    if st.coalition == "DESTROYED" then
+        labelText = entry.name .. "\nDestroyed"
+    elseif (st.captureTicks or 0) > 0 then
         local pct = math.floor((st.captureTicks / ABC.CFG.CAPTURE_TICKS) * 100)
-        labelText = labelText .. "\nCapturing... " .. pct .. "%"
+        labelText = entry.name .. "\nCapturing... " .. pct .. "%"
     end
 
-    local textPos = {
-        x = pos.x,
-        y = pos.y,
-        z = pos.z - math.floor(ABC.CFG.CIRCLE_RADIUS * 0.55),
-    }
-
+    -- Offset: nudge right (+x) and slightly north (-z) of centre
+    local offset = math.max(drawRadius * 0.12, 400)
+    local textPos = { x = drawPos.x + offset, y = drawPos.y, z = drawPos.z - offset * 0.5 }
     trigger.action.textToAll(
-        ALL,
-        textId,
-        textPos,
-        cols.line,
-        { r = 0, g = 0, b = 0, a = 0 },    -- transparent background
-        ABC.CFG.LABEL_FONT_SIZE,
-        true,       -- readOnly
-        labelText
-    )
+        -1, textId, textPos,
+        textColor, {0, 0, 0, 0},
+        ABC.CFG.LABEL_FONT_SIZE, true, labelText)
 
-    st.markIds = { circleId, textId }
+    st.markIds = { fillId, textId }
 end
+
+-- Fast initial coalition check — called once during init() for each entry
+-- BEFORE the first draw, so the opening map shows the true mission state.
+-- RED/BLUE bases that have no defending units show immediately as NEUTRAL.
+local function initCoalitionCheck(entry, st)
+    if not entry.capturable then return end
+    local zone = getZone(entry.zone)
+    if not zone then return end
+    local redCount  = countUnitsInZone(zone, coalition.side.RED)
+    local blueCount = countUnitsInZone(zone, coalition.side.BLUE)
+    if st.coalition == "RED"  and redCount  == 0 then st.coalition = "NEUTRAL" end
+    if st.coalition == "BLUE" and blueCount == 0 then st.coalition = "NEUTRAL" end
+end
+
 
 ------------------------------------------------------------------------
 -- SECTION 6 : COALITION STATE MACHINE
@@ -412,6 +496,7 @@ end
 ------------------------------------------------------------------------
 
 local function scanAll(_, time)
+    -- ── Airbase / FARP capture scan ──────────────────────────────────
     for _, entry in ipairs(ABC.REGISTRY) do
         local st = ABC._state[entry.name]
         if st then
@@ -421,6 +506,32 @@ local function scanAll(_, time)
             end
         end
     end
+
+    -- ── Destroy zone scan ────────────────────────────────────────────
+    -- When all RED units inside a DESTROY_ZONE_* are dead, flip to DESTROYED.
+    for _, entry in ipairs(ABC.DESTROY_REGISTRY) do
+        local dst = ABC._destroyState[entry.name]
+        if dst and dst.active then
+            local ok, err = pcall(function()
+                local zone = trigger.misc.getZone(entry.zone)
+                if not zone then return end
+                local redCount = countUnitsInZone(zone, coalition.side.RED)
+                if redCount == 0 then
+                    dst.active    = false
+                    dst.coalition = "DESTROYED"
+                    drawBase(entry, dst)
+                    trigger.action.outText(
+                        "[TARGET DESTROYED]  " .. entry.name .. "  has been neutralised.",
+                        ABC.CFG.MSG_DURATION, false)
+                    env.info("[ABC] Destroy zone cleared: " .. entry.name, false)
+                end
+            end)
+            if not ok then
+                env.info("[ABC] Error checking destroy zone " .. entry.name .. ": " .. tostring(err), false)
+            end
+        end
+    end
+
     return time + ABC.CFG.CHECK_INTERVAL
 end
 
@@ -564,6 +675,33 @@ function ABC.getOwner(baseName)
     return st and st.coalition or nil
 end
 
+--- Set (force) the owning coalition of any registered base or FARP.
+-- Use this from ME triggers or other scripts to hard-assign ownership,
+-- e.g. after a scripted event, a mission objective, or on mission start.
+-- Announces the change in-game and redraws the F10 map marker.
+--
+-- @param baseName  string  : exact name from the REGISTRY (or registerFARP)
+-- @param coalition string  : "RED" | "BLUE" | "NEUTRAL"
+--
+-- Example — from a DO SCRIPT trigger:
+--   ABC.setOwner("Palmyra",  "BLUE")    -- Blue just secured Palmyra
+--   ABC.setOwner("Tabqa",    "NEUTRAL") -- Tabqa has fallen, no owner yet
+--   ABC.setOwner("At Tanf",  "RED")     -- Red retook At Tanf
+function ABC.setOwner(baseName, coal)
+    local st = ABC._state[baseName]
+    if not st then
+        env.info("[ABC] setOwner: unknown base '" .. tostring(baseName) .. "'", false)
+        return
+    end
+    for _, e in ipairs(ABC.REGISTRY) do
+        if e.name == baseName then
+            applyCoalition(e, st, coal, true)
+            return
+        end
+    end
+    env.info("[ABC] setOwner: '" .. baseName .. "' found in state but not REGISTRY.", false)
+end
+
 --- Redraw all F10 map markers (useful after a mission load or map reset).
 function ABC.redrawAll()
     for _, entry in ipairs(ABC.REGISTRY) do
@@ -607,44 +745,69 @@ function ABC.init()
         -- Unique mark ID block for this base
         local markId = ABC.CFG.BASE_MARK_OFFSET + (i * ABC.CFG.MARKS_PER_BASE)
 
-        local pos = nil
+        -- For AIRBASEs: disable DCS engine auto-capture so this script has
+        -- full control. Comment out the pcall below if you want DCS engine
+        -- capture to run in PARALLEL (state syncs via S_EVENT_BASE_CAPTURED).
         if entry.type == "AIRBASE" then
             local ab = Airbase.getByName(entry.name)
             if ab then
-                pos = ab:getPoint()
-                -- Disable DCS engine auto-capture so this script has full control.
-                -- Comment out the two lines below if you want DCS engine capture
-                -- to run in PARALLEL with script state (both will work, state syncs
-                -- via S_EVENT_BASE_CAPTURED).
                 if ab.autoCapture then
                     pcall(function() ab:autoCapture(false) end)
                 end
             else
                 env.info("[ABC] WARNING: '" .. entry.name
                          .. "' not found as a DCS airbase object. "
-                         .. "Zone scanning will still work; no position for drawing.", false)
+                         .. "Will fall back to zone centre for drawing.", false)
             end
         end
-        -- Note: FARPs registered here without a pos will get it when
-        -- ABC.registerFARP() is called, which also creates the state entry.
-        -- We still create a placeholder so tickBase works even if pos is nil.
 
         ABC._state[entry.name] = {
             coalition    = entry.coalition,
             captureTicks  = 0,
             baseMarkId   = markId,
             markIds      = {},
-            pos          = pos,
+            pos          = nil,   -- resolved lazily by getBasePos()
         }
 
-        -- Draw initial marker (skipped silently if pos is nil)
-        if pos then
-            local ok, err = pcall(drawBase, entry, ABC._state[entry.name])
-            if not ok then
-                env.info("[ABC] Draw error for " .. entry.name .. ": " .. tostring(err), false)
-            end
+        -- Fast init scan: correct coalition BEFORE drawing so the first
+        -- frame shows accurate state (RED bases with no units → NEUTRAL).
+        pcall(initCoalitionCheck, entry, ABC._state[entry.name])
+
+        -- Draw initial marker using zone centre + zone radius from ME.
+        local ok, err = pcall(drawBase, entry, ABC._state[entry.name])
+        if not ok then
+            env.info("[ABC] Draw error for " .. entry.name .. ": " .. tostring(err), false)
         end
     end
+
+    -- ── Destroy zone initialisation ──────────────────────────────────
+    for i, entry in ipairs(ABC.DESTROY_REGISTRY) do
+        local markId = ABC.CFG.DESTROY_MARK_OFFSET + (i * ABC.CFG.MARKS_PER_BASE)
+        -- Check current unit count so a zone that starts empty is already DESTROYED
+        local startCoal = "RED"
+        local isActive  = true
+        local zone = trigger.misc.getZone(entry.zone)
+        if zone and countUnitsInZone(zone, coalition.side.RED) == 0 then
+            startCoal = "DESTROYED"
+            isActive  = false
+        end
+        if not zone then
+            env.info("[ABC] WARNING: Destroy zone '" .. entry.zone .. "' not found in ME.", false)
+        end
+        ABC._destroyState[entry.name] = {
+            coalition    = startCoal,
+            captureTicks = 0,
+            baseMarkId   = markId,
+            markIds      = {},
+            pos          = nil,
+            active       = isActive,
+        }
+        local ok, err = pcall(drawBase, entry, ABC._destroyState[entry.name])
+        if not ok then
+            env.info("[ABC] Draw error for destroy zone " .. entry.name .. ": " .. tostring(err), false)
+        end
+    end
+    env.info(string.format("[ABC] %d destroy zones registered.", #ABC.DESTROY_REGISTRY), false)
 
     -- Register the DCS event handler
     world.addEventHandler(ABC._eventHandler)
@@ -654,8 +817,8 @@ function ABC.init()
 
     ABC._initialized = true
     env.info(string.format(
-        "[ABC] Initialised. %d bases tracked. Scan interval: %ds. Capture ticks: %d.",
-        #ABC.REGISTRY, ABC.CFG.CHECK_INTERVAL, ABC.CFG.CAPTURE_TICKS
+        "[ABC] Initialised. %d bases tracked, %d destroy zones. Scan interval: %ds. Capture ticks: %d.",
+        #ABC.REGISTRY, #ABC.DESTROY_REGISTRY, ABC.CFG.CHECK_INTERVAL, ABC.CFG.CAPTURE_TICKS
     ), false)
     env.info("[ABC] ══════════════════════════════════════════", false)
 end
@@ -670,10 +833,9 @@ end
      Name the zone exactly as listed in the 'zone' field of REGISTRY,
      e.g.  "ZONE_Tiyas"  for the Tiyas (T4) airbase entry.
 
-  2. Create a MISSION START trigger with these DO SCRIPT FILE actions
-     IN THIS ORDER:
-       a) mist_4_5_126.lua
-       b) SYRIA_AirbaseCapture.lua
+  2. Create a MISSION START trigger with this DO SCRIPT FILE action:
+       a) SYRIA_AirbaseCapture.lua
+     (No other scripts required — MIST is not needed)
 
   3. (Optional) For each FARP you place, add a delayed DO SCRIPT trigger
      (5 s after start) with:

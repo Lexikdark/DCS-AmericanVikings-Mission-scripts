@@ -5,15 +5,19 @@
 --  Requires: MIST (Mission Scripting Tools) loaded BEFORE this script
 --
 --  Syria Airbase Reference (for placement purposes):
---    RED (SAA/Russian) : Khmeimim, Damascus Intl, Aleppo Intl, T4/Tiyas,
---                        Shayrat, Hama, Tabqa, Deir ez-Zor, Palmyra, Al-Qusayr
---    BLUE (Coalition)  : Incirlik, Hatay, Akrotiri, Ramat David, Haifa,
---                        Kiryat Shmona, Ramon, Ben Gurion, King Hussein
+--    RED (SAA/Russian) : Mezzeh, Damascus, Marj Ruhayyil, Khalkhalah, At Tanf,
+--                        Sayqal, Tiyas (= Tha'lah / T-4), Palmyra, Deir ez-Zor,
+--                        Shayrat, Hama, Al Qusayr, Bassel Al-Assad
+--    BLUE (Coalition)  : Ramat David, Megiddo, Haifa, Ben Gurion, Kiryat Shmona
+--  BLUE Sector Zones  : BLUE_ZONE_NORTH  BLUE_ZONE_NORTH_2    BLUE_ZONE_NORTHWEST
+--                        BLUE_ZONE_NORTHEAST  BLUE_ZONE_EAST  BLUE_ZONE_SOUTH
+--                        BLUE_ZONE_PRINCEHASSAN  BLUE_ZONE_H4
 --
---  Syria Sector Zones (suggested RED_ZONE_ names):
---    RED_ZONE_DAMASCUS    RED_ZONE_ALEPPO     RED_ZONE_LATAKIA
---    RED_ZONE_PALMYRA     RED_ZONE_HOMS       RED_ZONE_DEIR_EZ_ZOR
---    RED_ZONE_RAQQA       RED_ZONE_HAMA       RED_ZONE_COASTAL
+--  Syria Sector Zones (RED_ZONE_ names used in this mission):
+--    RED_ZONE_DAMASCUS    RED_ZONE_THALAH       RED_ZONE_KHALKHALAH
+--    RED_ZONE_AT_TANF     RED_ZONE_SAYQAL       RED_ZONE_PALMYRA
+--    RED_ZONE_DEIR_EZ_ZOR RED_ZONE_TABQA        RED_ZONE_AN_NASIRIYAH
+--    RED_ZONE_HAMA        RED_ZONE_ALEPPO       RED_ZONE_LATAKIA
 --
 --  Naming Conventions (configure groups in the Mission Editor):
 --    RED_SAM_<anything>   – Red SAM/SHORAD groups
@@ -45,20 +49,23 @@ local IADS_CFG = {
                                     -- no respawn — SAM sites are one-and-done.
 
     -- ── IADS detection ranges (metres) ─────────────────────────────────────
-    EWR_DETECTION_RANGE     = 250000,  -- 250 km  – EWR shares contacts within
-    SAM_ENGAGE_SHARE_RANGE  = 180000,  -- 180 km  – SAMs share targeting data
-    SAM_MIN_ENGAGE_ALT      = 30,      -- metres AGL – ignore very low contacts
-    SAM_FIRE_DELAY_MIN      = 2,       -- seconds – random delay before engaging
-    SAM_FIRE_DELAY_MAX      = 8,
+    SAM_ENGAGE_SHARE_RANGE  = 180000,  -- 180 km  – max range SAMs will score/engage a contact
+    SAM_MIN_ENGAGE_ALT      = 20,      -- metres AGL – ignore very low contacts
+    SAM_FIRE_DELAY_MIN      = 0,       -- seconds – random delay before engaging (0 = instant)
+    SAM_FIRE_DELAY_MAX      = 3,       -- tighter window = faster, more dangerous SAMs
+    SAM_MAX_ENGAGE_PER_CONTACT = 2,    -- max SAM nodes assigned to the same contact
 
     -- ── Probability of Kill helpers ──────────────────────────────────────────
     -- Each SAM computes a score; highest scorer engages.
     -- Score = basePk * altFactor * rangeFactor * healthFactor
-    PKill_BASE              = 0.75,      -- base Pk for a healthy SAM on boresight
+    PKill_BASE              = 0.92,      -- base Pk for a healthy SAM on boresight (raised for lethality)
 
     -- ── ARM / munition defence ──────────────────────────────────────────────
-    ARM_SHUTDOWN_TIME       = 45,        -- seconds radar stays silent after ARM detect
-    ARM_MOVE_RADIUS         = 800,       -- metres random relocate if unit is mobile
+    ARM_SHUTDOWN_TIME             = 45,    -- seconds radar stays silent after ARM detect
+    ARM_MOVE_RADIUS               = 800,   -- metres random relocate if unit is mobile
+    ARM_SUPPRESS_TRIGGER_DIST     = 150000, -- metres – arm suppression triggers when ARM is within this of trajectory end (was 80km)
+    ARM_NEIGHBOR_SUPPRESS_RANGE   = 12000,  -- metres – also silence SAMs this close to the targeted node
+    ARM_NEIGHBOR_SUPPRESS_TIME    = 20,     -- seconds neighbors stay dark (shorter than primary)
     -- ─────────────────────────────────────────────────────────────────────────
     --  ARM_TYPES – Anti-Radiation Missiles (radar-homing weapons)
     --  DCS getTypeName() can return either the underscored or hyphenated form;
@@ -258,20 +265,37 @@ local IADS_CFG = {
     -- ── Air Intercept ────────────────────────────────────────────────────────
     INTERCEPT_ALTITUDE      = 6000,   -- metres  – initial intercept climb altitude
     INTERCEPT_SPEED         = 900,    -- km/h    – intercept speed
-    RTB_LOITER_TIME         = 120,    -- seconds after zone clear before RTB order
+    RTB_LOITER_TIME         = 30,     -- seconds after zone clear before RTB order
+    SCRAMBLE_THREAT_BUFFER  = 40000,  -- metres OUTSIDE the zone radius that still triggers a scramble
+                                      -- e.g. zone radius 50 km + buffer 40 km = scramble at 90 km from centre
+                                      -- Set to 0 to only scramble when the threat is inside the zone itself
+    INTERCEPT_LEASH_BUFFER  = 80000,  -- metres beyond zone radius — if an airborne intercept flight strays
+                                      -- farther than (zone_radius + this value) from its zone centre it is
+                                      -- immediately recalled, regardless of RTB_LOITER_TIME
     ZONE_PREFIX             = "RED_ZONE_",   -- must match ME trigger zone names
 
     -- ── GCI / Detection settings ─────────────────────────────────────────────
-    USE_DCS_DETECTION      = true,    -- true  = coalition.getDetectedTargets() (realistic)
-                                      -- false = range-only sphere check (simpler)
+    -- Detection uses coalition.getDetectedTargets() exclusively (DCS sensor model).
+    -- Terrain masking, LOS, jamming, and unit radar ranges all apply natively.
     GCI_PICTURE_INTERVAL   = 180,     -- seconds between AWACS picture broadcasts
     GCI_FUEL_RTB_THRESHOLD = 0.20,    -- fuel fraction (0–1) that triggers Bingo RTB
-    AWACS_DETECTION_RANGE  = 420000,  -- 420 km detection radius for airborne AWACS nodes
     AWACS_PREFIX_RED       = "RED_AWACS_",
     AWACS_PREFIX_BLUE      = "BLUE_AWACS_",
+    AWACS_ORBIT_ALT_FT     = 30000,   -- ft  – orbit altitude enforced by the AWACS keeper loop
+    AWACS_ORBIT_KTS        = 350,     -- kts – airspeed enforced by the AWACS keeper loop
     AWACS_CALLSIGN = {
         RED  = "OVERLORD",
         BLUE = "MAGIC",
+    },
+
+    -- ── Lebanon sub-IADS engagement boundary ─────────────────────────────────
+    -- Lebanon SAMs will ONLY engage contacts whose position falls inside
+    -- (or within SAM_ENGAGE_SHARE_RANGE of) one of these trigger zones.
+    -- Zone names must match exactly what you set in the ME.
+    LEBANON_ZONES = {
+        "LEBANON_ZONE_NORTH",
+        "LEBANON_ZONE_MIDDLE",
+        "LEBANON_ZONE_SOUTH",
     },
     GCI_CALLSIGN = {
         RED  = "GCI MOSCOW",
@@ -286,19 +310,41 @@ local IADS_CFG = {
     --  callsign    : GCI radio callsign used in player-facing messages
     SQUADRONS = {
         RED = {
-            { callsign="FOXBAT",   homeBase="Mezzeh",          zone="RED_ZONE_DAMASCUS",    groupPrefix="RED_AIR_DAMASCUS",    maxFlights=3 },
-            { callsign="FULCRUM",  homeBase="Aleppo",          zone="RED_ZONE_ALEPPO",      groupPrefix="RED_AIR_ALEPPO",      maxFlights=3 },
-            { callsign="FLANKER",  homeBase="Bassel Al-Assad", zone="RED_ZONE_LATAKIA",     groupPrefix="RED_AIR_LATAKIA",     maxFlights=3 },
-            { callsign="FENCER",   homeBase="Tiyas",           zone="RED_ZONE_PALMYRA",     groupPrefix="RED_AIR_PALMYRA",     maxFlights=2 },
-            { callsign="FROGFOOT", homeBase="Hama",            zone="RED_ZONE_HOMS",        groupPrefix="RED_AIR_HOMS",        maxFlights=2 },
-            { callsign="SOKOL",    homeBase="Deir ez-Zor",     zone="RED_ZONE_DEIR_EZ_ZOR", groupPrefix="RED_AIR_DEIR_EZ_ZOR", maxFlights=2 },
-            { callsign="VYMPEL",   homeBase="Tabqa",           zone="RED_ZONE_RAQQA",       groupPrefix="RED_AIR_RAQQA",       maxFlights=2 },
-            { callsign="BERKUT",   homeBase="Hama",            zone="RED_ZONE_HAMA",        groupPrefix="RED_AIR_HAMA",        maxFlights=2 },
+            -- ── Damascus (2 squadrons – capital gets double coverage) ──────────
+            { callsign="FOXBAT",   homeBase="Mezzeh",          zone="RED_ZONE_DAMASCUS",      groupPrefix="RED_AIR_MEZZEH",        maxFlights=8 },
+            { callsign="FULCRUM",  homeBase="Damascus",        zone="RED_ZONE_DAMASCUS",      groupPrefix="RED_AIR_DAMASCUS",      maxFlights=8 },
+            -- ── South / SW Syria ─────────────────────────────────────────────
+            { callsign="FENCER",   homeBase="Marj Ruhayyil",   zone="RED_ZONE_AN_NASIRAYAH",  groupPrefix="RED_AIR_MARJ_RUHAYYIL", maxFlights=8 },
+            { callsign="SHAHIN",   homeBase="Khalkhalah",      zone="RED_ZONE_KHALKHALAH",    groupPrefix="RED_AIR_KHALKHALAH",    maxFlights=8 },
+            -- ── SE Syria / Iraqi border ──────────────────────────────────────
+            { callsign="NEMER",    homeBase="At Tanf",         zone="RED_ZONE_AT_TANF",       groupPrefix="RED_AIR_AT_TANF",       maxFlights=8 },
+            -- ── Central Syria ────────────────────────────────────────────────
+            { callsign="SOKOL",    homeBase="Sayqal",          zone="RED_ZONE_SAYQAL",        groupPrefix="RED_AIR_SAYQAL",        maxFlights=8 },
+            { callsign="FLANKER",  homeBase="Tha'lah",         zone="RED_ZONE_THALAH",        groupPrefix="RED_AIR_THALAH",        maxFlights=8 },
+            -- ── Palmyra / Eastern Syria ───────────────────────────────────────
+            { callsign="VYMPEL",   homeBase="Palmyra",         zone="RED_ZONE_PALMYRA",       groupPrefix="RED_AIR_PALMYRA",       maxFlights=8 },
+            { callsign="BUKET",    homeBase="Deir ez-Zor",     zone="RED_ZONE_DEIR_EZ-ZOR",   groupPrefix="RED_AIR_DEIR_EZ_ZOR",   maxFlights=8 },
+            -- ── Homs / Tabqa ─────────────────────────────────────────────────
+            { callsign="FROGFOOT", homeBase="Shayrat",         zone="RED_ZONE_TABQA",         groupPrefix="RED_AIR_SHAYRAT",       maxFlights=8 },
+            -- ── Hama / Aleppo ────────────────────────────────────────────────
+            { callsign="BERKUT",   homeBase="Hama",            zone="RED_ZONE_HAMA",          groupPrefix="RED_AIR_HAMA",          maxFlights=8 },
+            { callsign="ALKU",     homeBase="Hama",            zone="RED_ZONE_ALEPPO",        groupPrefix="RED_AIR_ALEPPO",        maxFlights=8 },  -- Closest user base to Aleppo zone
+            -- ── Latakia / Coastal (2 squadrons) ──────────────────────────────
+            { callsign="NASR",     homeBase="Al Qusayr",       zone="RED_ZONE_BASSEL_AL-ASSAD", groupPrefix="RED_AIR_AL_QUSAYR",     maxFlights=8 },
+            { callsign="KOBRA",    homeBase="Bassel Al-Assad", zone="RED_ZONE_BASSEL_AL-ASSAD", groupPrefix="RED_AIR_LATAKIA",       maxFlights=8 },
         },
         BLUE = {
-            { callsign="VIPER",    homeBase="Incirlik",         zone="BLUE_ZONE_NORTH",      groupPrefix="BLUE_AIR_NORTH",      maxFlights=4 },
-            { callsign="HORNET",   homeBase="Hatay",            zone="BLUE_ZONE_HATAY",      groupPrefix="BLUE_AIR_HATAY",      maxFlights=3 },
-            { callsign="EAGLE",    homeBase="Ramat David",      zone="BLUE_ZONE_SOUTH",      groupPrefix="BLUE_AIR_SOUTH",      maxFlights=3 },
+            -- ── Northern Israel – Syria north / NE approach ──────────────────
+            { callsign="VIPER",   homeBase="Kiryat Shmona", zone="BLUE_ZONE_North",        groupPrefix="BLUE_AIR_KIRYAT_N",    maxFlights=8 },  -- DCS: "Kiryat Shmona" (user: Kiryat Shamona)
+            { callsign="EAGLE",   homeBase="Ramat David",   zone="BLUE_ZONE_North_2",      groupPrefix="BLUE_AIR_RAMAT_N2",    maxFlights=8 },
+            { callsign="HORNET",  homeBase="Ramat David",   zone="BLUE_ZONE_NorthEast",    groupPrefix="BLUE_AIR_RAMAT_NE",    maxFlights=8 },
+            -- ── Central / NW Israel ───────────────────────────────────────────
+            { callsign="FALCON",  homeBase="Megiddo",       zone="BLUE_ZONE_NorthWest",    groupPrefix="BLUE_AIR_MEGIDDO",     maxFlights=8 },
+            { callsign="TIGER",   homeBase="Haifa",         zone="BLUE_ZONE_East",         groupPrefix="BLUE_AIR_HAIFA",       maxFlights=8 },
+            -- ── Southern Israel – Jordan / Iraqi border ───────────────────────
+            { callsign="ZEUS",    homeBase="Ben Gurion",    zone="BLUE_ZONE_South",        groupPrefix="BLUE_AIR_BENGURION_S",  maxFlights=8 },
+            { callsign="SPARTAN", homeBase="Ben Gurion",    zone="BLUE_ZONE_PrinceHassan", groupPrefix="BLUE_AIR_BENGURION_PH", maxFlights=8 },
+            { callsign="LANCER",  homeBase="Ben Gurion",    zone="BLUE_ZONE_H4",           groupPrefix="BLUE_AIR_BENGURION_H4", maxFlights=8 },
         },
     },
 }
@@ -332,6 +378,23 @@ local function randomOffset(radius)
     }
 end
 
+-- Returns true if point p lies within the radius of any zone in the given list.
+-- Uses trigger.misc.getZone() (native DCS API) for correct world-coordinate geometry.
+-- MIST zone DB uses 2D mission-file coordinates ({x,y} where y = DCS world z),
+-- so we never use zd.point directly for distance checks.
+local function pointInAnyZone(p, zoneNames)
+    for _, zoneName in ipairs(zoneNames) do
+        local zd = trigger.misc.getZone(zoneName)
+        if zd and zd.point and zd.radius then
+            -- trigger.misc.getZone returns point in DCS world coords {x, y, z}
+            if dist2d(p, zd.point) <= zd.radius then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 local function groupAlive(groupName)
     local g = Group.getByName(groupName)
     if not g then return false end
@@ -339,10 +402,6 @@ local function groupAlive(groupName)
         if u:getLife() > 1 then return true end
     end
     return false
-end
-
-local function groupHasAliveUnit(groupName)
-    return groupAlive(groupName)
 end
 
 local function getGroupPos(groupName)
@@ -354,12 +413,6 @@ local function getGroupPos(groupName)
         end
     end
     return nil
-end
-
-local function setGroupOption(group, option, value)
-    if group and group:getController() then
-        group:getController():setOption(option, value)
-    end
 end
 
 -- collect all group names (ground) matching a prefix for a coalition
@@ -415,8 +468,12 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local IADS = {
-    RED  = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {} },
-    BLUE = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {} },
+    RED     = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {} },
+    BLUE    = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {} },
+    -- Lebanon SAMs run as a completely isolated RED-side sub-IADS.
+    -- They detect and engage BLUE aircraft independently; they do NOT
+    -- share contacts or engagement assignments with the main RED network.
+    LEBANON = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {} },
 }
 
 -- Tracked incoming weapons  { weapon_obj, launchPos, coalition_target }
@@ -434,20 +491,28 @@ local airIntercept = { flights = gciState.RED.flights, zones = gciState.RED.zone
 --  SECTION 4 – EWR / CONTACT SHARING
 -- ─────────────────────────────────────────────────────────────────────────────
 
-local function buildNodeList(coaName, coaID, samPrefix, ewrPrefix)
+-- excludePrefix (optional): skip groups whose name starts with this string.
+-- Used to stop the main RED IADS absorbing RED_SAM_LEBANON_ / RED_EWR_LEBANON_ groups.
+local function buildNodeList(coaName, coaID, samPrefix, ewrPrefix, excludePrefix)
     local state = IADS[coaName]
     state.samNodes = {}
     state.ewrNodes = {}
 
     for _, name in ipairs(getGroupsByPrefix(coaID, samPrefix)) do
         if groupAlive(name) then
-            table.insert(state.samNodes, name)
+            local excluded = excludePrefix and (string.sub(name, 1, #excludePrefix) == excludePrefix)
+            if not excluded then
+                table.insert(state.samNodes, name)
+            end
         end
     end
 
     for _, name in ipairs(getGroupsByPrefix(coaID, ewrPrefix)) do
         if groupAlive(name) then
-            table.insert(state.ewrNodes, name)
+            local excluded = excludePrefix and (string.sub(name, 1, #excludePrefix) == excludePrefix)
+            if not excluded then
+                table.insert(state.ewrNodes, name)
+            end
         end
     end
 
@@ -455,91 +520,54 @@ local function buildNodeList(coaName, coaID, samPrefix, ewrPrefix)
 end
 
 -- Gather enemy contacts visible to this coalition.
--- PRIMARY path : coalition.getDetectedTargets() — uses actual DCS radar/sensor model.
--- SECONDARY     : range-sphere fallback (always runs to catch any gaps).
--- AWACS groups (RED_AWACS_ / BLUE_AWACS_) contribute an extended sensor radius.
+-- Uses ONLY the DCS built-in sensor model (coalition.getDetectedTargets with RADAR filter).
+-- Terrain masking, LOS, jamming, and each unit's real sensor range all apply.
+-- The scripted range-sphere fallback has been removed to preserve sensor realism.
+local _gatherContactsWarnedOnce = false
 local function gatherContacts(coaName, enemyCoa)
     local state  = IADS[coaName]
     state.contacts = {}
     local seen   = {}   -- deduplicate by unit name
     local now    = timer.getTime()
 
-    local myCoaID = (coaName == "RED") and coalition.side.RED or coalition.side.BLUE
+    -- LEBANON is a RED-coalition sub-IADS; resolve coalition ID accordingly.
+    local myCoaID = (coaName == "BLUE") and coalition.side.BLUE or coalition.side.RED
 
-    -- ── PRIMARY : DCS built-in sensor detections ──────────────────────────────
-    if IADS_CFG.USE_DCS_DETECTION then
-        local det = coalition.getDetectedTargets(myCoaID, Unit.SensorType.RADAR)
-        for _, d in ipairs(det or {}) do
-            local obj = d.object
-            if obj and obj:isExist()
-            and obj.getCoalition and obj:getCoalition() == enemyCoa
-            and obj.getLife     and obj:getLife() > 1
-            and obj.getPoint then
-                local p = obj:getPoint()
-                if p and p.y and p.y > IADS_CFG.SAM_MIN_ENGAGE_ALT then
-                    local n = obj:getName()
-                    if not seen[n] then
-                        seen[n] = true
-                        table.insert(state.contacts, {
-                            unit       = obj,
-                            group      = obj.getGroup and obj:getGroup() or nil,
-                            pos        = p,
-                            vel        = obj.getVelocity and obj:getVelocity() or {x=0,y=0,z=0},
-                            name       = n,
-                            detectedAt = now,
-                            byRadar    = true,
-                        })
-                    end
-                end
-            end
+    -- Unit.SensorType may be nil in older DCS builds; guard both the function and the enum.
+    local radarSensorType = Unit.SensorType and Unit.SensorType.RADAR or nil
+
+    if not (coalition.getDetectedTargets and radarSensorType) then
+        -- DCS build does not expose getDetectedTargets or RADAR sensor type.
+        -- Log once per session and skip — contacts list will be empty until DCS exposes the API.
+        if not _gatherContactsWarnedOnce then
+            _gatherContactsWarnedOnce = true
+            log("WARNING: coalition.getDetectedTargets or Unit.SensorType.RADAR unavailable. "
+                .. "IADS will not detect contacts. Check DCS version.")
         end
+        return state.contacts
     end
 
-    -- ── SECONDARY : range-sphere supplement / fallback ────────────────────────
-    -- Build a node list with individual detection ranges.
-    -- Ground EWR/SAM nodes use EWR_DETECTION_RANGE.
-    -- Airborne AWACS nodes use the (larger) AWACS_DETECTION_RANGE.
-    local nodes = {}
-    for _, n in ipairs(state.ewrNodes) do
-        table.insert(nodes, { name = n, range = IADS_CFG.EWR_DETECTION_RANGE })
-    end
-    for _, n in ipairs(state.samNodes) do
-        table.insert(nodes, { name = n, range = IADS_CFG.EWR_DETECTION_RANGE * 0.6 })
-    end
-    local awacsPrefix = (coaName == "RED") and (IADS_CFG.AWACS_PREFIX_RED  or "RED_AWACS_")
-                                            or  (IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_")
-    for _, g in ipairs(getAirGroupsByPrefix(myCoaID, awacsPrefix)) do
-        table.insert(nodes, { name = g, range = IADS_CFG.AWACS_DETECTION_RANGE or 420000 })
-    end
-
-    local enemyGroups = coalition.getGroups(enemyCoa, Group.Category.AIRPLANE)
-    local heloGroups  = coalition.getGroups(enemyCoa, Group.Category.HELICOPTER)
-    for _, g in ipairs(heloGroups) do table.insert(enemyGroups, g) end
-
-    for _, g in ipairs(enemyGroups) do
-        for _, u in ipairs(g:getUnits()) do
-            if u:isExist() and u:isActive() and u:getLife() > 1 then
-                local p = u:getPoint()
-                if p and p.y and p.y > IADS_CFG.SAM_MIN_ENGAGE_ALT then
-                    local n = u:getName()
-                    if not seen[n] then
-                        for _, node in ipairs(nodes) do
-                            local np = getGroupPos(node.name)
-                            if np and dist3d(np, p) <= node.range then
-                                seen[n] = true
-                                table.insert(state.contacts, {
-                                    unit       = u,
-                                    group      = g,
-                                    pos        = p,
-                                    vel        = u:getVelocity(),
-                                    name       = n,
-                                    detectedAt = now,
-                                    byRadar    = false,
-                                })
-                                break
-                            end
-                        end
-                    end
+    local det = coalition.getDetectedTargets(myCoaID, radarSensorType)
+    for _, d in ipairs(det or {}) do
+        local obj = d.object
+        if obj and obj:isExist()
+        and obj.getCoalition and obj:getCoalition() == enemyCoa
+        and obj.getLife     and obj:getLife() > 1
+        and obj.getPoint then
+            local p = obj:getPoint()
+            if p and p.y and p.y > IADS_CFG.SAM_MIN_ENGAGE_ALT then
+                local n = obj:getName()
+                if not seen[n] then
+                    seen[n] = true
+                    table.insert(state.contacts, {
+                        unit       = obj,
+                        group      = obj.getGroup and obj:getGroup() or nil,
+                        pos        = p,
+                        vel        = obj.getVelocity and obj:getVelocity() or {x=0,y=0,z=0},
+                        name       = n,
+                        detectedAt = now,
+                        byRadar    = true,
+                    })
                 end
             end
         end
@@ -636,54 +664,102 @@ local function optimizeEngagements(coaName)
     local assigned = {}  -- contactName → samName
 
     for _, contact in ipairs(state.contacts) do
-        local bestSam, bestScore = nil, 0
+        -- Only engage contacts that are INSIDE this coalition's own zones.
+        -- RED SAMs hold fire until the contact crosses into a RED_ZONE_*.
+        -- BLUE SAMs hold fire until the contact crosses into a BLUE_ZONE_*.
+        -- Lebanon SAMs hold fire until the contact is in a LEBANON_ZONE_*.
+        local inBounds
+        if coaName == "LEBANON" then
+            inBounds = pointInAnyZone(contact.pos, IADS_CFG.LEBANON_ZONES)
+        else
+            -- gciState[coaName].zones is keyed by zone name; collect into a list.
+            -- Fail open (true) if no zones registered yet so SAMs aren't permanently silenced.
+            local zoneNames = {}
+            for zoneName, _ in pairs(gciState[coaName].zones) do
+                table.insert(zoneNames, zoneName)
+            end
+            inBounds = (#zoneNames == 0) or pointInAnyZone(contact.pos, zoneNames)
+        end
+        if inBounds then
 
-        for _, samName in ipairs(state.samNodes) do
-            -- Check if not suppressed
-            local sup = state.suppressedUntil[samName] or 0
-            if timer.getTime() >= sup then
-                local score = computeEngagementScore(samName, contact)
-                if score > bestScore then
-                    bestScore = score
-                    bestSam   = samName
+        -- Assign up to SAM_MAX_ENGAGE_PER_CONTACT SAMs to the same contact.
+        -- Primary fires immediately; secondary fires after a short stagger delay
+        -- so cross-fire from two nodes confuses jamming and saturates point-defence.
+        local maxAssign = IADS_CFG.SAM_MAX_ENGAGE_PER_CONTACT or 1
+        local assigned_count = 0
+        local usedSAMs = {}  -- prevent double-assignment in this pass
+
+        for _ = 1, maxAssign do
+            local bestSam2, bestScore2 = nil, 0
+            for _, samName in ipairs(state.samNodes) do
+                if not usedSAMs[samName] then
+                    local sup = state.suppressedUntil[samName] or 0
+                    if timer.getTime() >= sup then
+                        local score = computeEngagementScore(samName, contact)
+                        if score > bestScore2 then
+                            bestScore2 = score
+                            bestSam2   = samName
+                        end
+                    end
                 end
             end
+
+            if bestSam2 and bestScore2 > 0.05 then
+                usedSAMs[bestSam2] = true
+                assigned_count = assigned_count + 1
+                assigned[contact.name] = bestSam2  -- last writer wins for radar-mgmt reverse map
+
+                local stagger = (assigned_count - 1) * 1.5  -- 0s for primary, 1.5s for secondary
+                local delay   = stagger
+                              + IADS_CFG.SAM_FIRE_DELAY_MIN
+                              + math.random() * (IADS_CFG.SAM_FIRE_DELAY_MAX - IADS_CFG.SAM_FIRE_DELAY_MIN)
+
+                local cap_contact = contact
+                local cap_sam     = bestSam2
+                timer.scheduleFunction(function()
+                    if groupAlive(cap_sam)
+                    and cap_contact.unit:isExist()
+                    and cap_contact.unit:isActive()
+                    and cap_contact.unit:getLife() > 1 then
+                        orderSAMEngage(cap_sam, cap_contact)
+                    end
+                    return nil
+                end, nil, timer.getTime() + delay)
+
+                log(coaName .. " IADS assigned " .. contact.name .. " to " .. bestSam2
+                    .. string.format(" [#%d, score=%.2f, delay=%.1fs]", assigned_count, bestScore2, delay))
+            else
+                break  -- no more viable SAMs for this contact
+            end
         end
-
-        if bestSam and bestScore > 0.05 then
-            assigned[contact.name] = bestSam
-            -- Random launch delay to stagger and confuse jamming
-            local delay = IADS_CFG.SAM_FIRE_DELAY_MIN
-                        + math.random() * (IADS_CFG.SAM_FIRE_DELAY_MAX - IADS_CFG.SAM_FIRE_DELAY_MIN)
-
-            local cap_contact = contact
-            local cap_sam     = bestSam
-            timer.scheduleFunction(function()
-                if groupAlive(cap_sam) and cap_contact.unit:isActive() and cap_contact.unit:getLife() > 1 then
-                    orderSAMEngage(cap_sam, cap_contact)
-                end
-                return nil
-            end, nil, timer.getTime() + delay)
-
-            log(coaName .. " IADS assigned " .. contact.name .. " to " .. bestSam
-                .. string.format(" (score=%.2f)", bestScore))
-        end
+        end  -- inBounds
     end
 
-    -- SAMs with no assigned targets should go to standby (radar off) to reduce
-    -- exposure to DEAD/SEAD
+    -- Radar management — two states only:
+    --   • SAM has been assigned an in-zone target → radar ON, weapons free (set by orderSAMEngage)
+    --   • Everything else (no contacts, contacts outside zone, suppressed) → radar OFF + alarm GREEN
+    --
+    -- Previously there was a third "contacts exist but outside zone → radar ON, return-fire-only"
+    -- state, but long-range SAMs (SA-5 etc.) would autonomously engage with the radar on regardless
+    -- of the ROE option setting.  Keeping the radar OFF until our script explicitly assigns a target
+    -- is the only reliable way to prevent unsanctioned DCS AI engagement.
     for _, samName in ipairs(state.samNodes) do
-        local hasTarget = false
-        for _, sName in pairs(assigned) do
-            if sName == samName then hasTarget = true; break end
-        end
-        if not hasTarget then
-            local sup = state.suppressedUntil[samName] or 0
-            if timer.getTime() >= sup then
-                local g = Group.getByName(samName)
-                if g and g:getController() then
-                    g:getController():setOnOff(false)  -- radar standby
+        local sup = state.suppressedUntil[samName] or 0
+        if timer.getTime() >= sup then
+            -- Reverse-lookup: is this SAM currently assigned to any contact?
+            local hasAssigned = false
+            for _, sName in pairs(assigned) do
+                if sName == samName then hasAssigned = true; break end
+            end
+            local g = Group.getByName(samName)
+            if g and g:getController() then
+                if not hasAssigned then
+                    -- No active assignment — radar off, alarm state green (AI won't self-engage)
+                    g:getController():setOnOff(false)
+                    g:getController():setOption(9, 1)  -- alarm state: green (passive)
+                    g:getController():setOption(0, 4)  -- ROE: return fire only (belt-and-braces)
                 end
+                -- hasAssigned case: already handled by orderSAMEngage (radar on, weapons free)
             end
         end
     end
@@ -709,6 +785,29 @@ local function suppressSAMRadar(coaName, samName)
     end
 
     IADS[coaName].suppressedUntil[samName] = timer.getTime() + IADS_CFG.ARM_SHUTDOWN_TIME
+
+    -- Also briefly silence neighboring SAMs so the ARM seeker can't re-acquire a nearby radar.
+    local primaryPos = getGroupPos(samName)
+    local neighborRange = IADS_CFG.ARM_NEIGHBOR_SUPPRESS_RANGE or 12000
+    local neighborTime  = IADS_CFG.ARM_NEIGHBOR_SUPPRESS_TIME  or 20
+    if primaryPos then
+        for _, nName in ipairs(IADS[coaName].samNodes) do
+            if nName ~= samName then
+                local np = getGroupPos(nName)
+                if np and dist3d(primaryPos, np) <= neighborRange then
+                    local ng = Group.getByName(nName)
+                    if ng and ng:getController() then
+                        ng:getController():setOnOff(false)
+                        if not IADS[coaName].suppressedUntil[nName] or
+                           IADS[coaName].suppressedUntil[nName] < timer.getTime() + neighborTime then
+                            IADS[coaName].suppressedUntil[nName] = timer.getTime() + neighborTime
+                        end
+                        log(coaName .. " SAM " .. nName .. " neighbour-darkened for " .. neighborTime .. "s")
+                    end
+                end
+            end
+        end
+    end
 
     -- If the unit is mobile (wheeled SAM), attempt relocation
     local sp = getGroupPos(samName)
@@ -788,29 +887,48 @@ local function findARMTarget(wpnPos, wpnVel, coaName)
     return best, bestDist
 end
 
--- Order SHORAD / AAA near a tracked weapon to engage it
-local function alertSHORADtoEngageWeapon(weapon, coaName)
+-- Alert SAMs and SHORAD near a tracked weapon to engage it.
+-- Nodes within INTERCEPT_CLOSE (30 km) go weapons-free alarm-red immediately.
+-- Nodes within INTERCEPT_WARN  (60 km) go alarm-red but hold fire (weapons safe)
+-- so they're pre-spun up and ready when the weapon closes.
+--
+-- skipSuppressed: when true, nodes currently in the ARM-suppression window keep
+-- their radar dark (so a suppressed SAM does NOT re-light while trying to shoot
+-- the very HARM heading at it).  Non-suppressed SHORAD (guns/IR) are unaffected.
+local function alertSHORADtoEngageWeapon(weapon, coaName, skipSuppressed)
     local state = IADS[coaName]
     local wpPos = weapon:getPoint()
     if not wpPos then return end
 
+    local CLOSE = 30000   -- metres – engage immediately
+    local WARN  = 60000   -- metres – slew radar, standby to engage
+    local now   = timer.getTime()
+
     for _, samName in ipairs(state.samNodes) do
-        local sp = getGroupPos(samName)
-        if sp and dist3d(sp, wpPos) < 15000 then   -- 15 km intercept range
-            local g = Group.getByName(samName)
-            if g and g:getController() then
-                g:getController():setOption(0, 1)   -- ROE = weapons free
-                local task = {
-                    id = "EngageTargets",
-                    params = {
-                        targetTypes = {Weapon.GuidanceType.TVM,
-                                       Weapon.GuidanceType.INS,
-                                       Weapon.GuidanceType.RADAR_ACTIVE},
-                        priority = 0,
-                    }
-                }
-                -- Best-effort push; DCS does not guarantee intercepting specific munitions
-                pcall(function() g:getController():pushTask(task) end)
+        -- Skip nodes that are currently suppressed (ARM evasion – keep radar dark)
+        local suppressed = false
+        if skipSuppressed then
+            local supUntil = state.suppressedUntil and state.suppressedUntil[samName] or 0
+            suppressed = now < supUntil
+        end
+
+        if not suppressed then
+            local sp = getGroupPos(samName)
+            if sp then
+                local d = dist3d(sp, wpPos)
+                local g = Group.getByName(samName)
+                if g and g:getController() then
+                    if d <= CLOSE then
+                        -- In the kill chain – weapons free, alarm red
+                        g:getController():setOnOff(true)
+                        g:getController():setOption(0, 2)   -- ROE: weapons free
+                        g:getController():setOption(9, 2)   -- alarm state: red
+                    elseif d <= WARN then
+                        -- Within warning range – wake up radar, hold fire
+                        g:getController():setOnOff(true)
+                        g:getController():setOption(9, 2)   -- alarm state: red (tracking mode)
+                    end
+                end
             end
         end
     end
@@ -869,6 +987,18 @@ function eventHandler:onEvent(event)
                     launchTime   = timer.getTime(),
                     alerted      = false,
                 })
+                -- If the ARM is targeting a RED-side unit it may be aimed at Lebanon SAMs;
+                -- queue a second entry so the Lebanon sub-IADS also gets ARM warning.
+                if defendCoaName == "RED" then
+                    table.insert(trackedWeapons, {
+                        weapon       = wpn,
+                        isARM        = isARM,
+                        isAGM        = isAGM,
+                        targetCoa    = "LEBANON",
+                        launchTime   = timer.getTime(),
+                        alerted      = false,
+                    })
+                end
                 log("Tracking " .. (isARM and "ARM" or "AGM") .. ": " .. typeName
                     .. " vs " .. defendCoaName)
             end
@@ -878,7 +1008,8 @@ function eventHandler:onEvent(event)
     -- ── UNIT DEAD ──────────────────────────────────────────────────────────
     if event.id == world.event.S_EVENT_DEAD or event.id == world.event.S_EVENT_CRASH then
         local unit = event.initiator
-        if not unit then return end
+        -- Static objects and weapons also trigger DEAD events but lack getGroup()
+        if not unit or not unit.getGroup then return end
         local groupObj = unit:getGroup()
         if groupObj then
             local gName = groupObj:getName()
@@ -914,18 +1045,29 @@ local function weaponTrackingLoop()
         else
             local vel = wpn:getVelocity()
 
-            if wt.isARM and not wt.alerted then
-                -- Find the SAM node most likely targeted and suppress it
-                local target, dist = findARMTarget(wpnPos, vel, wt.targetCoa)
-                if target and dist < 80000 then   -- within 80 km of trajectory end
-                    suppressSAMRadar(wt.targetCoa, target)
-                    wt.alerted = true
+            if wt.isARM then
+                if not wt.alerted then
+                    -- Find the SAM node most likely targeted and suppress it.
+                    -- Trigger earlier (ARM_SUPPRESS_TRIGGER_DIST, default 150 km) so
+                    -- the SAM has time to go dark before the HARM seeker locks it.
+                    local trigger_dist = IADS_CFG.ARM_SUPPRESS_TRIGGER_DIST or 150000
+                    local target, dist = findARMTarget(wpnPos, vel, wt.targetCoa)
+                    if target and dist < trigger_dist then
+                        suppressSAMRadar(wt.targetCoa, target)
+                        wt.alerted = true
+                    end
+                end
+                -- Once the ARM is tracked, alert all non-suppressed SHORAD to engage
+                -- it every tick.  skipSuppressed=true keeps the targeted SAM's radar
+                -- dark while allowing nearby guns / IR SAMs to attempt a kill.
+                if wt.alerted then
+                    alertSHORADtoEngageWeapon(wpn, wt.targetCoa, true)
                 end
             end
 
             if wt.isAGM then
                 -- Continuously alert SHORAD to try to intercept
-                alertSHORADtoEngageWeapon(wpn, wt.targetCoa)
+                alertSHORADtoEngageWeapon(wpn, wt.targetCoa, false)
             end
 
             -- Keep weapon in tracking list
@@ -943,17 +1085,22 @@ end
 
 local function iadsUpdateLoop()
 
-    -- Rebuild node lists (units can be killed between cycles)
-    buildNodeList("RED",  coalition.side.RED,  "RED_SAM_",  "RED_EWR_")
-    buildNodeList("BLUE", coalition.side.BLUE, "BLUE_SAM_", "BLUE_EWR_")
+    -- Rebuild node lists (units can be killed between cycles).
+    -- Main RED excludes RED_SAM_LEBANON_ / RED_EWR_LEBANON_ groups (3rd arg = excludePrefix).
+    buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
+    buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
+    -- Lebanon sub-IADS: RED coalition units, own prefix, isolated from main RED.
+    buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
 
     -- Gather air contacts for each side
-    gatherContacts("RED",  coalition.side.BLUE)
-    gatherContacts("BLUE", coalition.side.RED)
+    gatherContacts("RED",     coalition.side.BLUE)
+    gatherContacts("BLUE",    coalition.side.RED)
+    gatherContacts("LEBANON", coalition.side.BLUE)  -- Lebanon sees BLUE threats independently
 
     -- Optimise and order engagements
     optimizeEngagements("RED")
     optimizeEngagements("BLUE")
+    optimizeEngagements("LEBANON")
 
     return timer.getTime() + IADS_CFG.UPDATE_INTERVAL
 end
@@ -1069,35 +1216,100 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local function broadcastPicture(coalName)
-    local contacts  = IADS[coalName].contacts
-    local awacsCS   = (IADS_CFG.AWACS_CALLSIGN or {})[coalName] or "AWACS"
-    local myCoaID   = (coalName == "RED") and coalition.side.RED or coalition.side.BLUE
-    local awacsPrefix = (coalName == "RED") and (IADS_CFG.AWACS_PREFIX_RED  or "RED_AWACS_")
-                                             or  (IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_")
+    -- No player-controlled RED aircraft — suppress RED picture broadcasts entirely.
+    if coalName == "RED" then return end
 
-    -- Only broadcast if an AWACS node is alive
+    local contacts    = IADS[coalName].contacts
+    local awacsCS     = (IADS_CFG.AWACS_CALLSIGN or {})[coalName] or "AWACS"
+    local myCoaID     = coalition.side.BLUE
+    local awacsPrefix = IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_"
+
+    -- Only broadcast if a BLUE AWACS is airborne
     local awacsAlive = false
     for _, gName in ipairs(getAirGroupsByPrefix(myCoaID, awacsPrefix)) do
         if groupAlive(gName) then awacsAlive = true; break end
     end
     if not awacsAlive then return end
 
+    -- Suppress picture-clear chatter — only call when threats are actually present
+    if #contacts == 0 then return end
+
     local refPt = gciRefPoint(coalName)
 
-    if #contacts == 0 then
-        trigger.action.outTextForCoalition(
-            myCoaID,
-            "[" .. awacsCS .. "]  PICTURE CLEAR. No enemy contacts.",
-            12, false)
-        return
+    -- Group contacts by DCS flight group; compute centroid BRA and lead altitude per group.
+    local grpMap   = {}   -- key = group name, value = { count, sx, sz, maxAlt }
+    local grpOrder = {}   -- insertion-order list of keys (for deterministic output)
+    for _, c in ipairs(contacts) do
+        local gKey = (c.group and c.group:isExist() and c.group:getName()) or c.name
+        if not grpMap[gKey] then
+            grpMap[gKey] = { count = 0, sx = 0, sz = 0, maxAlt = 0 }
+            table.insert(grpOrder, gKey)
+        end
+        local e = grpMap[gKey]
+        e.count  = e.count + 1
+        e.sx     = e.sx + c.pos.x
+        e.sz     = e.sz + c.pos.z
+        if c.pos.y > e.maxAlt then e.maxAlt = c.pos.y end
     end
 
-    local posStr, _ = contactPicture(contacts, refPt)
-    local msg = string.format(
-        "[%s]  PICTURE: %d contact(s), %s.",
-        awacsCS, #contacts, posStr)
-    trigger.action.outTextForCoalition(myCoaID, msg, 16, false)
+    -- Build one line per group: "  GroupName ×N  BRG°/RNGnm  Angels A"
+    local lines = {}
+    for _, gKey in ipairs(grpOrder) do
+        local e     = grpMap[gKey]
+        local cPos  = { x = e.sx / e.count, z = e.sz / e.count }
+        local brg   = math.floor(bearingTo(refPt, cPos) + 0.5)
+        local rng   = math.floor(dist2d(refPt, cPos) / 1852 + 0.5)          -- nm
+        local angls = math.floor(e.maxAlt * 3.28084 / 1000 + 0.5)            -- angels (kft)
+        local suffix = e.count > 1 and (" x" .. e.count) or ""
+        table.insert(lines, string.format("  %s%s  %03d° / %d nm  Angels %d",
+            gKey, suffix, brg, rng, angls))
+    end
+
+    local msg = string.format("[%s]  PICTURE — %d group(s):\n%s",
+        awacsCS, #grpOrder, table.concat(lines, "\n"))
+    trigger.action.outTextForCoalition(myCoaID, msg, 20, false)
     env.info("[IADS] " .. coalName .. " " .. msg, false)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  SECTION 12b – AWACS ORBIT KEEPER
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Runs every 30 s and re-assigns a Circle orbit task to any BLUE AWACS group
+-- that has drifted more than 1000 ft below its configured altitude.  This
+-- recovers from any external interference (other scripts, DCS AI quirks, etc.)
+-- without touching the AWACS if it is already flying at the correct altitude.
+local function awacsOrbitLoop()
+    local altM   = (IADS_CFG.AWACS_ORBIT_ALT_FT or 30000) * 0.3048   -- ft → m
+    local spdMS  = (IADS_CFG.AWACS_ORBIT_KTS    or 350)   * 0.514444  -- kts → m/s
+    local thresh = altM - 305   -- 1000 ft below target triggers correction
+
+    local myCoaID     = coalition.side.BLUE
+    local awacsPrefix = IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_"
+
+    for _, gName in ipairs(getAirGroupsByPrefix(myCoaID, awacsPrefix)) do
+        if groupAlive(gName) then
+            local p = getGroupPos(gName)
+            if p and p.y < thresh then
+                local g = Group.getByName(gName)
+                if g then
+                    local ctrl = g:getController()
+                    if ctrl then
+                        ctrl:setTask({
+                            id = "Orbit",
+                            params = {
+                                pattern  = "Circle",
+                                speed    = spdMS,
+                                altitude = altM,
+                            }
+                        })
+                        log("AWACS " .. gName .. " altitude recovery – orbit restored at FL"
+                            .. math.floor(altM * 3.28084 / 100 + 0.5))
+                    end
+                end
+            end
+        end
+    end
+    return timer.getTime() + 30
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -1114,7 +1326,28 @@ local function getAvailableFlights(sqd, gciSt)
                 local fs = gciSt.flights[gName]
                 if not fs or fs.status == "standby" then
                     local g = Group.getByName(gName)
-                    if g == nil or not g:isActive() then
+                    -- Determine if this group is already airborne.
+                    -- Preferred: g:isActive() — returns false for late-activate unspawned groups.
+                    -- Fallback (some DCS builds lack isActive on certain objects): check if any
+                    -- unit is physically above 1500 m.  Late-activate parked aircraft are at airbase
+                    -- elevation (<800 m in Syria); airborne groups (AWACS, active flights) are far
+                    -- higher.  This prevents AWACS being mis-classified as an available slot.
+                    local isActiveNow = false
+                    if g then
+                        if g.isActive then
+                            isActiveNow = g:isActive()
+                        else
+                            -- altitude-based fallback
+                            for _, u in ipairs(g:getUnits()) do
+                                local p = u:getPoint()
+                                if p and p.y > 1500 then
+                                    isActiveNow = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if not isActiveNow then
                         table.insert(available, gName)
                     end
                 end
@@ -1139,13 +1372,32 @@ end
 -- Contacts from IADS[coaName].contacts that are within or approaching a zone
 local function getThreatsForZone(zoneName, coaName)
     local threats = {}
-    local zd = mist and mist.DBs and mist.DBs.zonesByName and mist.DBs.zonesByName[zoneName]
-    if not zd then return threats end
+    local zd = trigger.misc.getZone(zoneName)
+    if not zd then
+        -- Zone name mismatch – log once per zone to help diagnose
+        log("[GCI] getThreatsForZone: zone '" .. zoneName .. "' not found – check exact ME name")
+        return threats
+    end
     local zPos    = zd.point
-    local zRadius = zd.radius + 80000   -- 80 km threat buffer around the zone
-    for _, c in ipairs(IADS[coaName].contacts) do
-        if dist2d(c.pos, zPos) <= zRadius then
-            table.insert(threats, c)
+    local zRadius = zd.radius + (IADS_CFG.SCRAMBLE_THREAT_BUFFER or 0)
+
+    -- Use a direct aircraft position scan rather than radar contacts.
+    -- This means the GCI will scramble even if the enemy is below radar coverage,
+    -- in a notch, or otherwise undetected.  Radar contacts (IADS[coaName].contacts)
+    -- are still used for the picture broadcast; they are NOT used here.
+    local enemyCoa = (coaName == "RED") and coalition.side.BLUE or coalition.side.RED
+    local groups   = coalition.getGroups(enemyCoa, Group.Category.AIRPLANE)
+    for _, grp in ipairs(groups or {}) do
+        if grp and grp:isExist() then
+            for _, u in ipairs(grp:getUnits()) do
+                if u:isExist() and u:isActive() and u:getLife() > 1 then
+                    local uPos = u:getPoint()
+                    if uPos and dist2d(uPos, zPos) <= zRadius then
+                        table.insert(threats, { unit = u, pos = uPos, group = grp })
+                        break  -- one entry per group is enough
+                    end
+                end
+            end
         end
     end
     return threats
@@ -1159,12 +1411,18 @@ end
 local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
     log("Dispatching " .. coalName .. " flight: " .. groupName)
 
+    -- trigger.action.activateGroup is the correct DCS API for late-activate groups
     local g = Group.getByName(groupName)
     if g then
-        g:activate()
+        trigger.action.activateGroup(g)
     else
-        local ref = Group.getByName(groupName)
-        if ref then trigger.action.activateGroup(ref) end
+        -- Group.getByName() returned nil – the ME group name likely doesn't exactly
+        -- match groupPrefix in IADS_CFG.SQUADRONS.  Check [SqdValidate] in DCS.log.
+        log("*** DISPATCH FAILED: Group.getByName('" .. groupName .. "') returned nil."
+            .. " Verify the ME group name matches groupPrefix in IADS_CFG.SQUADRONS.")
+        trigger.action.outText("[IADS] DISPATCH ERROR: group '" .. groupName
+            .. "' not found. Check DCS.log.", 15, false)
+        return
     end
 
     local myCoaID = (coalName == "RED") and coalition.side.RED or coalition.side.BLUE
@@ -1178,12 +1436,32 @@ local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
         launchTime = timer.getTime(),
     }
 
-    -- GCI scramble radio call
-    local refPt  = gciRefPoint(coalName)
-    local posStr = (#threats > 0) and contactPicture(threats, refPt) or "unknown position"
+    -- Determine the actual aircraft type(s) in this group for the GCI call.
+    -- Read from MIST DB (available before activation) then deduplicate.
+    local function getGroupTypeStr(gName)
+        local types = {}
+        local seen  = {}
+        local dbGrp = mist and mist.DBs and mist.DBs.groupsByName and mist.DBs.groupsByName[gName]
+        if dbGrp and dbGrp.units then
+            for _, u in ipairs(dbGrp.units) do
+                local t = u.type or u.unitType
+                if t and not seen[t] then
+                    seen[t] = true
+                    table.insert(types, t)
+                end
+            end
+        end
+        if #types == 0 then return "Unknown" end
+        return table.concat(types, "/")
+    end
+
+    -- GCI scramble radio call – includes actual aircraft type
+    local refPt    = gciRefPoint(coalName)
+    local posStr   = (#threats > 0) and contactPicture(threats, refPt) or "unknown position"
+    local typeStr  = getGroupTypeStr(groupName)
     gciMsg(coalName,
-        string.format("%s, SCRAMBLE. Vector %s. %d hostile(s). Cleared to engage.",
-            sqd.callsign, posStr, #threats),
+        string.format("SCRAMBLE – %s (%s). Vector %s. %d hostile(s). Cleared to engage.",
+            sqd.callsign, typeStr, posStr, #threats),
         16)
 
     -- Assign task after short spawn delay
@@ -1213,7 +1491,7 @@ local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
             }
         else
             -- Orbit over zone centre
-            local zd  = mist and mist.DBs and mist.DBs.zonesByName and mist.DBs.zonesByName[cap_sqd.zone]
+            local zd  = trigger.misc.getZone(cap_sqd.zone)  -- native DCS API, correct world coords
             local ox   = zd and zd.point.x or 0
             local oz   = zd and zd.point.z or 0
             taskDef = {
@@ -1377,7 +1655,8 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local function flightMaintenanceLoop()
-    local fuelMin = IADS_CFG.GCI_FUEL_RTB_THRESHOLD or 0.20
+    local fuelMin    = IADS_CFG.GCI_FUEL_RTB_THRESHOLD or 0.20
+    local leashExtra = IADS_CFG.INTERCEPT_LEASH_BUFFER or 40000
 
     for _, coalName in ipairs({"RED", "BLUE"}) do
         local gciSt = gciState[coalName]
@@ -1385,7 +1664,7 @@ local function flightMaintenanceLoop()
             if fs.status == "airborne" then
                 local grp = Group.getByName(gName)
                 if grp then
-                    local alive     = false
+                    local alive      = false
                     local lowestFuel = 1.0
                     for _, u in ipairs(grp:getUnits()) do
                         if u:getLife() > 1 then
@@ -1401,6 +1680,20 @@ local function flightMaintenanceLoop()
                         log(string.format("%s bingo fuel (%.0f%%) – RTB", gName, lowestFuel * 100))
                         orderFlightRTB(gName, gciSt,
                             string.format("Bingo fuel (%.0f%%).", lowestFuel * 100))
+                    else
+                        -- Leash check: recall immediately if the flight has strayed too far
+                        -- from its assigned zone, regardless of the RTB_LOITER_TIME timer.
+                        -- Prevents fighters chasing the player deep into friendly territory.
+                        local fPos = getGroupPos(gName)
+                        local zd   = fs.zone and trigger.misc.getZone(fs.zone)
+                        if fPos and zd and zd.point and zd.radius then
+                            local distFromZone = dist2d(fPos, zd.point)
+                            if distFromZone > (zd.radius + leashExtra) then
+                                log(gName .. " leash exceeded (" .. math.floor(distFromZone/1000)
+                                    .. " km from zone centre) – RTB")
+                                orderFlightRTB(gName, gciSt, "Leash limit – RTB.")
+                            end
+                        end
                     end
                 else
                     if fs.status ~= "dead" then
@@ -1419,11 +1712,53 @@ end
 --  SECTION 13 – INITIALISATION
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- ─────────────────────────────────────────────────────────────────────────────
+--  STARTUP VALIDATOR – logs every squadron prefix and the groups it found.
+--  Check DCS.log for "[SqdValidate]" lines after mission start.
+--  Any line showing "NONE FOUND" means the ME group names don't match the prefix.
+-- ─────────────────────────────────────────────────────────────────────────────
+local function validateSquadrons()
+    if not (mist and mist.DBs and mist.DBs.groupsByName) then
+        log("[SqdValidate] MIST DB not available – cannot validate squadron prefixes")
+        return
+    end
+
+    local sqds = IADS_CFG.SQUADRONS or { RED = {}, BLUE = {} }
+    local overallOK = true
+
+    for _, coalName in ipairs({"RED", "BLUE"}) do
+        for _, sqd in ipairs(sqds[coalName] or {}) do
+            local prefix    = sqd.groupPrefix
+            local found     = {}
+            for gName, _ in pairs(mist.DBs.groupsByName) do
+                if string.sub(gName, 1, #prefix) == prefix then
+                    table.insert(found, gName)
+                end
+            end
+            table.sort(found)
+            if #found == 0 then
+                log(string.format("[SqdValidate] *** MISMATCH *** %s | callsign=%-10s | prefix=%-30s | NONE FOUND in MIST DB",
+                    coalName, sqd.callsign, prefix))
+                overallOK = false
+            else
+                log(string.format("[SqdValidate] OK  %s | callsign=%-10s | prefix=%-30s | found: %s",
+                    coalName, sqd.callsign, prefix, table.concat(found, ", ")))
+            end
+        end
+    end
+
+    if overallOK then
+        log("[SqdValidate] All squadron prefixes matched – dispatch should work.")
+    else
+        log("[SqdValidate] One or more prefixes had NO matching groups. Check DCS.log and rename either the script groupPrefix entries or the ME group names to match.")
+        trigger.action.outText("[IADS] WARNING: Some squadron group prefixes found no ME groups. Check DCS.log for [SqdValidate] lines.", 20, false)
+    end
+end
+
 local function init()
     log("=== RED/BLUE IADS + Air Intercept System initialising ===")
 
-    -- Seed random number generator
-    math.randomseed(os.time())
+    -- Note: DCS sandboxes math.randomseed; math.random() still works unseeded.
 
     -- Check MIST availability
     if not mist then
@@ -1432,18 +1767,24 @@ local function init()
         log("MIST version: " .. (mist.majorVersion or "?") .. "." .. (mist.minorVersion or "?"))
     end
 
+    -- Validate squadron prefixes against MIST group database.
+    -- Logs every prefix with the groups it found (or NONE FOUND for mismatches).
+    validateSquadrons()
+
     -- Discover RED_ZONE_ and BLUE_ZONE_ trigger zones via MIST DB
     discoverZones()
 
     -- Initial IADS node build
-    buildNodeList("RED",  coalition.side.RED,  "RED_SAM_",  "RED_EWR_")
-    buildNodeList("BLUE", coalition.side.BLUE, "BLUE_SAM_", "BLUE_EWR_")
+    buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
+    buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
+    buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
 
     -- Schedule main loops
     timer.scheduleFunction(iadsUpdateLoop,       {}, timer.getTime() + 10)
     timer.scheduleFunction(weaponTrackingLoop,    {}, timer.getTime() + 5)
     timer.scheduleFunction(gciInterceptLoop,      {}, timer.getTime() + 15)
     timer.scheduleFunction(flightMaintenanceLoop, {}, timer.getTime() + 30)
+    timer.scheduleFunction(awacsOrbitLoop,        {}, timer.getTime() + 20)
 
     -- Periodic IADS node-list rebuild (drops destroyed SAM/EWR groups).
     -- Runs every NODE_REFRESH_INTERVAL seconds (default 900 = 15 min).
@@ -1452,16 +1793,11 @@ local function init()
     local NODE_REFRESH_INTERVAL = IADS_CFG.NODE_REFRESH_INTERVAL or 900
     local function nodeRefreshLoop(_, time)
         log("[NodeRefresh] Rebuilding IADS node lists...")
-        buildNodeList("RED",  coalition.side.RED,  "RED_SAM_",  "RED_EWR_")
-        buildNodeList("BLUE", coalition.side.BLUE, "BLUE_SAM_", "BLUE_EWR_")
-        local redCount  = 0
-        local blueCount = 0
-        if IADS_STATE and IADS_STATE.nodes then
-            for _ in pairs(IADS_STATE.nodes.RED  or {}) do redCount  = redCount  + 1 end
-            for _ in pairs(IADS_STATE.nodes.BLUE or {}) do blueCount = blueCount + 1 end
-        end
-        log(string.format("[NodeRefresh] Done. RED nodes: %d  BLUE nodes: %d",
-            redCount, blueCount))
+        buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
+        buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
+        buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
+        log(string.format("[NodeRefresh] Done. RED: %d SAMs  BLUE: %d SAMs  LEBANON: %d SAMs",
+            #IADS.RED.samNodes, #IADS.BLUE.samNodes, #IADS.LEBANON.samNodes))
         return time + NODE_REFRESH_INTERVAL
     end
     timer.scheduleFunction(nodeRefreshLoop, {}, timer.getTime() + NODE_REFRESH_INTERVAL)
