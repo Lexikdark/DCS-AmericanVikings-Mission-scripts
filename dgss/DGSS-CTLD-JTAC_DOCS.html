@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS CTLD + JTAC — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}
+  @media(max-width:760px){.cols2{grid-template-columns:1fr}}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:10px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:80px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">CTLD +<br><span>JTAC</span><br><span style="font-size:9px;color:var(--muted)">DGSS v7.2</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">CTLD Config</div>
+  <a href="#cfg-limits">Limits</a>
+  <a href="#cfg-templates">Templates</a>
+  <a href="#cfg-zones">CTLD Zones</a>
+  <div class="grp">JTAC Config</div>
+  <a href="#cfg-jtac">JTAC Settings</a>
+  <a href="#cfg-laser">Laser Codes</a>
+  <div class="grp">Usage</div>
+  <a href="#menu-ctld">CTLD Menu</a>
+  <a href="#menu-jtac">JTAC Menu</a>
+  <a href="#limits">Hard Limits</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS CTLD + JTAC System</h1>
+<p class="sub"><b>DGSS-CTLD-JTACv7.2.lua</b> &nbsp;·&nbsp; Combat logistics, troop transport & autonomous JTAC laser designation</p>
+
+<h2 id="overview">How It Works</h2>
+<p>Two systems share one script:</p>
+<ol>
+  <li><strong>CTLD (Combat Transport & Logistics)</strong> — players pick up troop teams or vehicles from designated CTLD zones and deploy them anywhere on the battlefield via F10 menu.</li>
+  <li><strong>JTAC (Joint Terminal Attack Controller)</strong> — once a JTAC team or vehicle is deployed, it autonomously scans a 10 km radius, finds the nearest RED enemy, lases it with a unique 4-digit laser code, and broadcasts a 9-line CAS callout. Players can override target selection from the JTAC Control menu.</li>
+</ol>
+<div class="box box-info"><strong>Standalone laser system:</strong> The script implements its own <code>ctld</code> namespace using the native DCS <code>Spot</code> API — no external CTLD library is required. Both a visible laser spot (weapon lock-on) and an IR pointer (FLIR compatible) are created.</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td>None (standalone)</td><td>Uses native DCS Lua APIs only. Optional MIST compatibility but not required.</td></tr>
+  <tr><td>DCS World 2.7+</td><td>Requires <code>Spot.createLaser</code>, <code>Spot.createInfraRed</code>, <code>coalition.addGroup</code>, <code>missionCommands</code>.</td></tr>
+  <tr><td>BLUE coalition units</td><td>Script operates on <code>DGSS_CTLD.COUNTRY</code> (default: <code>country.id.USA</code>). All CTLD-spawned groups use this country.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  →  DO SCRIPT FILE  →  DGSS-CTLD-JTACv7.2.lua</pre>
+<div class="box box-warn">Script auto-initialises on load. If using alongside DGSS-Leaderboard, load the Leaderboard script <em>after</em> this one so it can hook into kill events.</div>
+
+<h2 id="cfg-limits">Config — Hard Limits</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_JTAC_TEAMS</span><span class="cd">10</span><span class="cq">Maximum JTAC infantry teams allowed on the map simultaneously.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Enforced at spawn time. The script counts only existing groups (verified via <code>Group.getByName</code>), so dead teams free a slot automatically. Raise to allow larger collaborative operations; lower to reduce server load on busy servers.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_JTAC_VEHICLES</span><span class="cd">10</span><span class="cq">Maximum JTAC designated vehicles allowed simultaneously.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Separate limit from infantry teams. Applies to ground vehicle assets that double as JTAC platforms (e.g. HMMWV, MATV with laser). Dead or despawned vehicles free a slot.</p></div>
+</div>
+
+<h2 id="cfg-templates">Config — Troop &amp; Vehicle Templates</h2>
+<p>Templates are defined in <code>DGSS_CTLD.TROOP_TEMPLATES</code> and <code>DGSS_CTLD.VEHICLE_TEMPLATES</code>. Each entry has:</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>namePrefix</code></td><td>string</td><td>Used to generate unique group names (e.g. <code>"JTAC_Team"</code>)</td></tr>
+  <tr><td><code>displayName</code></td><td>string</td><td>Human-readable name shown in the F10 menu</td></tr>
+  <tr><td><code>category</code></td><td>string</td><td>Menu category label (e.g. <code>"Infantry"</code>, <code>"Artillery"</code>)</td></tr>
+  <tr><td><code>units</code></td><td>string[]</td><td>Array of DCS unit type strings to spawn</td></tr>
+</table>
+<pre>-- Example troop template
+["JTAC_4man"] = {
+    namePrefix  = "JTAC_Team",
+    displayName = "JTAC 4-Man Team",
+    category    = "JTAC",
+    units = { "Soldier M4", "Soldier M4", "Soldier M4", "Soldier M249" }
+},
+
+-- Example vehicle template
+["CHAP_M1126"] = {
+    namePrefix  = "JTAC_Stryker",
+    displayName = "M1126 Stryker ICV",
+    category    = "APC",
+    units = { "CHAP_M1126" }
+},</pre>
+<div class="box box-warn">Unit type strings must match DCS internal type names exactly. Check <code>dcs.log</code> for <code>[DGSS_CTLD] Template not found</code> warnings if spawns fail silently.</div>
+
+<h2 id="cfg-zones">Config — CTLD Pickup Zones</h2>
+<p>Pickup zones are defined as trigger zones in the ME. Any trigger zone whose name matches your configured pattern is treated as a CTLD zone. Players must be inside a zone to load troops or vehicles. Zone names and allowed cargo types are set in the script config section near the top.</p>
+<div class="box box-info">There's no zone name pattern filter by default — all zones shown in the F10 menu are available. Add zone name checks in <code>DGSS_CTLD.getAvailableZones()</code> if you want to restrict which zones offer which cargo.</div>
+
+<h2 id="cfg-jtac">Config — JTAC Targeting</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">SCAN_RADIUS</span><span class="cd">10,000 m</span><span class="cq">Detection radius each JTAC team searches for enemies.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Every JTAC team scans a 10 km circle around its position and collects all RED ground units. Results are sorted by distance. Lowering this forces players to position JTACs closer to the action; raising it allows long-range laser designation.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Targeting interval</span><span class="cd">2 s</span><span class="cq">How frequently each JTAC re-evaluates its target and updates the laser spot.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>The laser is destroyed and recreated every 2 seconds to track a moving target. The DCS <code>Spot</code> API requires the spot to be re-placed when the target moves. Both the laser spot and IR pointer are updated together.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Menu poll interval</span><span class="cd">3 s</span><span class="cq">How frequently the JTAC Control sub-menu is rebuilt.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>The menu only rebuilds when the JTAC team count changes (not every cycle). The poll detects count changes every 3 seconds. This means new JTACs appear in the menu within 3 seconds of deployment.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Status monitor interval</span><span class="cd">60 s</span><span class="cq">How often dead teams are cleaned from the registry.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Dead JTAC groups are detected and removed from <code>DGSS_CTLD.JTAC_REGISTRY</code> every 60 seconds. Cleanup loop (full group audit) runs every 600 seconds.</p></div>
+</div>
+
+<h2 id="cfg-laser">Config — Laser Codes</h2>
+<p>Each JTAC team is assigned a unique 4-digit laser code automatically from a pool. The code is announced in the 9-line callout message. Players must dial in the correct code on their targeting pod or LGB seeker.</p>
+<div class="box box-info">Default laser code pool starts at <strong>1111</strong> and increments per team. To change the starting code or pool, find the <code>DGSS_CTLD.LASER_CODES</code> table or the code assignment in the JTAC spawn function.</div>
+
+<h2 id="menu-ctld">CTLD — F10 Radio Menu Flow</h2>
+<ol>
+  <li><strong>Fly to / hover over a CTLD pickup zone</strong></li>
+  <li>F10 → <em>CTLD</em> → <em>Load Troops</em> or <em>Load Vehicle</em></li>
+  <li>Select template from sub-menu</li>
+  <li><strong>Fly to deployment location</strong></li>
+  <li>F10 → <em>CTLD</em> → <em>Deploy Troops</em> / <em>Deploy Vehicle</em></li>
+  <li>Group spawns at aircraft position; squad is registered as a JTAC if eligible</li>
+</ol>
+<div class="box box-warn">Only one troop load and one vehicle can be carried at a time per aircraft. Loading a second payload overwrites the first (not stacked).</div>
+
+<h2 id="menu-jtac">JTAC Control — F10 Radio Menu Flow</h2>
+<ol>
+  <li>F10 → <em>JTAC Control</em> → select a JTAC team by name</li>
+  <li>Sub-menu shows: <strong>Status</strong>, <strong>Next Target</strong>, <strong>Previous Target</strong>, <strong>Auto Target (Nearest)</strong></li>
+  <li><strong>Next / Previous Target</strong> — cycles through the available target list (sorted by distance). JTAC immediately re-lases the selected target.</li>
+  <li><strong>Auto Target</strong> — clears manual override; JTAC returns to tracking the nearest enemy automatically.</li>
+  <li><strong>Status</strong> — prints current target type, MGRS, laser code, and number of available targets.</li>
+</ol>
+
+<p>On target change the JTAC broadcasts a CAS callout to BLUE coalition:</p>
+<pre>JTAC_Team_0001: MARKING NEW TARGET
+Type: T-80
+MGRS: 42S WB 12345 67890
+Lat/Lon: 32°24'N 065°00'E
+Distance: 3.4 NM
+Laser Code: 1111</pre>
+
+<h2 id="limits">Hard Limits &amp; Verification</h2>
+<table>
+  <tr><th>Limit</th><th>Default</th><th>Enforcement</th></tr>
+  <tr><td>Max JTAC teams</td><td>10</td><td>Checked at spawn; only live groups in <code>JTAC_REGISTRY</code> count. Dead teams free slots automatically.</td></tr>
+  <tr><td>Max JTAC vehicles</td><td>10</td><td>Separate check from teams; verified via <code>Group.getByName</code>.</td></tr>
+  <tr><td>Troop templates per aircraft</td><td>1</td><td>Overwritten on re-load; no stacking.</td></tr>
+  <tr><td>Vehicle per aircraft</td><td>1</td><td>Same as above.</td></tr>
+</table>
+
+<h2 id="me-setup">Mission Editor Setup Checklist</h2>
+<ol>
+  <li><strong>Load script</strong> — MISSION START trigger → DO SCRIPT FILE → <code>DGSS-CTLD-JTACv7.2.lua</code></li>
+  <li><strong>CTLD zones</strong> — place trigger zones where players can load troops/vehicles. Name them descriptively; the script lists available zones in menus based on player proximity.</li>
+  <li><strong>Templates</strong> — verify DCS unit type names in <code>DGSS_CTLD.TROOP_TEMPLATES</code> and <code>DGSS_CTLD.VEHICLE_TEMPLATES</code> match valid types for your country setting.</li>
+  <li><strong>Country setting</strong> — set <code>DGSS_CTLD.COUNTRY</code> to the desired coalition country. Default is <code>country.id.USA</code>. Mismatched country/unit type causes silent spawn failure.</li>
+  <li><strong>Enemy groups</strong> — ensure RED ground units are present in the area so JTACs have targets to detect.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>Spawn fails silently (no group appears)</td><td>Unit type in template not valid for <code>DGSS_CTLD.COUNTRY</code>. Check <code>dcs.log</code> for <code>[DGSS_CTLD] Failed to spawn group</code>. Change country or unit type.</td></tr>
+  <tr><td>JTAC shows "No targets in range"</td><td>No RED ground units within SCAN_RADIUS (10 km) of the JTAC. Reposition the JTAC or check enemy is alive.</td></tr>
+  <tr><td>Laser spot not visible in pod</td><td>Source unit may not have line of sight. The DCS Spot API requires clear LoS. Check terrain masking.</td></tr>
+  <tr><td>"Team limit reached" message</td><td>MAX_JTAC_TEAMS reached. Dead teams are cleaned every 60 s; wait or increase the limit.</td></tr>
+  <tr><td>JTAC menu not appearing</td><td>Menu rebuilds on JTAC count change, up to 3 s delay. If menu never appears, check <code>dcs.log</code> for <code>[DGSS_CTLD]</code> init errors.</td></tr>
+  <tr><td>All script log output</td><td>Prefixed <code>[DGSS_CTLD]</code> or <code>[JTAC]</code> or <code>[CTLD]</code> in dcs.log.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"▲ close":"▼ details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

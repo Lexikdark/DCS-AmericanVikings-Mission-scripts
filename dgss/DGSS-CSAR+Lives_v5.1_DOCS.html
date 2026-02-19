@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS CSAR + Lives — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .box-danger{background:rgba(224,85,85,.1);border-left:3px solid var(--red)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}
+  @media(max-width:760px){.cols2{grid-template-columns:1fr}}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:8px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:100px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow-step{display:flex;gap:14px;margin:8px 0;align-items:flex-start}
+  .flow-num{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px}
+  .flow-body{font-size:13px;flex:1}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">CSAR +<br><span>Lives</span><br><span style="font-size:9px;color:var(--muted)">DGSS v5.1</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Lives Config</div>
+  <a href="#cfg-lives">Lives Settings</a>
+  <a href="#cfg-lockout">Lockout Timer</a>
+  <div class="grp">CSAR Config</div>
+  <a href="#cfg-csar">CSAR Settings</a>
+  <a href="#cfg-limits">Speed / Alt Limits</a>
+  <a href="#cfg-zones">Drop-off Zones</a>
+  <a href="#cfg-aircraft">Allowed Aircraft</a>
+  <div class="grp">Usage</div>
+  <a href="#rescue-flow">CSAR Step-by-Step</a>
+  <a href="#lives-flow">Lives System</a>
+  <a href="#menus">F10 Menus</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS CSAR + Lives System</h1>
+<p class="sub"><b>DGSS-CSAR+Lives_v5.1.lua</b> &nbsp;·&nbsp; Crash / eject survivor rescue with per-player lives tracking and lockout</p>
+
+<h2 id="overview">How It Works</h2>
+<p>Two tightly integrated systems run in one script:</p>
+<div class="cols2">
+  <div class="box box-info">
+    <strong>CSAR</strong><br>
+    When a BLUE pilot crashes or ejects, a survivor unit spawns 150–200 m from the crash point, marked with blue smoke on request. Helicopter crews locate the survivor via F10 menu, hover low and slow to pick them up, then fly to a drop-off base. On delivery, the downed pilot's life count is restored.
+  </div>
+  <div class="box box-info">
+    <strong>Lives</strong><br>
+    Every BLUE player starts with 5 lives. Each death or crash deducts 1 life. When lives hit 0 the player is locked out of spawning for 10 minutes. Rescuing a survivor gives that player's count back to them (+1 per rescue, up to the max).
+  </div>
+</div>
+
+<div class="box box-tip"><strong>Anti-duplicate protection:</strong> A 30-second cooldown window prevents double-counting when an ejection and aircraft destruction happen within the same incident. A separate 5-minute eject exemption ensures players who eject are not penalised for leaving the ejected seat (<code>SLOT_LEAVE</code> event).</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td>None (standalone)</td><td>Uses native DCS Lua APIs only — no MIST or other external libs needed.</td></tr>
+  <tr><td>DCS World 2.7+</td><td>Requires <code>coalition.addGroup</code>, <code>trigger.misc.getZone</code>, <code>land.getHeight</code>, <code>missionCommands</code>.</td></tr>
+  <tr><td>BLUE coalition players</td><td>Script tracks <code>coalition.side.BLUE</code> units. Country for survivor groups defaults to <code>country.id.USA</code>.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  →  DO SCRIPT FILE  →  DGSS-CSAR+Lives_v5.1.lua</pre>
+<div class="box box-warn">If using alongside <strong>DGSS-Leaderboard</strong>, load the Leaderboard script after this one so it can hook into rescue and death events and award points correctly.</div>
+
+<h2 id="cfg-lives">Config — Lives Settings</h2>
+<p>All lives settings live inside <code>DGSS_CSAR.LIVES = { ... }</code>.</p>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">enabled</span><span class="cd">true</span><span class="cq">Master switch for the lives system. Set to <code>false</code> to run CSAR only.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>When <code>false</code>, no life counts are tracked, no lockouts are applied, and functions like <code>DGSS_CSAR.loseLife()</code> and <code>DGSS_CSAR.gainLife()</code> return immediately. CSAR rescue still works.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">defaultLives</span><span class="cd">5</span><span class="cq">How many lives a player starts with (first death event initialises them to this value).</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Players are not initialised until their first death event fires. If you want all players initialised at mission start, call <code>DGSS_CSAR.getPlayerLives(playerName)</code> in a separate startup loop.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">maxLives</span><span class="cd">5</span><span class="cq">Hard cap — lives can never exceed this value regardless of how many rescues a player performs.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Applies to <code>DGSS_CSAR.gainLife()</code>. The actual formula is <code>math.min(maxLives, current + lifeGainAmount)</code>.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">loseLifeOnDeath</span><span class="cd">true</span><span class="cq">Deduct a life when a player crashes or is killed.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Triggered by DCS <code>S_EVENT_PILOT_DEAD</code> and <code>S_EVENT_CRASH</code> events. The 30-second <code>INCIDENT_COOLDOWN</code> prevents double-counting across both events for the same incident.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">gainLifeOnRescue</span><span class="cd">true</span><span class="cq">Give the rescued pilot's original player a life back when delivered to a drop-off base.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>The script looks up the survivor's <code>playerName</code> stored at spawn time. If that player is currently in a slot, they receive an in-cockpit notification. Otherwise a coalition-wide message is broadcast.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">lifeGainAmount</span><span class="cd">1</span><span class="cq">How many lives are restored per successful rescue delivery.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Increase to reward rescue more aggressively, but be aware that <code>maxLives</code> is still capped. Setting this to 2 or 3 lets skilled CSAR teams bank extra lives.</p></div>
+</div>
+
+<h2 id="cfg-lockout">Config — Lockout</h2>
+<p>When a player's lives reach 0 they are locked out of spawning for a fixed duration.</p>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Lockout duration</span><span class="cd">600 s (10 min)</span><span class="cq">Hard-coded in <code>DGSS_CSAR.loseLife()</code> — change <code>now() + 600</code> to adjust.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>When lives hit 0, a lockout expiry time is written to <code>DGSS_CSAR.LOCKOUT[playerName]</code>. On each spawn attempt the script compares the current mission time against this expiry. If time has not elapsed, spawn is blocked and the player sees the <code>noLivesLeft</code> message.</p><p>The in-game message currently reads: <em>"You have no lives remaining. You will regain 1 life in 10 minutes."</em> If you change the lockout duration remember to update this message string in <code>DGSS_CSAR.MESSAGES.noLivesLeft</code>.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">INCIDENT_COOLDOWN</span><span class="cd">30 s</span><span class="cq">Prevents counting the same crash as multiple deaths (eject + explosion both fire events).</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>After the first death/eject event for a player, a 30-second window blocks further event processing for the same player. This covers the typical ejection → aircraft destruction → seat separation sequence.  Tracked in <code>DGSS_CSAR.INCIDENT_PROCESSED</code>.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">EJECT_EXEMPTION_TIME</span><span class="cd">300 s (5 min)</span><span class="cq">Players who eject are exempt from <code>SLOT_LEAVE</code> life penalty for this many seconds.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>After ejecting, players must control a parachute/ejected seat. They will inevitably leave that slot. Without this exemption, leaving the seat would trigger a <code>S_EVENT_PILOT_DEAD</code> / slot leave event and incorrectly deduct another life. The 5-minute window provides ample time for the parachute sequence to complete. Tracked in <code>DGSS_CSAR.EJECTED_PLAYERS</code>.</p></div>
+</div>
+
+<h2 id="cfg-csar">Config — CSAR Settings</h2>
+<p>All CSAR settings live inside <code>DGSS_CSAR.CSAR = { ... }</code>.</p>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">enableAutoSpawnOnEject</span><span class="cd">true</span><span class="cq">Automatically spawn a survivor group when a pilot ejects or crashes.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Listens for <code>S_EVENT_EJECTION</code> and <code>S_EVENT_CRASH</code>. When triggered, <code>DGSS_CSAR.spawnSurvivorGroup()</code> is called with the crash position. The survivor spawns 150–200 m away at a random offset angle to separate it from burning wreckage.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">pickupRadius</span><span class="cd">75 m</span><span class="cq">How close a helicopter must be (horizontal) to a survivor to initiate a pickup.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Combined with the altitude check (<code>pickupAltitudeMax</code>). Both conditions must be met simultaneously. The radius is checked in 2D (X/Z plane only, ignoring vertical). Increase this if terrain makes it hard to get exactly overhead; decrease for tighter, more realistic hovering requirements.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">pickupAltitudeMax</span><span class="cd">50 m AGL</span><span class="cq">Maximum altitude AGL at which a pickup can be initiated.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Altitude is measured using <code>unit:getPoint().y - land.getHeight(pos)</code> to get true AGL. This means hilly terrain is correctly accounted for. Note that the internal variable is stored as <code>MAX_PICKUP_ALTITUDE = 15.2 m</code> (50 ft) — that is the script default; verify the values are in sync if you edit one but not the other.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">smokeOnRequest</span><span class="cd">true</span><span class="cq">Players can request smoke from the survivor via the F10 menu.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Smoke colour is blue (<code>trigger.smokeColor.Blue</code>). Smoke is triggered at the survivor's current position. If the survivor moves (it is an immortal ground unit with no orders so it generally stays still), the smoke will still appear at the trigger point.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">nearestSearchRadius</span><span class="cd">148,160 m (80 NM)</span><span class="cq">Maximum distance for the "Find Nearest Survivor" menu option.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Used in <code>DGSS_CSAR.findNearestSurvivor()</code>. The function iterates all entries in <code>DGSS_CSAR.SURVIVORS</code> and returns the closest one within this radius. 80 NM covers virtually the entire Afghanistan map.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">despawnOnRescue</span><span class="cd">true</span><span class="cq">Destroy the survivor ground unit after successful drop-off.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Keeps the map tidy. The entry is also removed from <code>DGSS_CSAR.SURVIVORS</code> and the carrying aircraft's state is cleared from <code>DGSS_CSAR.CARRYING_SURVIVOR</code>. Set to <code>false</code> if you want the unit to persist on the map (e.g., for base defence immersion).</p></div>
+</div>
+
+<h2 id="cfg-limits">Config — Speed &amp; Altitude Limits</h2>
+<p>These limits apply to <strong>both</strong> pickup and drop-off operations.</p>
+<table>
+  <tr><th>Parameter</th><th>Default</th><th>Equivalent</th><th>Applies To</th></tr>
+  <tr><td><code>MAX_PICKUP_SPEED</code></td><td>7.5 m/s</td><td>~10 knots</td><td>Picking up a survivor</td></tr>
+  <tr><td><code>MAX_PICKUP_ALTITUDE</code></td><td>15.2 m AGL</td><td>~50 ft</td><td>Picking up a survivor</td></tr>
+  <tr><td><code>MAX_DROPOFF_SPEED</code></td><td>7.5 m/s</td><td>~10 knots</td><td>Delivering at a drop-off zone</td></tr>
+  <tr><td><code>MAX_DROPOFF_ALTITUDE</code></td><td>15.2 m AGL</td><td>~50 ft</td><td>Delivering at a drop-off zone</td></tr>
+</table>
+<div class="box box-warn">If a player exceeds these limits when they attempt pickup/drop-off, the operation fails and a message shows their exact current speed and altitude alongside the limit. They must slow down and descend before trying again.</div>
+<div class="box box-info">Altitude is True AGL, computed as <code>unit.getPoint().y - land.getHeight(pos)</code>. This is terrain-aware — flying 15 m above a hill counts as 15 m AGL even if the sea-level altitude is much higher.</div>
+
+<h2 id="cfg-zones">Config — Drop-off Zones</h2>
+<p>Survivors must be delivered to one of the following zones. Zone names must exactly match trigger zone names placed in the Mission Editor.</p>
+<table>
+  <tr><th>Zone Name</th><th>Type</th></tr>
+  <tr><td><code>KANDAHAR</code></td><td>Main airbase</td></tr>
+  <tr><td><code>KABUL</code></td><td>Airbase</td></tr>
+  <tr><td><code>BAGRAM</code></td><td>Airbase</td></tr>
+  <tr><td><code>JALALABAD</code></td><td>Airbase</td></tr>
+  <tr><td><code>TARINKOT</code></td><td>Airbase</td></tr>
+  <tr><td><code>CHAGHCHARAN</code></td><td>Airbase</td></tr>
+  <tr><td><code>FOB_LONDON</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_DALLAS</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_PARIS</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_WARSAW</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_SALERNO</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_URGOON</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>CARRIER_GROUP</code></td><td>Carrier CSAR recovery zone</td></tr>
+</table>
+<div class="box box-tip">To add a new drop-off zone, add a <code>{ zoneName = "YOUR_ZONE_NAME" }</code> entry to <code>DGSS_CSAR.CSAR.dropOffZones</code> and place a matching trigger zone (BLUE, any shape) in the ME.</div>
+
+<h2 id="cfg-aircraft">Allowed Aircraft (CSAR Whitelist)</h2>
+<p>Only units whose DCS type name appears in <code>DGSS_CSAR.ALLOWED_UNITS</code> can pick up survivors. Any other BLUE aircraft attempting a rescue will be silently denied.</p>
+<table>
+  <tr><th>DCS Type Name</th><th>Description</th></tr>
+  <tr><td><code>UH-1H</code></td><td>Huey — primary CSAR helicopter</td></tr>
+  <tr><td><code>Mi-8MT</code></td><td>Hip — multi-role transport helicopter</td></tr>
+  <tr><td><code>Mi-24P</code></td><td>Hind — armed transport helicopter</td></tr>
+  <tr><td><code>SA342M</code></td><td>Gazelle (HOT missiles)</td></tr>
+  <tr><td><code>SA342L</code></td><td>Gazelle (gun)</td></tr>
+  <tr><td><code>SA342Mistral</code></td><td>Gazelle (Mistral SAM)</td></tr>
+  <tr><td><code>SA342Minigun</code></td><td>Gazelle (minigun)</td></tr>
+  <tr><td><code>CH-47Fbl1</code></td><td>Chinook — heavy transport</td></tr>
+  <tr><td><code>MH-6J</code></td><td>Little Bird (pax)</td></tr>
+  <tr><td><code>AH-6J</code></td><td>Little Bird (armed)</td></tr>
+  <tr><td><code>C-130J-30</code></td><td>Hercules transport — fixed-wing rescue</td></tr>
+  <tr><td><code>TF-51D</code></td><td>Trainer — for testing</td></tr>
+</table>
+<div class="box box-tip">To add a new aircraft, add <code>["TypeName"] = true</code> to <code>DGSS_CSAR.ALLOWED_UNITS</code>. Use the exact type name from the unit's <em>Type</em> field in the ME or <code>unit:getTypeName()</code>.</div>
+
+<h2 id="rescue-flow">CSAR Step-by-Step</h2>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Pilot crashes or ejects</strong> — <code>S_EVENT_CRASH</code> / <code>S_EVENT_EJECTION</code> fires. The script spawns an immortal soldier 150–200 m from the crash point and broadcasts a coalition-wide mayday.</div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>CSAR crew locates the survivor</strong> — F10 → <em>CSAR</em> → <em>Nearest Pilot</em> or <em>Nearest Convoy Survivor</em>. A text callout provides MGRS, latitude/longitude (degrees + decimal minutes), distance, and bearing.</div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Request smoke</strong> (optional) — F10 → <em>CSAR</em> → <em>Request Smoke on Survivor</em>. Blue smoke deploys at the survivor's position.</div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Hover over the survivor</strong> — fly within 75 m horizontal, below 15.2 m AGL, and below 7.5 m/s. Then select F10 → <em>CSAR</em> → <em>Pick Up Survivor</em>. A countdown/confirmation message confirms loading.</div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Fly to a drop-off zone</strong> — any of the 13 zones listed above. Enter the trigger zone boundary.</div></div>
+<div class="flow-step"><div class="flow-num">6</div><div class="flow-body"><strong>Land and drop off</strong> — hover below 15.2 m AGL at under 7.5 m/s inside the zone, then F10 → <em>CSAR</em> → <em>Drop Off Survivor</em>. Rescue completes: the survivor despawns, the downed pilot gains +1 life, the rescuing crew earn leaderboard points (if leaderboard script is loaded).</div></div>
+<div class="box box-warn"><strong>Carrying state is per-aircraft.</strong> If the rescue helicopter is destroyed while carrying a survivor, the survivor is lost and no rescue credit is given. There is currently no "survivor overboard" re-spawn on carrier destruction.</div>
+
+<h2 id="lives-flow">Lives System — Player Flow</h2>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Player spawns for the first time</strong> — initialised to <code>defaultLives = 5</code>. No notification.</div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Player dies / crashes</strong> — <code>DGSS_CSAR.loseLife()</code> is called. Lives −1. In-cockpit HUD message shows remaining count. 30-second cooldown starts to block duplicate events from the same incident.</div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Lives reach 0</strong> — lockout timer starts (10 minutes). Message: <em>"You have no lives remaining. You will regain 1 life in 10 minutes."</em> Spawn attempts are blocked until the timer expires.</div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Player is rescued</strong> — <code>DGSS_CSAR.gainLife(playerName)</code> fires. Their count goes up by <code>lifeGainAmount = 1</code>. They receive a notification wherever they currently are. If they currently have 0 lives and the lockout hasn't expired, gaining a life does NOT cancel the lockout — they must wait out the timer.</div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Ejection path</strong> — eject event fires → life deducted → 5-minute eject exemption window opens. Player controls parachute/seat → leaves that slot → SLOT_LEAVE event fires → exemption check passes → no additional life deducted.</div></div>
+
+<h2 id="menus">F10 Radio Menus</h2>
+<table>
+  <tr><th>Menu Path</th><th>Action</th><th>Condition</th></tr>
+  <tr><td>CSAR → Nearest Downed Pilot</td><td>Prints MGRS, lat/lon, distance to nearest downed pilot within 80 NM</td><td>Any BLUE player</td></tr>
+  <tr><td>CSAR → Nearest Convoy Survivor</td><td>As above but filters to convoy-tagged survivors only</td><td>Any BLUE player</td></tr>
+  <tr><td>CSAR → Request Smoke</td><td>Pops blue smoke at nearest survivor within <code>nearestSearchRadius</code></td><td>Any BLUE player</td></tr>
+  <tr><td>CSAR → Pick Up Survivor</td><td>Loads survivor — speed, altitude, and proximity checks run first</td><td>Allowed aircraft only, within 75 m / 15.2 m AGL / &lt;7.5 m/s</td></tr>
+  <tr><td>CSAR → Drop Off Survivor</td><td>Completes rescue at a drop-off zone</td><td>Allowed aircraft only, carrying survivor, inside drop-off zone, &lt;15.2 m AGL, &lt;7.5 m/s</td></tr>
+  <tr><td>CSAR → My Lives</td><td>Shows current life count and lockout status</td><td>Any BLUE player</td></tr>
+</table>
+<p>Menus are added per-unit in <code>DGSS_CSAR.UNIT_MENUS</code> and rebuilt when players enter new slots via <code>S_EVENT_BIRTH</code>.</p>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>Load script</strong> — MISSION START trigger → DO SCRIPT FILE → <code>DGSS-CSAR+Lives_v5.1.lua</code></li>
+  <li><strong>Drop-off zones</strong> — for each name in <code>DGSS_CSAR.CSAR.dropOffZones</code>, place a trigger zone in the ME with an exactly matching name. Zone size determines how easy it is to land inside — 500–1000 m radius recommended for airfields.</li>
+  <li><strong>Coalition settings</strong> — <code>DGSS_CSAR.COALITION</code> defaults to <code>coalition.side.BLUE</code>. Change if you want a RED-side CSAR system.</li>
+  <li><strong>Country setting</strong> — <code>DGSS_CSAR.COUNTRY</code> defaults to <code>country.id.USA</code>. Survivor ground units use this; must be a valid country for <code>Soldier M4</code>.</li>
+  <li><strong>Aircraft whitelist</strong> — add any custom mod helicopters or aircraft to <code>DGSS_CSAR.ALLOWED_UNITS</code> before mission start.</li>
+  <li><strong>Tune lives</strong> — adjust <code>defaultLives</code>, <code>maxLives</code>, and the lockout duration in <code>DGSS_CSAR.loseLife()</code> to match your server's difficulty.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>No survivor spawned after crash</td><td><code>enableAutoSpawnOnEject</code> may be false, or the crash was not a BLUE player event. Check <code>dcs.log</code> for <code>[CSAR]</code> event lines.</td></tr>
+  <tr><td>"Speed too high" even when hovering</td><td>Blade stall or autorotation giving residual velocity. Wait a moment after collective reduction; the speed check uses real-time m/s.</td></tr>
+  <tr><td>"Altitude too high" at what looks like ground level</td><td>Terrain slope — the AGL check is accurate to the local ground cell. Move slightly to flatter ground and retry.</td></tr>
+  <tr><td>Pickup fails — "No survivors nearby"</td><td>You are more than 75 m from the survivor horizontally. Use the "Nearest" menu to check distance.</td></tr>
+  <tr><td>Life count didn't go up after rescue</td><td><code>gainLifeOnRescue</code> is true but check the drop-off zone name matches exactly (case-sensitive) a trigger zone in the ME.</td></tr>
+  <tr><td>Lives deducted twice for one crash</td><td>Normally prevented by the 30-second cooldown. If still happening, check <code>INCIDENT_COOLDOWN</code> value; a very long explosion chain may require a higher value.</td></tr>
+  <tr><td>Player locked out but shouldn't be</td><td>Verify the player's name matches exactly — <code>DGSS_CSAR.PLAYER_LIVES</code> is keyed by exact name string. Name changes between sessions will create a new entry.</td></tr>
+  <tr><td>All log output</td><td>Prefixed <code>[CSAR]</code> or <code>[CSAR-LIVES]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"▲ close":"▼ details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

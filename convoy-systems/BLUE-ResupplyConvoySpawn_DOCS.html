@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLUE-ResupplyConvoySpawn v5.7.0 – Documentation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c26;
+    --surface2: #1e2433;
+    --border: #2a3044;
+    --accent: #4fa3e8;
+    --accent2: #63c5a0;
+    --accent3: #e8a44f;
+    --accent4: #e87070;
+    --text: #d4daf0;
+    --muted: #7a8499;
+    --code-bg: #12151f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+  }
+  /* ── Sidebar ── */
+  nav {
+    width: 230px;
+    min-width: 230px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav .nav-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 20px 12px;
+  }
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav a:hover, nav a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(79,163,232,0.06);
+  }
+  nav .nav-section {
+    margin-top: 14px;
+    padding: 0 20px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #3d4560;
+  }
+  /* ── Main ── */
+  main {
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 960px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .badge-blue { background: rgba(79,163,232,0.15); color: var(--accent); border: 1px solid rgba(79,163,232,0.3); }
+  .badge-green { background: rgba(99,197,160,0.15); color: var(--accent2); border: 1px solid rgba(99,197,160,0.3); }
+  .badge-orange { background: rgba(232,164,79,0.15); color: var(--accent3); border: 1px solid rgba(232,164,79,0.3); }
+  .badge-red { background: rgba(232,112,112,0.15); color: var(--accent4); border: 1px solid rgba(232,112,112,0.3); }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin: 36px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 20px;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 20px 0 8px;
+    scroll-margin-top: 20px;
+  }
+  p { margin-bottom: 10px; }
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #a8d8f0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #a8d8f0;
+    margin: 12px 0;
+    line-height: 1.7;
+  }
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .cfg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .cfg-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .cfg-key {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+  }
+  .cfg-val {
+    font-family: 'Cascadia Code', monospace;
+    font-size: 13px;
+    color: var(--accent3);
+  }
+  .cfg-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  /* ── Flow steps ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 12px 0;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 6px;
+  }
+  .flow-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .flow-num {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: var(--surface2);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    z-index: 1;
+  }
+  .flow-body {
+    flex: 1;
+    padding: 6px 0 16px;
+  }
+  .flow-body strong {
+    color: #fff;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .flow-body p {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+  }
+  /* ── Info/Warning boxes ── */
+  .info-box {
+    border-left: 3px solid var(--accent);
+    background: rgba(79,163,232,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .warn-box {
+    border-left: 3px solid var(--accent3);
+    background: rgba(232,164,79,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .danger-box {
+    border-left: 3px solid var(--accent4);
+    background: rgba(232,112,112,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  /* ── Template card ── */
+  .template-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .template-num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .template-name { color: #fff; font-weight: 600; font-size: 14px; }
+  .unit-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .unit-pill {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-family: 'Cascadia Code', monospace;
+    color: var(--accent2);
+  }
+  /* ── Zone pill list ── */
+  .zone-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .zone-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-family: 'Cascadia Code', monospace;
+    color: var(--text);
+  }
+  /* ── Menu tree ── */
+  .menu-tree {
+    font-family: 'Cascadia Code', monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--text);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .menu-tree .m0 { color: var(--accent); font-weight: 700; }
+  .menu-tree .m1 { color: var(--accent2); margin-left: 20px; }
+  .menu-tree .m2 { color: var(--accent3); margin-left: 40px; }
+  .menu-tree .m3 { color: var(--muted); margin-left: 60px; }
+
+  ul { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; color: var(--muted); }
+  li strong { color: var(--text); }
+
+  .score-bar {
+    display: flex;
+    gap: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 20px;
+    margin: 8px 0;
+    font-size: 11px;
+  }
+  .score-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    padding: 0 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<nav>
+  <div class="nav-title">BLUE Convoy v5.7.0</div>
+  <a href="#overview">Overview</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#config">Configuration</a>
+  <div class="nav-section">Zones &amp; Templates</div>
+  <a href="#zones">Zones</a>
+  <a href="#templates">Convoy Templates</a>
+  <div class="nav-section">System Mechanics</div>
+  <a href="#spawn-flow">Spawn Flow</a>
+  <a href="#routing">Route Generation</a>
+  <a href="#formation">Formation</a>
+  <a href="#arrival">Arrival Detection</a>
+  <a href="#stuck">Stuck Detection</a>
+  <a href="#resupply">Warehouse Resupply</a>
+  <a href="#ai-behavior">AI Behavior</a>
+  <div class="nav-section">UI &amp; Integration</div>
+  <a href="#menus">F10 Radio Menus</a>
+  <a href="#notifications">Notifications</a>
+  <a href="#leaderboard">Leaderboard</a>
+  <a href="#timers">Timers &amp; Cleanup</a>
+  <div class="nav-section">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main>
+
+  <h1>BLUE-ResupplyConvoySpawn</h1>
+  <div class="subtitle">
+    <span class="badge badge-blue">v5.7.0</span>
+    <span class="badge badge-green">BLUE Coalition</span>
+    <span class="badge badge-orange">MIST Required</span>
+    Afghanistan Theatre · 2336 lines · Namespace: <code>ConvoySystem</code>
+  </div>
+
+  <!-- ── OVERVIEW ── -->
+  <h2 id="overview">Overview</h2>
+  <p>
+    A fully automated logistics system that lets BLUE coalition players dispatch ground resupply convoys
+    between 12 bases in the Afghanistan theatre via the F10 radio menu. Each convoy selects from
+    one of five vehicle templates, travels a dynamically generated road route, and on arrival tops up
+    the destination airbase's DCS warehouse with munitions and aircraft.
+  </p>
+  <p>
+    Convoys are tracked in real time: 2-minute progress broadcasts, stuck-detection with automatic
+    re-routing, a 5.5-hour hard timeout, and integration with the <code>DGSS_LEADERBOARD</code>
+    module for scoring.
+  </p>
+  <div class="info-box">
+    <strong>Key facts at a glance</strong><br>
+    Max simultaneous convoys: <strong>10</strong> &nbsp;|&nbsp;
+    Per-template cooldown: <strong>30 min</strong> &nbsp;|&nbsp;
+    Update cycle: <strong>5 min</strong> &nbsp;|&nbsp;
+    Progress broadcast: <strong>every 2 min</strong> &nbsp;|&nbsp;
+    Timeout: <strong>5.5 h</strong>
+  </div>
+
+  <!-- ── REQUIREMENTS ── -->
+  <h2 id="requirements">Requirements</h2>
+  <table>
+    <thead><tr><th>Dependency</th><th>Role</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>MIST</code></td>
+        <td>Group spawning (<code>mist.dynAdd</code>), zone checks (<code>mist.pointInZone</code>), ID management</td>
+        <td>Falls back to <code>coalition.addGroup</code>. Zone checks skip the tertiary MIST pass. A warning is printed to the DCS log.</td>
+      </tr>
+      <tr>
+        <td>DCS Warehouse API</td>
+        <td><code>Airbase:getWarehouse()</code>, <code>warehouse:addItem()</code>, <code>warehouse:getInventory()</code></td>
+        <td>No fallback — warehouse resupply silently fails if the airbase has no warehouse object.</td>
+      </tr>
+      <tr>
+        <td><code>DGSS_LEADERBOARD</code> (optional)</td>
+        <td>Convoy completion scoring</td>
+        <td>System runs normally; leaderboard calls are silently skipped.</td>
+      </tr>
+      <tr>
+        <td>Trigger Zones in ME</td>
+        <td>12 destination zones + 12 <code>ZONENAME_Spawn</code> spawn zones</td>
+        <td>Spawn/arrival detection fails for the missing zone; a warning is logged.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Load Order</h3>
+  <pre>-- Recommended load order in Mission Editor (DO Script File triggers)
+1. MIST (e.g. mist_4_5_122.lua)
+2. DGSS_Leaderboard (optional – load before convoy script)
+3. BLUE-ResupplyConvoySpawn v5.7.0.lua   ← auto-starts on load</pre>
+  <div class="warn-box">
+    The script calls <code>startConvoySystem()</code> immediately on load. Load it <em>after</em> MIST and
+    after any other script it depends on.
+  </div>
+
+  <!-- ── CONFIGURATION ── -->
+  <h2 id="config">Configuration</h2>
+
+  <h3>Core Limits</h3>
+  <div class="cfg-grid">
+    <div class="cfg-item">
+      <div class="cfg-key">maxActiveConvoys</div>
+      <div class="cfg-val">10</div>
+      <div class="cfg-desc">Hard cap on simultaneously travelling convoys (status = "traveling").</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">cooldownTime</div>
+      <div class="cfg-val">1800 s (30 min)</div>
+      <div class="cfg-desc">Per-template cooldown. Each template tracks its own last-spawn timestamp independently.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">updateInterval</div>
+      <div class="cfg-val">300 s (5 min)</div>
+      <div class="cfg-desc">How often the main convoy check loop fires.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">progressNotificationInterval</div>
+      <div class="cfg-val">120 s (2 min)</div>
+      <div class="cfg-desc">Minimum gap between coalition-wide progress broadcasts.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">resupplyQuantity</div>
+      <div class="cfg-val">20 per item</div>
+      <div class="cfg-desc">Quantity added to each existing warehouse item per successful delivery.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">aircraftIncrementPerConvoy</div>
+      <div class="cfg-val">+2 per type</div>
+      <div class="cfg-desc">Each aircraft type present in the warehouse gets +2 per convoy arrival.</div>
+    </div>
+  </div>
+
+  <h3>Route Variation</h3>
+  <div class="card">
+    <div class="card-title">ConvoySystem.routeVariation</div>
+    <table>
+      <thead><tr><th>Route Type</th><th>Weight</th><th>Waypoints Added</th><th>Offset Range</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-green">SHORT</span> Direct</td>
+          <td>40 %</td>
+          <td>3 intermediate WPs at 25 %, 50 %, 75 % of total distance (on-road, no offset)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-orange">MEDIUM</span> Alternate</td>
+          <td>35 %</td>
+          <td>1 offset WP at 50 % of route</td>
+          <td>2 000 – 5 000 m perpendicular (random side)</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">LONG</span> Extended</td>
+          <td>25 %</td>
+          <td>2 offset WPs at 33 % and 66 %</td>
+          <td>4 000 – 8 000 m (first), 70 % of that (second)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;color:var(--muted);font-size:12px;">
+      All intermediate waypoints use <code>action = "On Road"</code> so DCS AI path-finds along roads.
+      The short route adds 3 direct WPs specifically to help AI navigate mountains.
+    </p>
+  </div>
+
+  <!-- ── ZONES ── -->
+  <h2 id="zones">Zones</h2>
+  <p>All three zone lists share the same 12 base names. Spawn zones are named <code>BASENAME_Spawn</code>.</p>
+
+  <h3>Home / Destination Zones (origin &amp; arrival detection)</h3>
+  <div class="zone-grid">
+    <span class="zone-pill">KANDAHAR</span>
+    <span class="zone-pill">BAGRAM</span>
+    <span class="zone-pill">KABUL</span>
+    <span class="zone-pill">JALALABAD</span>
+    <span class="zone-pill">FOB_SALERNO</span>
+    <span class="zone-pill">FOB_LONDON</span>
+    <span class="zone-pill">FOB_PARIS</span>
+    <span class="zone-pill">FOB_DALLAS</span>
+    <span class="zone-pill">FOB_WARSAW</span>
+    <span class="zone-pill">FOB_URGOON</span>
+    <span class="zone-pill">TARINKOT</span>
+    <span class="zone-pill">CHAGHCHARAN</span>
+  </div>
+
+  <h3>Spawn Zones (vehicle spawn point, randomised within radius × 0.7)</h3>
+  <div class="zone-grid">
+    <span class="zone-pill">KANDAHAR_Spawn</span>
+    <span class="zone-pill">BAGRAM_Spawn</span>
+    <span class="zone-pill">KABUL_Spawn</span>
+    <span class="zone-pill">JALALABAD_Spawn</span>
+    <span class="zone-pill">FOB_SALERNO_Spawn</span>
+    <span class="zone-pill">FOB_LONDON_Spawn</span>
+    <span class="zone-pill">FOB_PARIS_Spawn</span>
+    <span class="zone-pill">FOB_DALLAS_Spawn</span>
+    <span class="zone-pill">FOB_WARSAW_Spawn</span>
+    <span class="zone-pill">FOB_URGOON_Spawn</span>
+    <span class="zone-pill">TARINKOT_Spawn</span>
+    <span class="zone-pill">CHAGHCHARAN_Spawn</span>
+  </div>
+
+  <h3>Airbase Name Mapping (for warehouse access)</h3>
+  <table>
+    <thead><tr><th>Zone Name</th><th>DCS Airbase Name</th></tr></thead>
+    <tbody>
+      <tr><td><code>KANDAHAR</code></td><td>Kandahar</td></tr>
+      <tr><td><code>BAGRAM</code></td><td>Bagram</td></tr>
+      <tr><td><code>KABUL</code></td><td>Kabul International Airport</td></tr>
+      <tr><td><code>JALALABAD</code></td><td>Jalalabad</td></tr>
+      <tr><td><code>FOB_SALERNO</code></td><td>Salerno</td></tr>
+      <tr><td><code>FOB_LONDON</code></td><td>FOB London</td></tr>
+      <tr><td><code>FOB_PARIS</code></td><td>FOB Paris</td></tr>
+      <tr><td><code>FOB_DALLAS</code></td><td>FOB Dallas</td></tr>
+      <tr><td><code>FOB_WARSAW</code></td><td>FOB Warsaw</td></tr>
+      <tr><td><code>FOB_URGOON</code></td><td>Urgoon Heliport</td></tr>
+      <tr><td><code>TARINKOT</code></td><td>Tarinkot</td></tr>
+      <tr><td><code>CHAGHCHARAN</code></td><td>Chaghcharan</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── CONVOY TEMPLATES ── -->
+  <h2 id="templates">Convoy Templates</h2>
+  <p>All templates use <code>side = "blue"</code>, <code>country = USA</code>. Skill levels are <strong>High</strong> or <strong>Excellent</strong>. Each template has its own independent 30-minute cooldown timer.</p>
+
+  <div class="template-card">
+    <span class="template-num">1</span><span class="template-name">Light Armor &amp; Supply</span>
+    <div class="unit-row">
+      <span class="unit-pill">LAV-25 ×1</span>
+      <span class="unit-pill">MaxxPro_MRAP ×4</span>
+      <span class="unit-pill">CHAP_M1083 ×2</span>
+      <span class="unit-pill">CHAP_M1130 ×1</span>
+    </div>
+    <p style="margin-top:8px;color:var(--muted);font-size:12px;">8 vehicles total. Fast, light protection. Good for FOB-to-FOB short runs.</p>
+  </div>
+
+  <div class="template-card">
+    <span class="template-num">2</span><span class="template-name">Medium Armor Convoy</span>
+    <div class="unit-row">
+      <span class="unit-pill">M1128 Stryker MGS ×1</span>
+      <span class="unit-pill">CHAP_M1130 ×2</span>
+      <span class="unit-pill">CHAP_MATV ×4</span>
+      <span class="unit-pill">CHAP_M1083 ×3</span>
+      <span class="unit-pill">LAV-25 ×1</span>
+    </div>
+    <p style="margin-top:8px;color:var(--muted);font-size:12px;">11 vehicles total. Balanced firepower and logistics.</p>
+  </div>
+
+  <div class="template-card">
+    <span class="template-num">3</span><span class="template-name">Heavy Armor Convoy</span>
+    <div class="unit-row">
+      <span class="unit-pill">M1A2C SEP V3 ×2</span>
+      <span class="unit-pill">MaxxPro_MRAP ×2</span>
+      <span class="unit-pill">CHAP_M1083 ×2</span>
+      <span class="unit-pill">CHAP_MATV ×2</span>
+      <span class="unit-pill">Leopard-2 ×2</span>
+    </div>
+    <p style="margin-top:8px;color:var(--muted);font-size:12px;">10 vehicles total. Heavy armour escort. Slowest; best survivability.</p>
+  </div>
+
+  <div class="template-card">
+    <span class="template-num">4</span><span class="template-name">Logistics Supply Train</span>
+    <div class="unit-row">
+      <span class="unit-pill">M1A2C SEP V3 ×2</span>
+      <span class="unit-pill">LAV-25 ×1</span>
+      <span class="unit-pill">AAV7 ×1</span>
+      <span class="unit-pill">CHAP_M1083 ×8</span>
+      <span class="unit-pill">M1128 Stryker MGS ×1</span>
+      <span class="unit-pill">CHAP_M1130 ×1</span>
+    </div>
+    <p style="margin-top:8px;color:var(--muted);font-size:12px;">14 vehicles total. Heaviest truck count — maximum resupply impact per run.</p>
+  </div>
+
+  <div class="template-card">
+    <span class="template-num">5</span><span class="template-name">Mixed Force Convoy</span>
+    <div class="unit-row">
+      <span class="unit-pill">MaxxPro_MRAP ×2</span>
+      <span class="unit-pill">M1A2C SEP V3 ×1</span>
+      <span class="unit-pill">CHAP_MATV ×4</span>
+      <span class="unit-pill">CHAP_M1130 ×1</span>
+      <span class="unit-pill">CHAP_M1083 ×5</span>
+      <span class="unit-pill">Leopard-2 ×1</span>
+      <span class="unit-pill">M1043 HMMWV Arm. ×1</span>
+    </div>
+    <p style="margin-top:8px;color:var(--muted);font-size:12px;">15 vehicles total. Large balanced force. Longest formation.</p>
+  </div>
+
+  <!-- ── SPAWN FLOW ── -->
+  <h2 id="spawn-flow">Spawn Flow</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <strong>Menu trigger</strong>
+        <p>Player selects Template → Origin → Destination from the F10 menu. System checks: active convoy count &lt; 10 AND selected template not on cooldown.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <strong>SpawnConvoyGroup()</strong>
+        <p>Resolves <code>ZONENAME_Spawn</code> for the spawn position (random offset within 70 % of zone radius) and destination zone centre position.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <strong>Build unit array</strong>
+        <p>All vehicles are placed in a two-column staggered formation (8 m longitudinal spacing, 8 m column separation) facing the heading toward the destination.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <strong>Route generation</strong>
+        <p>A weighted dice roll selects Short / Medium / Long route (see Route Generation section). The full waypoint array is embedded directly into the spawn data.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <strong>Spawn via MIST or coalition.addGroup</strong>
+        <p>Tries <code>mist.dynAdd()</code> first. Falls back to <code>coalition.addGroup(country.id.USA, Group.Category.GROUND, ...)</code> if MIST is unavailable.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <strong>AI options (3 s delayed)</strong>
+        <p>After 3 seconds: sets Alarm State = GREEN, ROE = Return Fire, Disperse On Attack = true, Engage Air Weapons = false.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <strong>Register in tracking table</strong>
+        <p>Convoy is stored in <code>ConvoySystem.spawnedConvoys[convoyId]</code> with status <code>"traveling"</code>. Template cooldown timestamp is written to <code>ConvoySystem.templateCooldowns[templateIndex]</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">8</div>
+      <div class="flow-body">
+        <strong>On arrival (5-min update cycle detects arrival)</strong>
+        <p>Convoy is marked <code>"resupplying"</code>, <code>performWarehouseResupply()</code> is called once, leaderboard hook fires, group is despawned after 10 seconds.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROUTING ── -->
+  <h2 id="routing">Route Generation</h2>
+  <p>
+    All waypoints use DCS action <code>"On Road"</code> so the AI follows road networks. 
+    Speed is gradually reduced toward the destination to allow the column to compress into a tight formation 
+    before despawn.
+  </p>
+  <table>
+    <thead><tr><th>Waypoint</th><th>Action</th><th>Speed</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>WP 1 — Spawn position</td><td>On Road</td><td>32 m/s (~115 km/h)</td><td>Start moving</td></tr>
+      <tr><td>WP 2 — 100 m ahead</td><td>On Road</td><td>32 m/s</td><td>Find the road immediately</td></tr>
+      <tr><td>WP 3+ — Intermediate (route variation)</td><td>On Road</td><td>32 m/s</td><td>Short: 3 direct WPs; Medium: 1 offset; Long: 2 offset</td></tr>
+      <tr><td>WP n-2 — 200 m from destination</td><td>On Road</td><td>15 m/s (~54 km/h)</td><td>Begin slowing — column compresses</td></tr>
+      <tr><td>WP n-1 — 50 m from destination</td><td>On Road</td><td>5 m/s</td><td>Slow crawl — tight formation</td></tr>
+      <tr><td>WP n — Destination</td><td>On Road</td><td>3 m/s + ROE Hold Fire</td><td>Parking; triggers arrival detection</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box">
+    The destination waypoint sets ROE = Hold Fire (value 4) via a WrappedAction task embedded in the final waypoint, so parked convoys won't shoot at nearby threats.
+  </div>
+
+  <!-- ── FORMATION ── -->
+  <h2 id="formation">Vehicle Formation</h2>
+  <p>
+    Vehicles are positioned in a <strong>two-column staggered formation</strong> perpendicular to the heading toward the destination:
+  </p>
+  <pre>  Column L (odd units)     Column R (even units)
+  ┌─────────────────────────────────────────── heading →
+  │  Unit 1 (pair 0, left)   Unit 2 (pair 0, right)
+  │  Unit 3 (pair 1, left)   Unit 4 (pair 1, right)
+  │  Unit 5 (pair 2, left)   Unit 6 (pair 2, right)
+  │  ...
+  
+  Longitudinal spacing:  8 m per pair
+  Lateral separation:    8 m (4 m each side of centreline)</pre>
+  <p style="color:var(--muted);font-size:12px;">
+    Each unit is named <code>Convoy_SPAWNZONE_TIMESTAMP_N</code>. The group is named 
+    <code>Convoy_SPAWNZONE_DESTZONE_TIMESTAMP</code>.
+  </p>
+
+  <!-- ── ARRIVAL DETECTION ── -->
+  <h2 id="arrival">Arrival Detection</h2>
+  <p>
+    The update loop runs every 5 minutes. For each travelling convoy, it checks the lead unit's position using 
+    <strong>three progressive checks</strong> — any single pass triggers arrival:
+  </p>
+  <div class="card">
+    <div class="card-title">Check 1 — Distance / Zone Radius (Primary)</div>
+    <p>2D distance (x,z only — altitude ignored) from lead unit to destination zone centre &le; zone radius + 100 m buffer.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Check 2 — Near &amp; Stopped (Secondary)</div>
+    <p>Distance &le; 1 500 m AND lead unit velocity &lt; 2 m/s (convoy has stopped).</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Check 3 — MIST Zone Verification (Tertiary, if MIST available)</div>
+    <p>
+      <code>mist.pointInZone()</code> is called with three zone name variants:
+      original name → stripped of <code>_Spawn</code> suffix → full <code>spawnZones</code> mapping lookup.
+    </p>
+  </div>
+
+  <!-- ── STUCK DETECTION ── -->
+  <h2 id="stuck">Stuck Convoy Detection</h2>
+  <p>
+    On each update cycle, the system tracks the lead unit position. If the convoy has not moved more than 
+    <strong>20 m</strong> within <strong>60 seconds</strong> (and the route has not already been retried), 
+    the route is re-pushed via <code>controller:resetTask()</code> followed by a simplified 3-waypoint 
+    direct route to the destination at 71 m/s. This retry is attempted only once per convoy 
+    (<code>convoy.routeRetried = true</code>).
+  </p>
+  <div class="warn-box">
+    The 5-minute update interval means a stuck convoy may not be detected until the next cycle fires. 
+    In the worst case, a convoy can appear stuck for up to ~10 minutes before the retry kicks in.
+  </div>
+
+  <!-- ── WAREHOUSE RESUPPLY ── -->
+  <h2 id="resupply">Warehouse Resupply</h2>
+  <p>
+    On convoy arrival, <code>performWarehouseResupply(destinationZone)</code> is called exactly once 
+    (guarded by <code>convoy.resupplied = true</code>).
+  </p>
+
+  <h3>Resupply Logic</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <strong>Resolve airbase name</strong>
+        <p>Strip <code>_Spawn</code> / <code>_Dest</code> suffix from zone name, look up in <code>ConvoySystem.airbaseNames</code> map → call <code>Airbase.getByName()</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <strong>Get warehouse object</strong>
+        <p><code>airbase:getWarehouse()</code>. Aborts with a coalition text alert if the warehouse is nil.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <strong>Top up existing inventory (Option B)</strong>
+        <p>Iterates <code>inventory.weapon</code> and <code>inventory.liquids</code>. Each item with a current count &gt; 0 receives <code>warehouse:addItem(itemName, 20)</code>. Fuel items are skipped.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <strong>Fallback inventory (if warehouse is empty)</strong>
+        <p>If no items were processed, iterates <code>ConvoySystem.fallbackInventory</code> — a table of ~400+ weapon/pod/rocket/bomb/tank/torpedo entries all preset at qty 20.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <strong>Aircraft increment</strong>
+        <p><code>incrementWarehouseAircraft()</code> adds +2 to each aircraft type already present in the warehouse.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <strong>Player notification</strong>
+        <p>Coalition text: <code>"[Airbase] resupplied! +X munitions / +Y aircraft"</code> (displayed for 8 seconds).</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Fallback Inventory Coverage</h3>
+  <p>The fallback table covers every major DCS weapon category (all pre-set to qty 20):</p>
+  <table>
+    <thead><tr><th>Category</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td>Air-to-Air Missiles</td><td>AIM-120C/B, AIM-9M/X, AIM-7M, AIM-54, MICA, IRIS-T, R-77, PL-12, Derby…</td></tr>
+      <tr><td>Air-to-Ground Missiles</td><td>AGM-65D/G/H/K, Hellfire, AGM-88, AGM-154, Kh-29/31/58/59, AS-30L, CM-802AKG…</td></tr>
+      <tr><td>JDAM / Paveway</td><td>GBU-10/12/16/24, GBU-31/38, GBU-54, GBU-32 JDAM…</td></tr>
+      <tr><td>Unguided Bombs (US)</td><td>Mk-82/83/84, MK-20 Rockeye, BDU-33/45…</td></tr>
+      <tr><td>Unguided Bombs (RU/FR/DE/UK/CN)</td><td>FAB-100/250/500/1500, KAB-500/1500, BLG-66, SC-250/500, Durandal…</td></tr>
+      <tr><td>Rockets</td><td>HYDRA-70 (all variants), Zuni, FFAR, HVAR, S-5/8/13/24/25, SNEB, ARAKM70…</td></tr>
+      <tr><td>Targeting / ECM Pods</td><td>LANTIRN, LITENING, AN/AAQ-33, WMD-7, Pave Spike, ALQ-131/184, SPS-141, BOZ-100…</td></tr>
+      <tr><td>Drop Tanks</td><td>FPU-8A, F-15E tanks, PTB-490/800/1500, M2KC RPL-522/541, MB-339 tanks…</td></tr>
+      <tr><td>Torpedoes</td><td>Mk-46, G7A T1, LTF-5B, YU-6…</td></tr>
+      <tr><td>Smoke / Misc</td><td>OH-58D / AH-6 smoke grenades, smoke pods, BRD-4-250, LAU-88…</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── AI BEHAVIOR ── -->
+  <h2 id="ai-behavior">AI Behavior</h2>
+  <table>
+    <thead><tr><th>Option</th><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Alarm State</td><td>GREEN</td><td>No active threat scanning; convoy stays focused on route.</td></tr>
+      <tr><td>ROE</td><td>RETURN_FIRE</td><td>Convoy shoots back when hit but won't proactively engage IEDs or ambushes.</td></tr>
+      <tr><td>Disperse On Attack</td><td>true</td><td>Units spread out when taking fire.</td></tr>
+      <tr><td>Engage Air Weapons</td><td>false</td><td>Ground units won't try to engage aircraft.</td></tr>
+      <tr><td>Final waypoint ROE</td><td>Hold Fire (4)</td><td>Parked convoy does not engage nearby threats.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── F10 MENUS ── -->
+  <h2 id="menus">F10 Radio Menus</h2>
+  <p>Menu structure (coalition-wide for BLUE):</p>
+  <div class="menu-tree">
+    <div class="m0">F10 → Convoy Operations</div>
+    <div class="m1">├─ Light Armor &amp; Supply</div>
+    <div class="m2">│   ├─ From KANDAHAR</div>
+    <div class="m3">│   │   ├─ To Bagram Airbase</div>
+    <div class="m3">│   │   ├─ To Kabul International Airport</div>
+    <div class="m3">│   │   └─ … (all destinations ≠ origin)</div>
+    <div class="m2">│   ├─ From BAGRAM</div>
+    <div class="m2">│   └─ … (×12 origins)</div>
+    <div class="m1">├─ Medium Armor Convoy</div>
+    <div class="m1">├─ Heavy Armor Convoy</div>
+    <div class="m1">├─ Logistics Supply Train</div>
+    <div class="m1">└─ Mixed Force Convoy</div>
+  </div>
+
+  <h3>Menu Guard Conditions</h3>
+  <table>
+    <thead><tr><th>Block Condition</th><th>Message shown to coalition</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Active convoy count ≥ 10</td>
+        <td><em>"CONVOY LIMIT REACHED! Maximum 10 convoys allowed. Wait for a convoy to arrive or be destroyed."</em></td>
+      </tr>
+      <tr>
+        <td>Template on cooldown (last spawn &lt; 30 min ago)</td>
+        <td><em>"[Template Name] ON COOLDOWN! Available in: MM:SS"</em></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="info-box">
+    Each menu command iterates all currently flying/flying BLUE aircraft and helicopters to identify the first 
+    player found. That player's name is stored as the convoy requester for leaderboard credit. 
+    If no player is found, the requester is logged as <code>"Unknown"</code>.
+  </div>
+
+  <!-- ── NOTIFICATIONS ── -->
+  <h2 id="notifications">Notifications</h2>
+  <table>
+    <thead><tr><th>Event</th><th>Message</th><th>Duration</th><th>Audience</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Convoy dispatched</td>
+        <td><code>Convoy Dispatched! [Template] From: [X] Destination: [Y]</code></td>
+        <td>10 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+      <tr>
+        <td>Convoy limit reached</td>
+        <td>See above</td>
+        <td>10 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+      <tr>
+        <td>Template on cooldown</td>
+        <td>Cooldown remaining</td>
+        <td>10 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+      <tr>
+        <td>Progress broadcast (every 2 min)</td>
+        <td><code>═══ CONVOY STATUS ═══ Active: X/10 • [Origin]→[Dest]: N% (ETA: MM:SS)</code></td>
+        <td>15 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+      <tr>
+        <td>Convoy arrived &amp; resupplied</td>
+        <td><code>[Airbase] resupplied! +X munitions / +Y aircraft</code></td>
+        <td>8 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+      <tr>
+        <td>Spawn zone not found</td>
+        <td><code>Failed to spawn convoy from [Zone]! Check that spawn zone exists.</code></td>
+        <td>10 s</td>
+        <td>BLUE coalition</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:var(--muted);font-size:12px;">
+    ETA in progress broadcasts assumes a constant 10 m/s convoy speed (regardless of actual speed).
+  </p>
+
+  <!-- ── LEADERBOARD ── -->
+  <h2 id="leaderboard">Leaderboard Integration</h2>
+  <p>
+    If <code>DGSS_LEADERBOARD</code> is globally available and exposes <code>addConvoyCompletion(playerName, state)</code>,
+    the convoy system calls it on every convoy resolution (arrival OR destruction/timeout).
+  </p>
+  <h3>Scoring Formula</h3>
+  <pre>survivalRate  = survivingUnits / initialUnitCount × 100
+healthRate    = currentTotalHealth / initialTotalHealth × 100
+overallScore  = (survivalRate + healthRate) / 2</pre>
+  <div class="score-bar">
+    <div class="score-seg" style="background:rgba(99,197,160,0.3);color:var(--accent2);flex:85;">&ge; 85 % → "full"</div>
+    <div class="score-seg" style="background:rgba(232,164,79,0.3);color:var(--accent3);flex:35;">50–84 % → "partial"</div>
+    <div class="score-seg" style="background:rgba(232,112,112,0.3);color:var(--accent4);flex:50;">&lt; 50 % → "failed"</div>
+  </div>
+  <p>
+    Convoys destroyed en-route or timed out (after 5.5 h) are always scored as <code>"failed"</code>.
+    The initial unit count and total life pool (<code>unit:getLife0()</code>) are captured at spawn time.
+  </p>
+  <div class="warn-box">
+    The requester detection scans all active BLUE aircraft/helicopters at the moment the menu command fires. 
+    It attributes the convoy to the <em>first player found</em>, not necessarily the player who clicked the menu.
+    In a multi-player environment, ensure coordination so credit goes to the correct pilot.
+  </div>
+
+  <!-- ── TIMERS & CLEANUP ── -->
+  <h2 id="timers">Timers &amp; Cleanup</h2>
+  <table>
+    <thead><tr><th>Timer</th><th>Interval</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Main update loop</td>
+        <td>300 s (5 min)</td>
+        <td>Runs <code>updateConvoys()</code> + <code>sendProgressNotifications()</code>. Self-rescheduling via return value.</td>
+      </tr>
+      <tr>
+        <td>AI options delay</td>
+        <td>+3 s after spawn</td>
+        <td>One-shot: sets Green/ReturnFire/Disperse after DCS has had time to fully initialise the group.</td>
+      </tr>
+      <tr>
+        <td>Despawn timer</td>
+        <td>+10 s after arrival</td>
+        <td>Calls <code>group:destroy()</code> on arrived convoy and removes tracking entries. Stored in <code>ConvoySystem.despawnTimers[convoyId]</code>; cancelled if convoy already gone.</td>
+      </tr>
+      <tr>
+        <td>Hard timeout</td>
+        <td>19 800 s (5.5 h)</td>
+        <td>Any convoy older than 5.5 hours is forcibly removed from tracking on the next update cycle.</td>
+      </tr>
+      <tr>
+        <td>Cooldown table pruning</td>
+        <td>Every 10th update (≈50 min)</td>
+        <td>Removes cooldown entries older than 2 hours to prevent unbounded table growth.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="warn-box">
+    <strong>Important:</strong> Despawn timers use <code>timer.getTime()</code> (mission clock), not 
+    <code>timer.getAbsTime()</code>. Do not mix these — the timer will fire at the wrong time if you switch.
+  </div>
+
+  <!-- ── ME CHECKLIST ── -->
+  <h2 id="me-setup">Mission Editor Checklist</h2>
+  <ul>
+    <li><strong>Trigger Zones</strong> — create 24 zones total: one per base with the exact name (e.g. <code>KANDAHAR</code>) and one spawn zone with <code>_Spawn</code> suffix (e.g. <code>KANDAHAR_Spawn</code>). Recommended radius: 300–800 m for bases, 200–400 m for spawn zones.</li>
+    <li><strong>Airbase Names</strong> — confirm each DCS airbase name matches the mapping table exactly (see Zones section above). Rename airbases in ME if needed.</li>
+    <li><strong>Warehouses</strong> — enable the Warehouse module in ME (Mission → Options → Mission Features → Warehouse). Pre-stock a small amount of each weapon you want topped up, or the fallback list will be used instead.</li>
+    <li><strong>MIST</strong> — load MIST via a DO SCRIPT FILE trigger at mission start (fired once, MISSION START).</li>
+    <li><strong>DGSS_LEADERBOARD</strong> — if used, load before this script.</li>
+    <li><strong>This script</strong> — load via DO SCRIPT FILE after MIST (delay 2–3 s recommended).</li>
+    <li><strong>Road network</strong> — convoys use <code>"On Road"</code> waypoints. Ensure your map has road coverage between zones, otherwise convoys will move cross-country and may get stuck.</li>
+    <li><strong>BLUE country</strong> — all convoy templates use <code>country.id.USA</code>. The spawning coalition is <code>coalition.side.BLUE</code>.</li>
+  </ul>
+
+  <!-- ── TROUBLESHOOTING ── -->
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Convoy doesn't spawn, coalition message about spawn error</td>
+        <td>Spawn zone (e.g. <code>KANDAHAR_Spawn</code>) doesn't exist in ME or name is misspelled (case-sensitive)</td>
+        <td>Add the trigger zone with the exact name including correct capitalisation and <code>_Spawn</code> suffix.</td>
+      </tr>
+      <tr>
+        <td>Convoy travels but warehouse never gets resupplied</td>
+        <td>Airbase name mismatch in <code>ConvoySystem.airbaseNames</code>, or the DCS airbase has no warehouse object</td>
+        <td>Check DCS log for <code>ConvoySystem: FAILED - Could not find airbase</code>. Compare the name in the map against the exact DCS airbase name. Enable warehouses in ME options.</td>
+      </tr>
+      <tr>
+        <td>Convoy arrives but arrival is not detected for many minutes</td>
+        <td>Update loop only fires every 5 minutes. Convoy may have arrived mid-cycle.</td>
+        <td>Normal behaviour. Worst case is a 5-minute delay. If persistent, check zone radius in ME — increase to 600+ m.</td>
+      </tr>
+      <tr>
+        <td>Convoy stops far from destination and never arrives</td>
+        <td>No road connection between spawn and destination; AI cannot path-find</td>
+        <td>Place intermediate trigger zones on the actual road and consider adding additional waypoints manually. Alternatively the stuck-detection will retry after 60 s with a direct 3-WP route.</td>
+      </tr>
+      <tr>
+        <td>Cooldown message shown immediately after arrival</td>
+        <td>Template cooldown is per-template, based on spawn time not arrival time</td>
+        <td>Expected. Cooldown starts the moment the convoy spawns, not when it arrives. You can reduce <code>ConvoySystem.cooldownTime</code> in the config.</td>
+      </tr>
+      <tr>
+        <td>Menu shows up for RED coalition</td>
+        <td>Menu is registered with <code>coalition.side.BLUE</code> — this should not occur</td>
+        <td>Verify no other script is adding similar menu items. Check DCS log for duplicate <code>addSubMenuForCoalition</code> calls.</td>
+      </tr>
+      <tr>
+        <td>Leaderboard not credited (shows "Unknown")</td>
+        <td>No BLUE player was airborne at the moment the menu command was triggered</td>
+        <td>The requester scan only looks at active aircraft/helicopters in the air. Ground players are not detected. Ensure a player is in an aircraft when ordering the convoy.</td>
+      </tr>
+      <tr>
+        <td><code>MIST_AVAILABLE</code> warning in log</td>
+        <td>MIST not loaded before this script</td>
+        <td>Re-order DO SCRIPT FILE triggers: MIST must fire first. Add a 2-second delay before loading this script.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;">
+    BLUE-ResupplyConvoySpawn v5.7.0 · DCS World · BLUE Coalition · Afghanistan Theatre · Auto-generated documentation
+  </div>
+
+</main>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0% -70% 0%' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

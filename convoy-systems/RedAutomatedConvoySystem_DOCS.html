@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedAutomatedConvoySystem v4.0 – Documentation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c26;
+    --surface2: #1e2433;
+    --border: #2a3044;
+    --accent: #e87070;
+    --accent2: #e8a44f;
+    --accent3: #63c5a0;
+    --accent4: #4fa3e8;
+    --text: #d4daf0;
+    --muted: #7a8499;
+    --code-bg: #12151f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+  }
+  nav {
+    width: 220px;
+    min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav .nav-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 20px 12px;
+  }
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav a:hover, nav a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(232,112,112,0.06);
+  }
+  nav .nav-section {
+    margin-top: 14px;
+    padding: 0 20px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #3d4560;
+  }
+  main {
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 940px;
+  }
+  h1 { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .badge-red    { background: rgba(232,112,112,0.15); color: var(--accent);  border: 1px solid rgba(232,112,112,0.3); }
+  .badge-orange { background: rgba(232,164,79,0.15);  color: var(--accent2); border: 1px solid rgba(232,164,79,0.3); }
+  .badge-green  { background: rgba(99,197,160,0.15);  color: var(--accent3); border: 1px solid rgba(99,197,160,0.3); }
+  .badge-blue   { background: rgba(79,163,232,0.15);  color: var(--accent4); border: 1px solid rgba(79,163,232,0.3); }
+  h2 {
+    font-size: 18px; font-weight: 700; color: #fff;
+    margin: 36px 0 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 20px;
+  }
+  h3 {
+    font-size: 14px; font-weight: 600; color: var(--accent2);
+    margin: 20px 0 8px; scroll-margin-top: 20px;
+  }
+  p { margin-bottom: 10px; }
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px; color: #a8d8f0;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px 20px;
+    overflow-x: auto; font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px; color: #a8d8f0; margin: 12px 0; line-height: 1.7;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .card-title { font-weight: 600; color: #fff; margin-bottom: 8px; font-size: 13px; }
+  .cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .cfg-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px;
+  }
+  .cfg-key { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .cfg-val { font-family: 'Cascadia Code', monospace; font-size: 13px; color: var(--accent2); }
+  .cfg-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th {
+    background: var(--surface2); color: var(--muted);
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.6px; padding: 8px 12px; text-align: left;
+    border: 1px solid var(--border);
+  }
+  td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 12px 0; }
+  .flow-step { display: flex; gap: 16px; position: relative; padding-bottom: 6px; }
+  .flow-step:not(:last-child)::before {
+    content: ''; position: absolute; left: 15px; top: 32px;
+    bottom: 0; width: 2px; background: var(--border);
+  }
+  .flow-num {
+    width: 32px; height: 32px; min-width: 32px;
+    background: var(--surface2); border: 2px solid var(--accent);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--accent); z-index: 1;
+  }
+  .flow-body { flex: 1; padding: 6px 0 16px; }
+  .flow-body strong { color: #fff; display: block; margin-bottom: 3px; }
+  .flow-body p { color: var(--muted); font-size: 13px; margin: 0; }
+  .info-box {
+    border-left: 3px solid var(--accent4);
+    background: rgba(79,163,232,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .warn-box {
+    border-left: 3px solid var(--accent2);
+    background: rgba(232,164,79,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .danger-box {
+    border-left: 3px solid var(--accent);
+    background: rgba(232,112,112,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .template-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px;
+  }
+  .template-num {
+    display: inline-block; background: rgba(232,112,112,0.2); color: var(--accent);
+    border-radius: 4px; padding: 1px 8px; font-size: 11px; font-weight: 700; margin-right: 6px;
+  }
+  .unit-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .unit-pill {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; font-family: 'Cascadia Code', monospace; color: var(--accent3);
+  }
+  ul { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; color: var(--muted); }
+  li strong { color: var(--text); }
+  .zone-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .zone-pill {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 4px 12px;
+    font-size: 12px; font-family: 'Cascadia Code', monospace; color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">RED Convoys v4.0</div>
+  <a href="#overview">Overview</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#config">Configuration</a>
+  <div class="nav-section">Templates &amp; Zones</div>
+  <a href="#vehicles">Vehicle Types</a>
+  <a href="#templates">20 Templates</a>
+  <a href="#zones">Convoy Zones</a>
+  <div class="nav-section">System Mechanics</div>
+  <a href="#spawn-flow">Spawn Flow</a>
+  <a href="#node-selection">Node Selection</a>
+  <a href="#routing">Route Building</a>
+  <a href="#formation">Formation</a>
+  <a href="#arrival">Arrival &amp; Re-routing</a>
+  <a href="#stall">Stall Detection</a>
+  <a href="#ai">AI Behavior</a>
+  <a href="#loop">Update Loop</a>
+  <div class="nav-section">Integration</div>
+  <a href="#jtac">JTAC Manager</a>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<main>
+
+  <h1>RedAutomatedConvoySystem</h1>
+  <div class="subtitle">
+    <span class="badge badge-red">v4.0</span>
+    <span class="badge badge-red">RED Coalition</span>
+    <span class="badge badge-orange">MIST Required</span>
+    461 lines · Fully automated · Self-perpetuating · No player input required
+  </div>
+
+  <!-- OVERVIEW -->
+  <h2 id="overview">Overview</h2>
+  <p>
+    A fully autonomous RED coalition convoy system. On mission start it spawns up to 3 initial convoys,
+    then continuously maintains up to 15 active convoys by spawning a new one every 2 minutes whenever
+    capacity allows. Each convoy is randomly composed from 20 insurgent/militia vehicle templates and
+    travels between randomly selected trigger zones, re-routing to a new destination on arrival — it 
+    <strong>never despawns</strong> naturally; it only terminates if destroyed or stalled.
+  </p>
+  <div class="info-box">
+    <strong>Key facts</strong> &nbsp;|&nbsp;
+    Max convoys: <strong>15</strong> &nbsp;|&nbsp;
+    Initial convoys: <strong>3</strong> &nbsp;|&nbsp;
+    Spawn stagger: <strong>120 s</strong> &nbsp;|&nbsp;
+    Speed: <strong>22 m/s (~79 km/h)</strong> &nbsp;|&nbsp;
+    Min route distance: <strong>35 nm (64 820 m)</strong> &nbsp;|&nbsp;
+    Update cycle: <strong>10 s</strong>
+  </div>
+
+  <!-- REQUIREMENTS -->
+  <h2 id="requirements">Requirements</h2>
+  <table>
+    <thead><tr><th>Dependency</th><th>Role</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>MIST</code></td>
+        <td>Group spawning via <code>mist.dynAdd()</code></td>
+        <td>None — the script will error if MIST is not loaded. MIST must be loaded first.</td>
+      </tr>
+      <tr>
+        <td>Trigger Zones <code>ConvoyZone1</code>–<code>ConvoyZone30</code></td>
+        <td>Node network for spawn &amp; destination selection</td>
+        <td>Missing zones are skipped with a warning; system uses whatever zones are found. If 0 zones load, spawning is blocked entirely.</td>
+      </tr>
+      <tr>
+        <td><code>JTAC_Manager</code> (optional)</td>
+        <td>Auto-registers spawned groups for JTAC targeting</td>
+        <td>Silently skipped if not present.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Load Order</h3>
+  <pre>-- Recommended DO SCRIPT FILE order (Mission Start trigger)
+1. MIST (e.g. mist_4_5_122.lua)
+2. JTAC_Manager (optional, if used)
+3. RedAutomatedConvoySystem(v4.0).lua   ← auto-starts immediately on load</pre>
+  <div class="warn-box">
+    The script calls <code>loadConvoyNodes()</code>, sets <code>nextSpawnTime</code>, and schedules
+    the main loop all at load time. Load it <em>after</em> MIST.
+  </div>
+
+  <!-- CONFIGURATION -->
+  <h2 id="config">Configuration</h2>
+  <div class="cfg-grid">
+    <div class="cfg-item">
+      <div class="cfg-key">NUM_CONVOY_POINTS</div>
+      <div class="cfg-val">30</div>
+      <div class="cfg-desc">Number of <code>ConvoyZone</code> trigger zones to load (ConvoyZone1 … ConvoyZone30).</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">CONVOY_SPEED</div>
+      <div class="cfg-val">22 m/s (~79 km/h)</div>
+      <div class="cfg-desc">Applied to all waypoints. Intentionally above normal vehicle speed for faster gameplay.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">MAX_CONVOYS</div>
+      <div class="cfg-val">15</div>
+      <div class="cfg-desc">Hard cap on simultaneously active convoys in the <code>activeConvoys</code> table.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">INITIAL_CONVOYS</div>
+      <div class="cfg-val">3</div>
+      <div class="cfg-desc">Burst-spawned on first manager tick until this count is reached.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">STAGGER_DELAY</div>
+      <div class="cfg-val">120 s (2 min)</div>
+      <div class="cfg-desc">Minimum gap between consecutive spawns after initial burst.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">STALL_TIMEOUT</div>
+      <div class="cfg-val">300 s (5 min)</div>
+      <div class="cfg-desc">How long a convoy can remain stationary before it is destroyed and removed.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">STALL_CHECK_THRESHOLD</div>
+      <div class="cfg-val">10 m</div>
+      <div class="cfg-desc">Movement below this distance (per 10-second cycle) is considered "not moving".</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">MIN_TRAVEL_DISTANCE</div>
+      <div class="cfg-val">64 820 m (35 nm)</div>
+      <div class="cfg-desc">Preferred minimum distance between origin and destination nodes. Falls back to farthest available zone if no zone qualifies.</div>
+    </div>
+  </div>
+
+  <!-- VEHICLE TYPES -->
+  <h2 id="vehicles">Vehicle Types</h2>
+  <p>All 20 templates are composed from the following 9 DCS unit types (insurgent / militia mix):</p>
+  <table>
+    <thead><tr><th>DCS Type</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>BRDM-2</code></td><td>Light armoured recon vehicle — primary fire support</td></tr>
+      <tr><td><code>BTR-60</code></td><td>Armoured personnel carrier</td></tr>
+      <tr><td><code>Ural-375</code></td><td>Military cargo truck</td></tr>
+      <tr><td><code>ural_4230_civil_t</code></td><td>Civilian-style cargo truck (insurgent logistics)</td></tr>
+      <tr><td><code>Ural-375 ZU-23 Insurgent</code></td><td>Truck with ZU-23 AA/ground gun (insurgent variant)</td></tr>
+      <tr><td><code>HL_DSHK</code></td><td>Pickup / technical with DShK 12.7mm HMG</td></tr>
+      <tr><td><code>HL_KORD</code></td><td>Pickup / technical with Kord 12.7mm HMG</td></tr>
+      <tr><td><code>HL_ZU-23</code></td><td>Technical with ZU-23-2 twin AA autocannon</td></tr>
+      <tr><td><code>tt_ZU-23</code></td><td>Towed ZU-23-2 variant</td></tr>
+    </tbody>
+  </table>
+
+  <!-- TEMPLATES -->
+  <h2 id="templates">Convoy Templates (20)</h2>
+  <p>
+    A template is randomly selected from all 20 on each spawn. Templates are referenced by name from 
+    the global <code>CONVOY_TEMPLATES</code> string array and resolved via <code>_G[templateName]</code>.
+    All units spawn at skill level <strong>Excellent</strong>.
+  </p>
+  <div class="template-grid">
+    <div class="template-card">
+      <span class="template-num">1</span>
+      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">2</span>
+      <div class="unit-row"><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_ZU-23</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">3</span>
+      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">4</span>
+      <div class="unit-row"><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">5</span>
+      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BRDM-2</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">6</span>
+      <div class="unit-row"><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">ural_4230_civil_t</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">7</span>
+      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Ural-375</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">8</span>
+      <div class="unit-row"><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">9</span>
+      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">10</span>
+      <div class="unit-row"><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BTR-60</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">11</span>
+      <div class="unit-row"><span class="unit-pill">HL_KORD</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">12</span>
+      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BTR-60</span><span class="unit-pill">HL_KORD</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">13</span>
+      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">ural_4230_civil_t</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">14</span>
+      <div class="unit-row"><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">15</span>
+      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">Ural-375</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">16</span>
+      <div class="unit-row"><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">17</span>
+      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">18</span>
+      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BRDM-2</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">19</span>
+      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
+    </div>
+    <div class="template-card">
+      <span class="template-num">20</span>
+      <div class="unit-row"><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
+    </div>
+  </div>
+
+  <!-- CONVOY ZONES -->
+  <h2 id="zones">Convoy Zones</h2>
+  <p>
+    Zones are loaded from DCS trigger zones named <strong>ConvoyZone1</strong> through
+    <strong>ConvoyZone30</strong>. The script reads <code>zone.point.x</code> and <code>zone.point.z</code>
+    (stored internally as <code>y</code> in the 2D node table). Missing zones emit a warning and are skipped.
+  </p>
+  <div class="zone-grid">
+    <span class="zone-pill">ConvoyZone1</span><span class="zone-pill">ConvoyZone2</span>
+    <span class="zone-pill">ConvoyZone3</span><span class="zone-pill">ConvoyZone4</span>
+    <span class="zone-pill">ConvoyZone5</span><span class="zone-pill">ConvoyZone6</span>
+    <span class="zone-pill">ConvoyZone7</span><span class="zone-pill">ConvoyZone8</span>
+    <span class="zone-pill">ConvoyZone9</span><span class="zone-pill">ConvoyZone10</span>
+    <span class="zone-pill">ConvoyZone11</span><span class="zone-pill">ConvoyZone12</span>
+    <span class="zone-pill">…</span>
+    <span class="zone-pill">ConvoyZone29</span><span class="zone-pill">ConvoyZone30</span>
+  </div>
+  <div class="info-box">
+    Zone positions are used directly as spawn/waypoint coordinates. Zones should be placed <em>on or near roads</em>
+    so that DCS AI can path-find using the <code>"On Road"</code> waypoint action.
+  </div>
+
+  <!-- SPAWN FLOW -->
+  <h2 id="spawn-flow">Spawn Flow</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <strong>Manager tick (every 10 s)</strong>
+        <p>Counts active convoys. If below INITIAL_CONVOYS (3), spawns immediately in a burst. If below MAX_CONVOYS (15) and stagger delay has elapsed, spawns one convoy.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <strong>Select start node</strong>
+        <p>Prefers a zone not currently used as any convoy's spawn point. Falls back to any zone if all are occupied.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <strong>Select destination node</strong>
+        <p>Finds all zones ≥ 35 nm from start, picks one randomly. If none qualify, uses the farthest zone overall and logs a warning.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <strong>Pick random template</strong>
+        <p>Selects one of the 20 <code>ConvoyTemplate</code> globals at random via <code>_G[name]</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <strong>Build unit array (single column)</strong>
+        <p>Units placed in a single-file column at 12 m spacing, all facing the bearing to the destination. Group named <code>ActiveConvoy_ID_TIMESTAMP</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <strong>Spawn via mist.dynAdd()</strong>
+        <p>Country = <code>CJTF_RED</code>, coalition = <code>"red"</code>, category = <code>"vehicle"</code>. If dynAdd fails or the group doesn't exist post-spawn, aborts with an error log.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <strong>JTAC registration hook</strong>
+        <p>Immediately after spawn: calls <code>JTAC_Manager.registerSpawnedGroup(groupName)</code> if JTAC_Manager is available.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">8</div>
+      <div class="flow-body">
+        <strong>Route activation (3 s delay)</strong>
+        <p>After 3 seconds, calls <code>buildRoute()</code> and <code>applyRouteToGroup()</code>. The delay gives DCS time to fully initialise the spawned group before assigning tasks.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">9</div>
+      <div class="flow-body">
+        <strong>Register in activeConvoys</strong>
+        <p>Stored with: <code>id</code>, <code>name</code>, <code>group</code>, <code>startNode</code>, <code>endNode</code>, <code>lastPos</code>, <code>lastPosUpdateTime</code>. Stall timer begins implicitly.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NODE SELECTION -->
+  <h2 id="node-selection">Node Selection Logic</h2>
+  <table>
+    <thead><tr><th>Selection</th><th>Primary</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Start node</strong></td>
+        <td>Random from zones not currently used as any convoy's spawn point</td>
+        <td>Random from all zones if every zone is occupied</td>
+      </tr>
+      <tr>
+        <td><strong>Destination node</strong></td>
+        <td>Random from zones ≥ 64 820 m (35 nm) from start</td>
+        <td>The single farthest zone if no zone meets the 35 nm threshold</td>
+      </tr>
+      <tr>
+        <td><strong>Re-route on arrival</strong></td>
+        <td>New destination ≥ 35 nm from <em>current</em> position (old destination becomes new start)</td>
+        <td>Logs a warning if no valid next destination found; convoy stays at destination indefinitely</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ROUTING -->
+  <h2 id="routing">Route Building</h2>
+  <p>
+    <code>buildRoute(a, b)</code> generates a 4-waypoint route for every trip. All at altitude 0.
+  </p>
+  <table>
+    <thead><tr><th>WP</th><th>Action</th><th>Position</th><th>Speed</th></tr></thead>
+    <tbody>
+      <tr><td>1 — Start</td><td>Off Road</td><td>Zone centre (a.x, a.y)</td><td>22 m/s</td></tr>
+      <tr><td>2 — Get on road</td><td>On Road</td><td>10 % of the way toward destination (max 100 m)</td><td>22 m/s</td></tr>
+      <tr><td>3 — Approach</td><td>On Road</td><td>50 m before destination</td><td>22 m/s</td></tr>
+      <tr><td>4 — Destination</td><td>Off Road</td><td>Zone centre (b.x, b.y)</td><td>22 m/s</td></tr>
+    </tbody>
+  </table>
+  <div class="warn-box">
+    Unlike the BLUE convoy system, there is <strong>no speed deceleration</strong> approaching the destination.
+    All four waypoints run at the same 22 m/s. The convoy will drive straight through the destination zone
+    and trigger arrival detection on the next update cycle.
+  </div>
+  <p>
+    The route is applied via <code>controller:setTask({ id = "Mission", params = { route = routeData } })</code>
+    — not embedded in the spawn data. This means it is applied as a separate task 3 s after spawn.
+  </p>
+
+  <!-- FORMATION -->
+  <h2 id="formation">Vehicle Formation</h2>
+  <p>All vehicles are placed in a <strong>single-file column</strong>:</p>
+  <pre>  Unit 1  ← heading toward destination
+  Unit 2  (12 m behind)
+  Unit 3  (24 m behind)
+  Unit 4  (36 m behind)
+  …
+
+  Spacing: 12 m longitudinal
+  Each unit: name = groupName_UN  (e.g. ActiveConvoy_3_1234_U1)</pre>
+  <p style="color:var(--muted);font-size:12px;">
+    The column is oriented by calculating the bearing from start to destination using 
+    <code>math.atan2(dest.y - start.y, dest.x - start.x)</code> and offsetting each unit back 
+    along that bearing.
+  </p>
+
+  <!-- ARRIVAL & RE-ROUTING -->
+  <h2 id="arrival">Arrival &amp; Re-routing</h2>
+  <p>
+    Every 10 seconds, <code>updateConvoys()</code> checks the lead unit's position. A convoy is 
+    considered <strong>arrived</strong> when the 2D distance to <code>endNode</code> is less than 
+    <strong>75 m</strong>.
+  </p>
+  <p>
+    On arrival, the convoy does <strong>not despawn</strong>. Instead:
+  </p>
+  <ul>
+    <li>The old <code>endNode</code> becomes the new <code>startNode</code>.</li>
+    <li>A new destination is selected (≥ 35 nm away).</li>
+    <li>The stall timer is reset.</li>
+    <li><code>applyRouteToGroup()</code> is called immediately with the new route.</li>
+  </ul>
+  <p>This creates a self-perpetuating convoy that keeps driving until destroyed or stalled.</p>
+  <div class="info-box">
+    Because the update cycle is every 10 seconds and the convoy travels at 22 m/s, it may overshoot
+    the 75 m arrival radius significantly before the check fires. The Off Road final waypoint action 
+    gives DCS some flexibility in where the vehicle actually stops.
+  </div>
+
+  <!-- STALL DETECTION -->
+  <h2 id="stall">Stall Detection</h2>
+  <p>
+    On each 10-second cycle, the lead unit's current position is compared to <code>c.lastPos</code>.
+    The logic uses <strong>x and z</strong> (world coordinates) internally but the lastPos table was 
+    originally written with an <code>.y</code> field holding the DCS z-value — they are consistent.
+  </p>
+  <div class="card">
+    <div class="card-title">Stall lifecycle</div>
+    <ol style="padding-left:18px;color:var(--muted);font-size:13px;line-height:2;">
+      <li>Lead unit moves &lt; 10 m since last cycle → <code>stallDetectedTime</code> is set to now (first occurrence) or compared.</li>
+      <li>If stalled continuously for &gt; 300 s → <code>group:destroy()</code> is called, convoy is removed from <code>activeConvoys</code>.</li>
+      <li>If lead unit moves ≥ 10 m → <code>stallDetectedTime</code> is cleared, <code>lastPos</code> is updated to current position.</li>
+    </ol>
+  </div>
+  <div class="danger-box">
+    Once a convoy is destroyed by stall timeout it is simply removed — <strong>no re-spawn is triggered 
+    immediately</strong>. The manager will spawn a replacement on the next tick where active count &lt; MAX_CONVOYS
+    and the stagger delay has elapsed.
+  </div>
+
+  <!-- AI BEHAVIOR -->
+  <h2 id="ai">AI Behavior</h2>
+  <table>
+    <thead><tr><th>Option</th><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Alarm State</td><td>AUTO</td><td>Units react to nearby threats; will go to high alert if engaged.</td></tr>
+      <tr><td>ROE</td><td>OPEN_FIRE</td><td>Convoys will proactively engage detected BLUE threats — unlike the BLUE system which uses Return Fire only.</td></tr>
+      <tr><td>Disperse On Attack</td><td>true</td><td>Units spread out when taking fire.</td></tr>
+    </tbody>
+  </table>
+  <div class="warn-box">
+    <strong>RED vs BLUE difference:</strong> RED convoys use <code>OPEN_FIRE</code> + <code>AUTO</code> alarm state,
+    making them much more aggressive than BLUE convoys (which use <code>RETURN_FIRE</code> + <code>GREEN</code>).
+    RED convoys will stop and engage if they detect a target, which can trigger the stall detector if combat
+    lasts &gt; 5 minutes.
+  </div>
+
+  <!-- UPDATE LOOP -->
+  <h2 id="loop">Update Loop</h2>
+  <p>A single self-rescheduling timer drives the entire system:</p>
+  <pre>convoyLoop()  ← called every 10 seconds
+  ├─ updateConvoys()   -- checks each active convoy:
+  │    ├─ Group dead?        → remove from activeConvoys
+  │    ├─ Lead unit gone?    → remove from activeConvoys
+  │    ├─ Stall check        → destroy if stalled > 5 min
+  │    └─ Arrival check      → re-route if within 75 m
+  └─ convoyManager()   -- capacity management:
+       ├─ Count active convoys
+       ├─ Burst-spawn if count < INITIAL_CONVOYS (3)
+       └─ Spawn 1 if count < MAX_CONVOYS (15) and stagger delay elapsed</pre>
+  <p style="color:var(--muted);font-size:12px;">
+    The loop uses <code>return timer.getTime() + 10</code> to self-reschedule. All convoy management
+    (stall, arrival, spawn) occurs within this single 10-second tick.
+  </p>
+
+  <!-- JTAC INTEGRATION -->
+  <h2 id="jtac">JTAC Manager Integration</h2>
+  <p>
+    Immediately after a successful <code>mist.dynAdd()</code>, the script calls:
+  </p>
+  <pre>if JTAC_Manager and JTAC_Manager.registerSpawnedGroup then
+    JTAC_Manager.registerSpawnedGroup(result.name)
+end</pre>
+  <p>
+    This registers the convoy's group name with the JTAC target pool, allowing JTAC aircraft to be 
+    assigned these groups as 9-line targets. There is no de-registration call when a convoy is 
+    destroyed — the JTAC Manager is expected to handle stale group names itself.
+  </p>
+
+  <!-- ME CHECKLIST -->
+  <h2 id="me-setup">Mission Editor Checklist</h2>
+  <ul>
+    <li><strong>Trigger Zones</strong> — create 30 zones named exactly <code>ConvoyZone1</code> through <code>ConvoyZone30</code> (case-sensitive). Fewer zones work but reduce route variety.</li>
+    <li><strong>Zone placement</strong> — place zones on or very close to road junctions/intersections. The very first waypoint is Off Road (zone centre); WP2 is the first On Road point 100 m ahead. If there is no road within DCS pathing range of the zone, the convoy will drive cross-country.</li>
+    <li><strong>Zone spacing</strong> — at least some zones should be &gt; 35 nm apart. If all zones are within 35 nm of each other, every convoy uses the "farthest zone" fallback and logs a warning every spawn.</li>
+    <li><strong>MIST</strong> — load before this script, no exceptions.</li>
+    <li><strong>Country</strong> — convoys spawn as <code>country.id.CJTF_RED</code>. This must be enabled for the mission coalition.</li>
+    <li><strong>JTAC Manager</strong> — load before this script if used.</li>
+    <li><strong>No ME groups needed</strong> — all groups are spawned dynamically. No RED ground groups need to be pre-placed in the mission.</li>
+  </ul>
+
+  <!-- TROUBLESHOOTING -->
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>No convoys spawn, log shows "No convoy nodes loaded"</td>
+        <td>No trigger zones named <code>ConvoyZone1</code>–<code>ConvoyZone30</code> found in ME</td>
+        <td>Add the zones with exact names. Even 1 zone will allow the system to start (but spawning logic needs at least 2 zones).</td>
+      </tr>
+      <tr>
+        <td>Convoys spawn but immediately stop and are cleaned up after 5 min</td>
+        <td>Zones placed off-road in terrain AI cannot navigate; convoy immediately stalls</td>
+        <td>Move <code>ConvoyZone</code> trigger zones to road junctions. The Off Road → On Road WP transition requires a road within ~100 m.</td>
+      </tr>
+      <tr>
+        <td>All convoys use the same nearby zone pair, log shows "No zones 35nm+ away"</td>
+        <td>All zones are clustered within 35 nm of each other</td>
+        <td>Spread zones across the map, or reduce <code>MIN_TRAVEL_DISTANCE</code> in the config section.</td>
+      </tr>
+      <tr>
+        <td>Convoy spawns but drives in the wrong direction</td>
+        <td>Normal — unit positions are offset <em>away</em> from destination so they drive toward it</td>
+        <td>No fix needed. If persistent misdirection: verify DCS road network connectivity between zone pairs.</td>
+      </tr>
+      <tr>
+        <td>Active convoy count never reaches 15</td>
+        <td>Convoys are being destroyed (by players or stall timeout) faster than the 2-minute stagger allows respawning</td>
+        <td>Reduce <code>STAGGER_DELAY</code> or increase <code>MAX_CONVOYS</code> in the config.</td>
+      </tr>
+      <tr>
+        <td>JTAC targets not appearing for spawned convoys</td>
+        <td>JTAC_Manager loaded after this script, or <code>registerSpawnedGroup</code> function name mismatch</td>
+        <td>Ensure JTAC_Manager is loaded before this script. Confirm the function name matches exactly.</td>
+      </tr>
+      <tr>
+        <td>dynAdd fails (log: "dynAdd failed for convoy")</td>
+        <td>MIST not loaded, or unit type string is misspelled in a template</td>
+        <td>Verify MIST is loaded first. Check each DCS unit type string in the templates against the DCS unit database.</td>
+      </tr>
+      <tr>
+        <td>Convoys stop engaging and sit idle (triggering stall)</td>
+        <td>ROE = OPEN_FIRE means convoys will stop to fight; if combat exceeds 5 minutes the stall timer kills them</td>
+        <td>Increase <code>STALL_TIMEOUT</code> (e.g. to 600 s) if convoys should survive extended engagements.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;">
+    RedAutomatedConvoySystem v4.0 · DCS World · RED Coalition · Auto-generated documentation
+  </div>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0% -70% 0%' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

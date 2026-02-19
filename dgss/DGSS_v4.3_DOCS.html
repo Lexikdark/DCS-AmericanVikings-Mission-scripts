@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS v4.3 — Dynamic Insurgent Zone Spawner</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .m{background:rgba(180,100,220,.18);color:#c07ae0}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .box-danger{background:rgba(224,85,85,.1);border-left:3px solid var(--red)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}
+  @media(max-width:760px){.cols2{grid-template-columns:1fr}}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:8px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:250px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:100px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .tmpl-row{display:flex;align-items:flex-start;gap:16px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .tmpl-row:last-child{border-bottom:none}
+  .tmpl-name{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:70px}
+  .tmpl-type{min-width:100px}
+  .tmpl-units{font-size:12px;color:var(--muted);flex:1;line-height:1.7}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">DGSS<br><span>v4.3</span><br><span style="font-size:9px;color:var(--muted)">Insurgent Spawner</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-general">General Config</a>
+  <a href="#cfg-timing">Timing</a>
+  <a href="#cfg-zones">Zones</a>
+  <div class="grp">Templates</div>
+  <a href="#normal-templates">Normal Templates</a>
+  <a href="#engagement-templates">Engagement Templates</a>
+  <a href="#shuffle-bag">Shuffle Bag</a>
+  <div class="grp">Systems</div>
+  <a href="#spawn-logic">Spawn Logic</a>
+  <a href="#engagement-system">Engagement System</a>
+  <a href="#markers">Markers &amp; Smoke</a>
+  <a href="#cleanup">Cleanup &amp; Memory</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS v4.3 — Dynamic Insurgent Zone Spawner</h1>
+<p class="sub"><b>DGSS_v4.3.lua</b> &nbsp;·&nbsp; Polygon-safe insurgent spawning with global shuffle bag, scripted ground engagements, and F10 map markers</p>
+
+<h2 id="overview">How It Works</h2>
+<p>The script monitors 18 named trigger zones. Every 5 minutes it counts live groups per zone and compares against each zone's configured min/max. If a zone is below its minimum, new groups spawn immediately. If between min and max, a random number of extra groups may spawn. When a group is killed, the slot opens and the system refills it in the next cycle.</p>
+
+<div class="cols2">
+  <div class="box box-info">
+    <strong>Normal insurgent spawn</strong><br>
+    A template is drawn from the global shuffle bag and spawned via <code>mist.dynAdd</code> anywhere inside the zone (polygon-safe). Units use <code>country.id.CJTF_RED</code>, skill = Random. A F10 map marker is placed at the spawn point immediately. Smoke can optionally be enabled (off by default).
+  </div>
+  <div class="box box-info">
+    <strong>Engagement spawn</strong><br>
+    Six templates have <code>isEngagement = true</code>. These spawn two opposing groups 200–500 m apart, facing each other. The RED group uses <code>CJTF_RED</code>; the BLUE group uses <code>country.id.USA</code>. Both are ordered to <code>AttackGroup</code> the other. When the RED group is eliminated (or the engagement times out) both groups are destroyed and a re-spawn is triggered after 5 seconds.
+  </div>
+</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Usage</th></tr>
+  <tr><td><strong>MIST</strong> (required)</td><td><code>mist.dynAdd()</code> — spawns groups dynamically<br><code>mist.getRandPointInPolygon()</code> — polygon-safe spawn placement<br><code>mist.scheduleFunction()</code> — periodic memory cleanup</td></tr>
+  <tr><td>DCS World 2.7+</td><td><code>trigger.misc.getZone</code>, <code>trigger.action.markToAll</code>, <code>trigger.action.removeMark</code>, <code>land.getHeight</code>, <code>Group.getByName</code>, <code>coalition.getGroups</code></td></tr>
+  <tr><td>ZONE1–ZONE18 trigger zones</td><td>Polygon or circular trigger zones placed in the ME with these exact names.</td></tr>
+</table>
+<div class="box box-danger"><strong>MIST must be loaded before this script.</strong> Load order: MIST → DGSS_v4.3.lua. If MIST is absent, <code>mist.dynAdd</code> will error and no groups will spawn.</div>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  →  DO SCRIPT FILE  →  mist.lua
+MISSION START trigger  →  DO SCRIPT FILE  →  DGSS_v4.3.lua</pre>
+
+<h2 id="cfg-general">Config — General</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_CONCURRENT_ENGAGEMENTS</span><span class="cd">15</span><span class="cq">Maximum number of active scripted ground engagements at any time.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>When an engagement template is drawn and this limit is already reached, the spawn is skipped entirely rather than queued. The zone count still ticks down, meaning the zone may be refilled with a normal template on the next attempt. Lower this on performance-sensitive servers (each engagement has two actively fighting groups).</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ENGAGEMENT_TIMEOUT</span><span class="cd">1200 s (20 min)</span><span class="cq">Maximum time an engagement can run before it is forcibly ended.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Prevents engagements from running indefinitely when units get stuck, retreat behind terrain, or fail to spot each other. On timeout, both groups are destroyed, the engagement slot is freed, and a re-spawn is triggered in 5 seconds.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_SPAWNS_PER_CYCLE</span><span class="cd">3</span><span class="cq">Rate-limits how many groups can spawn in a single <code>checkZones()</code> pass.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Prevents a burst of <code>mist.dynAdd</code> calls when many zones are below minimum at the same time (e.g. after a large wipe). Remaining zones are filled in the next cycle (5 minutes later). Increase if you need faster refill after server restart.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ENABLE_SMOKE</span><span class="cd">false</span><span class="cq">Place an orange smoke marker at each spawn point.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Set to <code>true</code> to enable. Smoke colour is orange (<code>SMOKE_COLOR = 1</code>) to avoid confusion with CSAR blue smoke. This is a purely visual cue for mission design testing — disable for live server use as it marks every spawn for ALL players.</p></div>
+</div>
+
+<h2 id="cfg-timing">Config — Timing</h2>
+<table>
+  <tr><th>Loop</th><th>Interval</th><th>Function</th></tr>
+  <tr><td>Zone check / spawn</td><td>300 s (5 min)</td><td><code>checkZones()</code> — counts live groups per zone and spawns up to <code>MAX_SPAWNS_PER_CYCLE</code> new groups. Self-rescheduling via <code>timer.scheduleFunction</code>.</td></tr>
+  <tr><td>Cleanup loop</td><td>120 s (2 min)</td><td><code>cleanupLoop()</code> — calls <code>cleanupGroups()</code> and <code>markerManagerCleanup()</code>. Logs active engagement count. Returns the next scheduled time.</td></tr>
+  <tr><td>Memory cleanup</td><td>1200 s (20 min)</td><td><code>performMemoryCleanup()</code> — audits <code>activeGroups</code> and <code>engagementGroups</code> for stale references; logs how many dead references were removed. Runs via <code>mist.scheduleFunction</code>.</td></tr>
+</table>
+
+<h2 id="cfg-zones">Config — Zones &amp; Per-Zone Limits</h2>
+<p>18 zones are defined in the <code>zones</code> array and their spawn limits in <code>zoneSettings</code>. The zone names must match trigger zones placed in the ME exactly.</p>
+<table>
+  <tr><th>Zone</th><th>Min</th><th>Max</th><th>Zone</th><th>Min</th><th>Max</th></tr>
+  <tr><td><code>ZONE1</code></td><td>2</td><td>3</td><td><code>ZONE10</code></td><td>2</td><td>7</td></tr>
+  <tr><td><code>ZONE2</code></td><td>2</td><td>4</td><td><code>ZONE11</code></td><td>0</td><td>2</td></tr>
+  <tr><td><code>ZONE3</code></td><td>0</td><td>2</td><td><code>ZONE12</code></td><td>1</td><td>4</td></tr>
+  <tr><td><code>ZONE4</code></td><td>1</td><td>3</td><td><code>ZONE13</code></td><td>0</td><td>2</td></tr>
+  <tr><td><code>ZONE5</code></td><td>1</td><td>4</td><td><code>ZONE14</code></td><td>1</td><td>5</td></tr>
+  <tr><td><code>ZONE6</code></td><td>1</td><td>5</td><td><code>ZONE15</code></td><td>2</td><td>4</td></tr>
+  <tr><td><code>ZONE7</code></td><td>2</td><td>3</td><td><code>ZONE16</code></td><td>0</td><td>4</td></tr>
+  <tr><td><code>ZONE8</code></td><td>2</td><td>4</td><td><code>ZONE17</code></td><td>1</td><td>5</td></tr>
+  <tr><td><code>ZONE9</code></td><td>1</td><td>4</td><td><code>ZONE18</code></td><td>0</td><td>2</td></tr>
+</table>
+<div class="box box-tip">
+  <strong>Min vs Max behaviour:</strong>
+  <ul style="margin:8px 0 0 18px">
+    <li><strong>Below min</strong> → spawn exactly enough groups to reach minimum (up to the cycle rate limit).</li>
+    <li><strong>Between min and max</strong> → spawn a random number between 1 and <code>max - count</code> extra groups.</li>
+    <li><strong>At max</strong> → nothing spawns.</li>
+    <li><strong>Min = 0</strong> → zone is optional; no guaranteed state but the max cap still applies.</li>
+  </ul>
+</div>
+<div class="box box-info">To add or remove a zone: update both the <code>zones</code> array and the <code>zoneSettings</code> table. Place (or remove) the matching trigger zone in the ME. Zone type can be polygon or circular — polygon zones use <code>mist.getRandPointInPolygon</code>; circular zones get a uniform random point inside the radius.</div>
+
+<h2 id="normal-templates">Templates — Normal Insurgents (14 templates)</h2>
+<p>Normal templates spawn as a single RED group. All units use <code>country.id.CJTF_RED</code>, <code>coalition = "red"</code>, skill = <strong>Random</strong>. Units are placed around a random spawn point using their <code>dx</code>/<code>dy</code> offsets.</p>
+<div style="margin:12px 0">
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_1</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">T-55 · HL_KORD × 2 · Grad-URAL · Ural-375 ZU-23 · SA-18 Igla manpad · Soldier RPG · Soldier AK × 2</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_2</span><span class="tmpl-type"><span class="badge y">LIGHT</span></span>
+    <span class="tmpl-units">HL_DSHK · BTR-60 · HL_ZU-23 · Soldier RPG · SA-18 Igla manpad · Infantry AK Ins</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_4</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">T-55 · BTR-60 · Soldier RPG × 2 · Infantry AK Ins × 2 · SA-18 Igla manpad</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_5</span><span class="tmpl-type"><span class="badge y">LIGHT</span></span>
+    <span class="tmpl-units">Grad-URAL · ural_4230_civil_t · HL_ZU-23 · HL_KORD · Infantry AK Ins × 2 · Soldier RPG</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_7</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">Grad-URAL · T-55 · HL_DSHK · tt_ZU-23 · Soldier RPG × 2 · Infantry AK Ins × 2 · HL_KORD</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_8</span><span class="tmpl-type"><span class="badge y">LIGHT</span></span>
+    <span class="tmpl-units">BTR-80 · Ural-375 ZU-23 · Soldier RPG · SA-18 Igla manpad · Infantry AK Ins × 3</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_10</span><span class="tmpl-type"><span class="badge y">LIGHT</span></span>
+    <span class="tmpl-units">Ural-375 ZU-23 · Soldier RPG · SA-18 Igla manpad · Infantry AK Ins × 3</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_11</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">T-55 · BTR-60 · Infantry AK Ins × 4 · ZSU-23-4 Shilka</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_13</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">T-55 · BTR-70 · ZSU-23-4 Shilka · SA-18 Igla manpad · Ural-375 ZU-23 · Soldier RPG · Infantry AK Ins</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_14</span><span class="tmpl-type"><span class="badge y">LIGHT</span></span>
+    <span class="tmpl-units">HL_ZU-23 · Soldier RPG · Infantry AK Ins × 3 · SA-18 Igla manpad</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_16</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">T-55 · BTR-60 · Ural-375 ZU-23 · Soldier RPG · Infantry AK Ins × 2</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_17</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">Grad-URAL · ZSU-23-4 Shilka · Infantry AK Ins × 3 · SA-18 Igla manpad</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_19</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">BTR-60 · BRDM-2 · Soldier RPG × 2 · SA-18 Igla manpad · Infantry AK Ins × 2 · ZSU-23-4 Shilka</span>
+  </div>
+  <div class="tmpl-row">
+    <span class="tmpl-name">Ins_20</span><span class="tmpl-type"><span class="badge r">ARMOUR</span></span>
+    <span class="tmpl-units">Grad-URAL × 2 · T-55 · Infantry AK Ins × 3 · SA-18 Igla manpad</span>
+  </div>
+</div>
+
+<h2 id="engagement-templates">Templates — Scripted Engagements (6 templates)</h2>
+<p>Engagement templates have <code>isEngagement = true</code> and define two opposing forces. They are spawned as facing each other and ordered to attack. The RED group is the "insurgent" side; the BLUE group represents a pre-existing coalition patrol.</p>
+<div class="box box-warn">These BLUE units are <strong>AI-only</strong> — they are not connected to player slots. They exist purely as a scripted ground battle. Players can observe and support from the air — the BLUE AI units do not count toward player-controlled assets.</div>
+<table>
+  <tr><th>Template</th><th>RED Units (CJTF_RED)</th><th>BLUE Units (USA)</th></tr>
+  <tr>
+    <td><code>Ins_3</code></td>
+    <td>HL_KORD × 2 · Infantry AK Ins × 8</td>
+    <td>CHAP_MATV × 3 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+  <tr>
+    <td><code>Ins_6</code></td>
+    <td>HL_KORD · Infantry AK Ins × 8</td>
+    <td>CHAP_MATV × 2 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+  <tr>
+    <td><code>Ins_9</code></td>
+    <td>HL_KORD × 2 · Infantry AK Ins × 9</td>
+    <td>CHAP_MATV × 3 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+  <tr>
+    <td><code>Ins_12</code></td>
+    <td>HL_KORD · Infantry AK Ins × 9</td>
+    <td>CHAP_MATV × 2 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+  <tr>
+    <td><code>Ins_15</code></td>
+    <td>HL_KORD × 2 · Infantry AK Ins × 7</td>
+    <td>CHAP_MATV × 3 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+  <tr>
+    <td><code>Ins_18</code></td>
+    <td>HL_KORD · Infantry AK Ins × 9</td>
+    <td>CHAP_MATV × 2 · Soldier M4 × 8 · Soldier M249 × 2</td>
+  </tr>
+</table>
+<p>Engagement configuration at spawn time:</p>
+<ul>
+  <li><strong>Separation distance:</strong> 200–500 m (random per spawn)</li>
+  <li><strong>Direction:</strong> Random angle; both groups face each other exactly</li>
+  <li><strong>AI ROE:</strong> <code>OPEN_FIRE</code> + <code>ALARM_STATE.RED</code> for both sides</li>
+  <li><strong>Task:</strong> <code>AttackGroup</code> targeting the opposing group by ID, <code>weaponType = 2047</code> (all weapons)</li>
+  <li><strong>Skill:</strong> Average (both sides)</li>
+</ul>
+
+<h2 id="shuffle-bag">Shuffle Bag System</h2>
+<p>All 20 templates are managed through a global shuffle bag — a randomised queue that guarantees every template appears exactly once before any template repeats.</p>
+<pre>-- Fisher-Yates shuffle fills the bag from all 20 templates
+local function shuffleTemplates()
+    shuffleBag = {}
+    for i = 1, #INSURGENT_TEMPLATES do
+        shuffleBag[i] = INSURGENT_TEMPLATES[i]
+    end
+    for i = #shuffleBag, 2, -1 do
+        local j = math.random(1, i)
+        shuffleBag[i], shuffleBag[j] = shuffleBag[j], shuffleBag[i]
+    end
+end
+
+local function getNextTemplate()
+    if #shuffleBag == 0 then shuffleTemplates() end  -- auto-refill when exhausted
+    return table.remove(shuffleBag)
+end</pre>
+<div class="box box-info"><strong>Why a shuffle bag instead of pure random?</strong> Pure random can produce streaks (e.g. 5 T-55 armour groups back to back). The shuffle bag guarantees variety — if you see Ins_20 (two Grad-URALs) early in a session, you won't see it again until all other 19 templates have been drawn. The bag refills automatically and reshuffles when empty.</div>
+
+<h2 id="spawn-logic">Spawn Logic</h2>
+<p>Every spawn attempt makes up to <strong>5 tries</strong> before giving up. Each attempt:</p>
+<ol>
+  <li>Fetch a zone reference via <code>trigger.misc.getZone(zoneName)</code>.</li>
+  <li>Get a random point inside the zone — <code>mist.getRandPointInPolygon()</code> for polygon zones, uniform-radius random for circular zones.</li>
+  <li>Draw the next template from the shuffle bag.</li>
+  <li>If it is an engagement template, check <code>MAX_CONCURRENT_ENGAGEMENTS</code> — skip if at limit.</li>
+  <li>Build the unit table with positions offset by each unit's <code>dx</code>/<code>dy</code>.</li>
+  <li>Call <code>mist.dynAdd(groupTemplate)</code>.</li>
+  <li>Verify the returned group name exists via <code>Group.getByName</code> and has live units. If not, log a warning and retry.</li>
+  <li>On success: register in <code>activeGroups</code>, place F10 marker, optionally place smoke.</li>
+</ol>
+<div class="box box-warn">If all 5 attempts fail (e.g. zone has bad geometry, MIST polygon point returns nil repeatedly) the spawn logs an error and exits. The zone will be re-checked on the next 5-minute cycle.</div>
+
+<h2 id="engagement-system">Engagement System</h2>
+<p>The <code>cleanupGroups()</code> function handles engagement lifecycle every 2 minutes:</p>
+<table>
+  <tr><th>Condition</th><th>Action</th></tr>
+  <tr><td>RED group dead</td><td>Destroy BLUE group → remove both from tracking → schedule re-spawn in 5 s</td></tr>
+  <tr><td>Engagement &gt; 20 min old</td><td>Destroy both groups → remove from tracking → schedule re-spawn in 5 s</td></tr>
+  <tr><td>BLUE dead but RED alive</td><td>Destroy both groups → remove from tracking → <em>no re-spawn</em> (insurgents "won")</td></tr>
+  <tr><td>Either group no longer exists</td><td>Remove from tracking → <em>no re-spawn</em> (group was externally destroyed)</td></tr>
+</table>
+<div class="box box-info">Re-spawn after a completed engagement uses the same zone name the original pair occupied. If <code>MAX_CONCURRENT_ENGAGEMENTS</code> is already full at re-spawn time, the re-spawn is skipped and the zone remains empty until the next regular cycle.</div>
+
+<h2 id="markers">F10 Markers &amp; Smoke</h2>
+<p>Every spawned group (normal or engagement — RED side only) gets an F10 map marker placed immediately at its spawn point via <code>trigger.action.markToAll</code>.</p>
+<ul>
+  <li>Marker text: <em>"Enemy Forces"</em></li>
+  <li>Visible to all coalitions (public marker)</li>
+  <li>Marker ID stored in <code>markerManager.active[groupName]</code></li>
+  <li>Auto-removed when <code>markerManagerCleanup()</code> detects the group is dead (runs every 2 minutes)</li>
+  <li>If a group name re-uses a marker slot (shouldn't happen with timestamp-based names), the old marker is removed first</li>
+</ul>
+<p>Smoke is disabled by default (<code>ENABLE_SMOKE = false</code>). When enabled, orange smoke triggers at the Vec3 ground position of the spawn point.</p>
+
+<h2 id="cleanup">Cleanup &amp; Memory Management</h2>
+<p>Three cleanup mechanisms run at different intervals:</p>
+<table>
+  <tr><th>Function</th><th>Interval</th><th>What It Does</th></tr>
+  <tr><td><code>cleanupGroups()</code></td><td>Called inside <code>cleanupLoop()</code> every 2 min + inside <code>checkZones()</code> every 5 min</td><td>Iterates <code>activeGroups</code> and <code>engagementGroups</code>; removes entries for dead groups; handles engagement lifecycle (see above)</td></tr>
+  <tr><td><code>markerManagerCleanup()</code></td><td>Called inside <code>cleanupLoop()</code> every 2 min</td><td>Removes F10 markers for dead groups via <code>trigger.action.removeMark</code></td></tr>
+  <tr><td><code>performMemoryCleanup()</code></td><td>Every 20 min (via mist.scheduleFunction)</td><td>Deep-audits both tracking tables for nil or non-existent group references; logs removed count; does NOT remove physical wreckage (left to DCS)</td></tr>
+</table>
+<div class="box box-tip">Physical wreckage is intentionally left in place — the script only clears its own Lua references. DCS handles wreckage lifespan natively. This avoids <code>Group.destroy()</code> errors on already-dead groups.</div>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>Load MIST first</strong> — MISSION START trigger → DO SCRIPT FILE → <code>mist.lua</code>.</li>
+  <li><strong>Load script</strong> — MISSION START trigger → DO SCRIPT FILE → <code>DGSS_v4.3.lua</code> (after MIST).</li>
+  <li><strong>Place trigger zones</strong> — create 18 zones named exactly <code>ZONE1</code> through <code>ZONE18</code>. Polygon zones are preferred for irregular terrain; circular zones work but spawn points are radius-uniform (not edge-weighted).</li>
+  <li><strong>Size zones appropriately</strong> — zones that are too small (under ~200 m radius) can cause polygon-point failures or tight clustering of spawns. 500 m–2 km radius zones work best.</li>
+  <li><strong>Avoid overlapping zones with friendly airbases</strong> — units spawn with ground task "Nothing" so they will not automatically move, but spawning inside a friendly base perimeter is visually inconsistent.</li>
+  <li><strong>Adjust min/max per zone</strong> — edit <code>zoneSettings</code> at the top of the script to match the operational weight of each zone in your mission design. Frontline zones get higher min; rear-area zones get min=0.</li>
+  <li><strong>Check unit type validity</strong> — all units in templates use <code>country.id.CJTF_RED</code> (RED side) or <code>country.id.USA</code> (BLUE side engagement groups). Verify the DCS unit types are valid for those countries in your DCS version.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>No groups spawn at all</td><td>MIST not loaded or loaded after this script. Check load order; look for <code>attempt to index a nil value (global 'mist')</code> in <code>dcs.log</code>.</td></tr>
+  <tr><td>"Zone not found: ZONE1" in log</td><td>Trigger zone named <code>ZONE1</code> does not exist in the ME. Names are case-sensitive. Verify the zone name matches exactly.</td></tr>
+  <tr><td>Groups spawn in the wrong spot</td><td>Zone is marked as polygon but has no poly points defined — it falls back to circular. Recreate the zone as polygon in the ME and re-export the mission.</td></tr>
+  <tr><td>Engagements never clean up</td><td><code>cleanupGroups()</code> runs every 2 minutes. If both groups are stuck alive for &gt;20 min, the timeout will clean them. Check <code>dcs.log</code> for <code>[DGSS] ENGAGEMENT COMPLETE</code> entries.</td></tr>
+  <tr><td>"Max concurrent engagements reached"</td><td>15 engagements are active simultaneously. Normal insurgent templates will be drawn instead until slots free up. Raise <code>MAX_CONCURRENT_ENGAGEMENTS</code> if needed.</td></tr>
+  <tr><td>Markers not appearing</td><td>All markers are added via <code>markToAll</code> (visible to everyone). Check if the user has F10 map marks disabled in the DCS user settings. Look for <code>[DGSS][MARKER] Placed marker ID</code> in the log.</td></tr>
+  <tr><td>All log output tagged</td><td>Prefixed <code>[DGSS]</code> or <code>[DGSS][MARKER]</code> or <code>[DGSS][ERROR]</code> or <code>[DGSS][WARN]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"▲ close":"▼ details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

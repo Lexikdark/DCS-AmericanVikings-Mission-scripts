@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission State Persistence v4.0 — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .box-danger{background:rgba(224,85,85,.1);border-left:3px solid var(--red)}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}
+  @media(max-width:760px){.cols2{grid-template-columns:1fr}}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:8px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:250px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:130px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow-step{display:flex;gap:14px;margin:8px 0;align-items:flex-start}
+  .flow-num{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px}
+  .flow-body{font-size:13px;flex:1}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(74,144,226,.18);color:var(--blue);margin-right:4px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">Mission<br><span>Persistence</span><br><span style="font-size:9px;color:var(--muted)">v4.0</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-paths">Save Paths</a>
+  <a href="#cfg-timing">Save Interval</a>
+  <a href="#cfg-scope">What Gets Saved</a>
+  <div class="grp">Lifecycle</div>
+  <a href="#init-flow">Startup Flow</a>
+  <a href="#save-flow">Save Flow</a>
+  <a href="#restore-flow">Restore Flow</a>
+  <div class="grp">Internals</div>
+  <a href="#groups">Group Saving</a>
+  <a href="#warehouses">Warehouse Saving</a>
+  <a href="#change-detect">Change Detection</a>
+  <a href="#serialization">Serialization</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#saved-files">Saved Files</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>Mission State Persistence v4.0</h1>
+<p class="sub"><b>MissionStatePersistence(v.4.0).lua</b> &nbsp;·&nbsp; Saves CJTF-BLUE ground groups &amp; all airbase warehouses every 10 minutes and restores them on the next server restart</p>
+
+<h2 id="overview">How It Works</h2>
+<div class="cols2">
+  <div class="box box-info">
+    <strong>Groups</strong><br>
+    All live CJTF-BLUE ground units (position, heading, fuel, type) are serialized to a Lua file every 10 minutes. On the next mission start a 15-second delayed restore destroys all existing BLUE ground groups and respawns them from the save file at their last known positions.
+  </div>
+  <div class="box box-info">
+    <strong>Warehouses</strong><br>
+    The full inventory — liquids (fuel, O₂, MW-50), weapons, and aircraft — of every DCS airbase is captured and saved. On restore each airbase's warehouse is refilled to match the saved state.
+  </div>
+</div>
+<div class="box box-tip"><strong>DGSS-CTLD integration:</strong> If <code>DGSS_CTLD</code> is loaded (detected via global existence check), groups spawned by CTLD under <code>DGSS_CTLD.COUNTRY</code> are also included in saves, so player-deployed JTAC teams and vehicles survive a server restart.</div>
+<div class="box box-info"><strong>Change detection:</strong> Each save cycle computes a position+unit-count hash per group. Only groups whose state has changed since the previous save are marked "new/changed" in the log — unchanged groups are still written (the <code>SavedGroups</code> table is rebuilt from scratch each cycle) but the tracking avoids redundant file I/O when nothing moved.</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Usage</th></tr>
+  <tr><td><strong>MIST</strong> (required)</td><td><code>mist.DBs.groupsByName</code> — iterates all known groups including dynamically spawned ones.<br><code>mist.getHeading()</code> — gets unit facing direction for save.<br>Script auto-disables itself if MIST is absent.</td></tr>
+  <tr><td><strong>lfs</strong> (DCS built-in)</td><td><code>lfs.writedir()</code> — locates the DCS writable directory (Saved Games\DCS\).<br><code>lfs.mkdir()</code> / <code>lfs.attributes()</code> — creates and checks the save directory.<br>Script auto-disables itself if lfs is absent.</td></tr>
+  <tr><td><strong>io</strong> (DCS built-in)</td><td>Standard Lua <code>io.open</code> / <code>io.read</code> / <code>io.write</code> for file operations. Available in DCS server environment by default.</td></tr>
+</table>
+<div class="box box-danger"><strong>DCS scripting security must allow file I/O.</strong> In <code>%APPDATA%\DCS\Scripts\MissionScripting.lua</code>, the <code>io</code> and <code>lfs</code> modules must not be disabled (they are blocked in default installs for security). The server admin must sanitize (uncomment) these lines before this script will work.</div>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  →  DO SCRIPT FILE  →  mist.lua
+MISSION START trigger  →  DO SCRIPT FILE  →  MissionStatePersistence(v.4.0).lua
+MISSION START trigger  →  DO SCRIPT FILE  →  (other DGSS scripts...)</pre>
+<div class="box box-warn">MIST must be loaded first. DGSS-CTLD must be loaded <em>before</em> this script if you want CTLD-spawned groups to be included in saves — the script detects the <code>DGSS_CTLD</code> global at runtime. If CTLD loads after persistence, the CTLD country check will be skipped on the first save cycle.</div>
+
+<h2 id="cfg-paths">Config — Save File Paths</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MISSIONPERSIST.saveDir</span><span class="cd">…\Mission Saves\</span><span class="cq">Directory where both save files are written.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Resolved at runtime as <code>lfs.writedir() .. "Mission Saves\\"</code>. On a typical Windows DCS install this expands to:</p><pre>C:\Users\&lt;user&gt;\Saved Games\DCS.openbeta\Mission Saves\</pre><p>The directory is created automatically on first load if it does not exist. If creation fails, the script disables itself and logs an error.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MISSIONPERSIST.groupFile</span><span class="cd">MissionGroups.lua</span><span class="cq">Serialized Lua file containing all saved ground group states.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Full path: <code>saveDir .. "MissionGroups.lua"</code>. The file is plain Lua that, when executed, rebuilds <code>MISSIONPERSIST.SavedGroups</code>. Each group entry stores: name, country, category, coalition, task, x/z position, and a full unit list (type, name, x/z, heading, skill, fuel, life).</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MISSIONPERSIST.warehouseFile</span><span class="cd">MissionWarehouses.lua</span><span class="cq">Serialized Lua file containing all airbase warehouse inventories.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Full path: <code>saveDir .. "MissionWarehouses.lua"</code>. Stores the full <code>Warehouse:getInventory()</code> result for each airbase, keyed by airbase name. Includes three sub-tables: <code>liquids</code>, <code>weapon</code>, <code>aircraft</code>.</p></div>
+</div>
+
+<h2 id="cfg-timing">Config — Save Interval</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MISSIONPERSIST.saveInterval</span><span class="cd">600 s (10 min)</span><span class="cq">How often the periodic save loop fires.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>Set at the top of the script. The first periodic save fires 10 minutes after restoration completes (15 s after mission start). Change to a lower value (e.g. <code>300</code>) for more frequent saves on active servers, or higher (e.g. <code>900</code>) to reduce disk I/O. Both the group file and warehouse file are written on every save cycle.</p></div>
+</div>
+
+<h2 id="cfg-scope">Config — What Gets Saved</h2>
+<table>
+  <tr><th>Category</th><th>Included</th><th>Excluded</th></tr>
+  <tr><td>Ground groups</td><td>All <strong>living</strong> <code>country.id.CJTF_BLUE</code> ground groups<br>All living <code>DGSS_CTLD.COUNTRY</code> ground groups (if DGSS_CTLD is loaded)</td><td>Dead groups<br>Air groups<br>Ship groups<br>RED / NEUTRAL groups<br>Groups with no living units</td></tr>
+  <tr><td>Unit data saved per unit</td><td><code>type</code>, <code>name</code>, <code>x</code>/<code>y</code> position, <code>heading</code>, <code>skill</code> (fixed to "Average"), <code>fuel</code>, <code>life</code></td><td>AI tasks/waypoints (restored with task = "Ground Nothing")<br>Cargo<br>Ammo count</td></tr>
+  <tr><td>Warehouses</td><td>All airbases returned by <code>world.getAirbases()</code> that have a warehouse</td><td>Airbases with no warehouse API<br>FARP / helipad units (DCS API may not expose warehouse)</td></tr>
+  <tr><td>Warehouse data saved</td><td>Liquids (fuel types, O₂, MW-50), weapons (all types by name), aircraft (by type name)</td><td>—</td></tr>
+</table>
+
+<h2 id="init-flow">Startup Flow</h2>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Dependency check</strong> — verifies <code>lfs</code> and <code>mist</code> globals exist. If either is missing, the script logs an error and <code>return</code>s (fully disabled).</div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Ensure save directory</strong> — calls <code>MISSIONPERSIST.ensureDirectory()</code>. Creates <code>Mission Saves\</code> if absent. Disables if creation fails.</div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Capture initial groups</strong> — <code>MISSIONPERSIST.captureInitialGroups()</code> records all ME-placed CJTF-BLUE ground groups into <code>MISSIONPERSIST.initialGroups</code>. This snapshot is taken before any restores run, so the script knows which groups were in the mission file originally.</div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Load saved files</strong> — <code>loadGroups()</code> and <code>loadWarehouses()</code> read the two save files (if they exist) and <code>loadstring</code>-execute them to populate <code>MISSIONPERSIST.SavedGroups</code> and <code>MISSIONPERSIST.SavedWarehouses</code>. If files don't exist (first run), both tables are initialised empty.</div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Delayed restore (T+15 s)</strong> — a <code>timer.scheduleFunction</code> fires 15 seconds after mission start to give DCS time to fully initialise. This calls <code>restoreGroups()</code> then <code>restoreWarehouses()</code>.</div></div>
+<div class="flow-step"><div class="flow-num">6</div><div class="flow-body"><strong>Periodic save loop starts</strong> — after restoration completes, the first periodic save is scheduled for T+10 min. Each save reschedules itself.</div></div>
+
+<h2 id="save-flow">Save Flow (every 10 minutes)</h2>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><code>MISSIONPERSIST.captureGroups()</code> — clears <code>SavedGroups</code>, iterates <code>mist.DBs.groupsByName</code>, filters for living BLUE (and CTLD) ground groups, captures unit state, applies change-detection hash.</div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><code>MISSIONPERSIST.serializeWithCycles()</code> — converts <code>SavedGroups</code> to a Lua string that self-assigns the table when executed. Handles circular references via the <code>saved</code> visited-table guard.</div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><code>MISSIONPERSIST.writeFile()</code> — opens <code>MissionGroups.lua</code> in write mode and overwrites it. Logs a warning if <code>io.open</code> fails.</div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-body">Same process for warehouses: <code>captureWarehouses()</code> → <code>serializeWithCycles()</code> → <code>writeFile()</code> to <code>MissionWarehouses.lua</code>.</div></div>
+
+<h2 id="restore-flow">Restore Flow (T+15 s on mission start)</h2>
+<div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Destroy all existing BLUE ground groups</strong> — iterates <code>mist.DBs.groupsByName</code> again and calls <code>group:destroy()</code> on every existing CJTF-BLUE (and CTLD) ground group. This clears both ME-placed groups and any remnants. Wrapped in <code>pcall</code> to avoid errors on already-dead groups.</div></div>
+<div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Spawn from save file</strong> — for each entry in <code>SavedGroups</code>, builds a group template and calls <code>coalition.addGroup(country, Group.Category.GROUND, template)</code>. Units are placed at their saved x/y coordinates with their saved headings. Skill is set to the saved value (typically "Average").</div></div>
+<div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Restore unit fuel</strong> — after each group spawns, iterates its units and calls <code>unit:setFuel(savedFuel)</code> to restore fuel levels. Wrapped in <code>pcall</code>.</div></div>
+<div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Restore warehouses</strong> — for each saved airbase, locates it via <code>world.getAirbases()</code>, gets its <code>Warehouse</code> object, then calls <code>setLiquidAmount</code>, <code>setItem</code> (weapons), <code>setItem</code> (aircraft) to rebuild the inventory.</div></div>
+<div class="box box-warn"><strong>On first server launch (no save files yet)</strong> — <code>SavedGroups</code> and <code>SavedWarehouses</code> will be empty tables. The restore step destroys all ME-placed BLUE ground groups and spawns nothing back. This means the <strong>first session will have no BLUE ground forces</strong> until the first 10-minute save creates the files. To avoid this, either pre-seed the save files or remove the destroy-all step in <code>restoreGroups()</code> when no save file exists.</div>
+
+<h2 id="groups">Group Saving — Detail</h2>
+<p>Data captured per unit:</p>
+<pre>-- Per-unit entry in SavedGroups
+{
+    type    = "M1A2 SEP v2",      -- DCS unit type name
+    name    = "JTAC_Team_0001_U1",-- unit name (used to identify on restore)
+    x       = 42568.3,            -- world X position
+    y       = 37291.8,            -- world Z position (stored as y for coalition.addGroup)
+    heading = 1.57,               -- radians
+    skill   = "Average",          -- always "Average" on restore regardless of original
+    fuel    = 0.85,               -- 0.0–1.0
+    life    = 1.0,                -- health value (not used to filter; dead units excluded upstream)
+}</pre>
+<div class="box box-info">Units are restored with <code>playerCanDrive = true</code>, meaning any player can take direct control of restored ground vehicles. Group tasks are always set to <code>"Ground Nothing"</code> — original AI waypoints are not preserved.</div>
+
+<h2 id="warehouses">Warehouse Saving — Detail</h2>
+<p>Data captured per airbase via <code>Warehouse:getInventory()</code>:</p>
+<pre>-- SavedWarehouses["KANDAHAR"] = {
+--   liquids  = { [0]=12000, [1]=8000, ... },   -- liquid type IDs → litres
+--   weapon   = { ["AIM-120C"]=24, ... },        -- weapon name → count
+--   aircraft = { ["F/A-18C"]=4, ... },          -- aircraft type → count
+-- }</pre>
+<p>Restoration uses:</p>
+<ul>
+  <li><code>Warehouse:setLiquidAmount(liquidType, amount)</code> for each liquid</li>
+  <li><code>Warehouse:setItem(name, count)</code> for weapons and aircraft</li>
+</ul>
+
+<h2 id="change-detect">Change Detection</h2>
+<p>Each save cycle maintains <code>MISSIONPERSIST.lastSavedState</code> — a table keyed by group name storing a lightweight hash string:</p>
+<pre>local currentHash = string.format("%.0f_%.0f_%d", groupPos.x, groupPos.z, #unitTable)</pre>
+<p>The hash encodes the group's world X, world Z (rounded to nearest metre), and living unit count. A group is considered <em>changed</em> when any of these three values differs from the previous cycle. A group with the same position and same unit count is still <em>written</em> (SavedGroups is rebuilt fully each cycle) but is counted separately in the log output as "unchanged" for monitoring.</p>
+<div class="box box-tip">The hash intentionally does NOT encode heading or fuel — those micro-changes on stationary units would cause every group to appear "changed" every cycle. If you need finer change detection (e.g. for fuel-critical scenarios), extend the hash to include <code>fuel</code> from the first unit.</div>
+
+<h2 id="serialization">Serialization</h2>
+<p>The script uses a custom cycle-safe serializer (<code>MISSIONPERSIST.serializeWithCycles</code>) derived from the SWS/SGS tradition. It walks the table recursively and emits assignment statements:</p>
+<pre>-- Output format (simplified):
+MISSIONPERSIST.SavedGroups = {}
+MISSIONPERSIST.SavedGroups["GroupName"] = {}
+MISSIONPERSIST.SavedGroups["GroupName"]["name"] = "GroupName"
+MISSIONPERSIST.SavedGroups["GroupName"]["units"] = {}
+...</pre>
+<p>On load, the file is read as a string and executed via <code>loadstring(content)()</code> inside a <code>pcall</code>. This pattern is standard in DCS persistence scripts and avoids having to write a dedicated parser.</p>
+<div class="box box-warn">The save files are standard Lua. They can be manually edited to adjust positions, restore lost groups, or seed state before a campaign's first boot. Be careful with string quoting — use the same conventions <code>string.format('%q', s)</code> uses.</div>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>MIST must be loaded first</strong> — MISSION START → DO SCRIPT FILE → <code>mist.lua</code>.</li>
+  <li><strong>Load persistence script</strong> — MISSION START → DO SCRIPT FILE → <code>MissionStatePersistence(v.4.0).lua</code>.</li>
+  <li><strong>Script sanitation</strong> — ensure the DCS server's <code>MissionScripting.lua</code> has <code>io</code> and <code>lfs</code> enabled (not sanitized out). Without these the script self-disables on startup.</li>
+  <li><strong>No additional ME setup required</strong> — the script reads whatever BLUE ground groups exist at mission start and persists them. No trigger zones, flags, or units need to be added specifically for persistence.</li>
+  <li><strong>Campaign start</strong> — on the absolute first run (no save files), optionally pre-populate the save folder with seed files, or accept that the first 10 minutes will have no persistent groups.</li>
+  <li><strong>DGSS-CTLD</strong> — load CTLD before this script if you want CTLD-spawned groups persisted. The order matters only at the first save cycle; subsequent sessions will always catch CTLD groups regardless since DGSS_CTLD will be defined by the time the 10-minute timer fires.</li>
+</ol>
+
+<h2 id="saved-files">Saved Files Location</h2>
+<table>
+  <tr><th>File</th><th>Default Path</th></tr>
+  <tr><td><code>MissionGroups.lua</code></td><td><code>%USERPROFILE%\Saved Games\DCS[.openbeta]\Mission Saves\MissionGroups.lua</code></td></tr>
+  <tr><td><code>MissionWarehouses.lua</code></td><td><code>%USERPROFILE%\Saved Games\DCS[.openbeta]\Mission Saves\MissionWarehouses.lua</code></td></tr>
+</table>
+<div class="box box-info">On a dedicated server the path resolves under the server user's profile. The folder is shared with DGSS-Leaderboard (<code>leaderboard_stats.lua</code>) so all persistence files live together in <code>Mission Saves\</code>.</div>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>Script loads but no files are written</td><td><code>io</code> or <code>lfs</code> sanitized in <code>MissionScripting.lua</code>. Look for <code>[PERSISTENCE] LFS not available</code> or <code>[PERSISTENCE] Failed to write</code> in <code>dcs.log</code>.</td></tr>
+  <tr><td>All BLUE ground groups disappear on restart</td><td>Normal on first run when no save file exists — restore destroys all groups and finds nothing to respawn. Seed a save file or add a "no-save-file" guard in <code>restoreGroups()</code>.</td></tr>
+  <tr><td>Groups spawn at wrong positions</td><td>Save file was written while units were moving. The next save 10 minutes later will correct positions. Check the .lua file directly to verify coordinates.</td></tr>
+  <tr><td>Warehouse not restoring</td><td>Airbase name in saved file doesn't match DCS internal name. Check <code>dcs.log</code> for <code>[PERSISTENCE] Restored warehouse: &lt;name&gt;</code>. Use <code>airbase:getName()</code> output to verify.</td></tr>
+  <tr><td>"Failed to parse groups file"</td><td>Save file is corrupt (e.g. partial write due to server crash mid-save). Delete <code>MissionGroups.lua</code> to start fresh, or manually fix the Lua syntax.</td></tr>
+  <tr><td>CTLD-spawned groups not saved</td><td><code>DGSS_CTLD</code> global not present when the script loaded or when the save fired. Ensure DGSS-CTLD is loaded before this script.</td></tr>
+  <tr><td>Log prefix</td><td>All messages prefixed <code>[PERSISTENCE]</code> in <code>dcs.log</code>. Look for <code>env.error</code> lines to identify hard failures.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"▲ close":"▼ details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>
