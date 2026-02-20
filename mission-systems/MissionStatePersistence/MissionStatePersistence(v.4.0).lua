@@ -180,7 +180,7 @@ function MISSIONPERSIST.captureGroups()
                             MISSIONPERSIST.SavedGroups[groupName] = {
                                 name = groupName,
                                 country = groupData.country,
-                                category = groupData.coalition,
+                                category = groupData.category,
                                 task = "Ground Nothing",
                                 x = groupPos.x,
                                 y = groupPos.z,
@@ -200,8 +200,8 @@ function MISSIONPERSIST.captureGroups()
         end
     end
     
-    env.info(string.format("[PERSISTENCE] Saved: %d groups (%d new/changed, %d unchanged, %d cleaned)", 
-        saved, saved - unchanged, unchanged, cleaned))
+    env.info(string.format("[PERSISTENCE] Captured: %d groups (%d changed, %d unchanged, %d cleaned)", 
+        saved + unchanged, saved, unchanged, cleaned))
 end
 
 function MISSIONPERSIST.saveGroups()

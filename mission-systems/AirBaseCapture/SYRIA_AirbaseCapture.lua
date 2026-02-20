@@ -164,6 +164,9 @@ ABC.REGISTRY = {
     { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true },
     { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true },
     { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Hotel",   zone = "CAPTURE_ZONE_FOB_Hotel",   coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Golf",    zone = "CAPTURE_ZONE_FOB_Golf",    coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_India",   zone = "CAPTURE_ZONE_FOB_India",   coalition = "NEUTRAL", type = "FARP", capturable = true },
 
     -- ═══════════════════════════════════════════════════════════════════
     -- FARP SLOTS  — leave blank here; use ABC.registerFARP() at runtime
@@ -204,13 +207,14 @@ ABC.DESTROY_REGISTRY = {
     -- Examples — uncomment and fill in your zone names:
     { name = "SAM Site Alpha",    zone = "DESTROY_ZONE_SAM_ALPHA"    },
     { name = "SAM Site Bravo",    zone = "DESTROY_ZONE_SAM_BRAVO"    },
-    { name = "SAM Site Charlie", zone = "DESTROY_ZONE_SAM_CHARLIE" },
-    { name = "SAM Site Delta",   zone = "DESTROY_ZONE_SAM_DELTA"   },
-    { name = "SAM Site Echo", zone = "DESTROY_ZONE_SAM_ECHO"     },
-    { name = "SAM Site Foxtrot", zone = "DESTROY_ZONE_SAM_FOXTROT"   },
-    { name = "SAM Site Golf",    zone = "DESTROY_ZONE_SAM_GOLF"     },
-    { name = "SAM Site Hotel",   zone = "DESTROY_ZONE_SAM_HOTEL"    },
-    { name = "SAM Site India",   zone = "DESTROY_ZONE_SAM_INDIA"    },
+    { name = "SAM Site Charlie",  zone = "DESTROY_ZONE_SAM_CHARLIE" },
+    { name = "SAM Site Delta",    zone = "DESTROY_ZONE_SAM_DELTA"   },
+    { name = "SAM Site Echo",     zone = "DESTROY_ZONE_SAM_ECHO"     },
+    { name = "SAM Site Foxtrot",  zone = "DESTROY_ZONE_SAM_FOXTROT"   },
+    { name = "SAM Site Golf",     zone = "DESTROY_ZONE_SAM_GOLF"     },
+    { name = "SAM Site Hotel",    zone = "DESTROY_ZONE_SAM_HOTEL"    },
+    { name = "SAM Site India",    zone = "DESTROY_ZONE_SAM_INDIA"    },
+    { name = "Tiyas",             zone = "DESTROY_ZONE_TIYAS" },
 }
 
 ------------------------------------------------------------------------
@@ -236,6 +240,10 @@ local function getZone(name)
     return z
 end
 
+-- Coalition group cache – populated once per scanAll() cycle to avoid
+-- hundreds of redundant coalition.getGroups() calls each tick.
+local _groupCache = nil
+
 -- Count live units of coalition coalId inside a circular zone
 -- coalId : coalition.side.RED (1) or coalition.side.BLUE (2)
 local function countUnitsInZone(zone, coalId)
@@ -249,7 +257,9 @@ local function countUnitsInZone(zone, coalId)
         cats[#cats + 1] = Group.Category.HELICOPTER
     end
     for _, cat in ipairs(cats) do
-        local groups = coalition.getGroups(coalId, cat)
+        -- Use cached groups when available (scanAll pre-populates), else fetch live
+        local cacheKey = tostring(coalId) .. "_" .. tostring(cat)
+        local groups = (_groupCache and _groupCache[cacheKey]) or coalition.getGroups(coalId, cat)
         for _, g in ipairs(groups) do
             if g:isExist() then
                 for _, u in ipairs(g:getUnits()) do
@@ -496,6 +506,19 @@ end
 ------------------------------------------------------------------------
 
 local function scanAll(_, time)
+    -- ── Build coalition group cache (fetches each combo ONCE) ─────────
+    _groupCache = {}
+    local _cacheCats = { Group.Category.GROUND }
+    if ABC.CFG.SCAN_AIR then
+        _cacheCats[#_cacheCats + 1] = Group.Category.AIRPLANE
+        _cacheCats[#_cacheCats + 1] = Group.Category.HELICOPTER
+    end
+    for _, _coa in ipairs({ coalition.side.RED, coalition.side.BLUE }) do
+        for _, _cat in ipairs(_cacheCats) do
+            _groupCache[tostring(_coa) .. "_" .. tostring(_cat)] = coalition.getGroups(_coa, _cat) or {}
+        end
+    end
+
     -- ── Airbase / FARP capture scan ──────────────────────────────────
     for _, entry in ipairs(ABC.REGISTRY) do
         local st = ABC._state[entry.name]
@@ -532,6 +555,7 @@ local function scanAll(_, time)
         end
     end
 
+    _groupCache = nil  -- release cache until next cycle
     return time + ABC.CFG.CHECK_INTERVAL
 end
 

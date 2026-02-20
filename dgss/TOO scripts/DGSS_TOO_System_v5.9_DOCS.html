@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS TOO System v5.9 — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:10px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:80px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+  .flow-s{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;font-size:12px;line-height:1.5}
+  .flow-a{font-size:18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">DGSS<br><span>TOO System</span><br><span style="font-size:9px;color:var(--muted)">v5.9</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-general">General Settings</a>
+  <a href="#cfg-zones">Spawn Zones</a>
+  <a href="#cfg-templates">Templates</a>
+  <div class="grp">Systems</div>
+  <a href="#spawn-flow">Spawn Flow</a>
+  <a href="#maintenance">Maintenance</a>
+  <a href="#markers">Map Markers</a>
+  <a href="#nineline">9-Line CAS Brief</a>
+  <div class="grp">Usage</div>
+  <a href="#menu">F10 Radio Menu</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS Target of Opportunity System</h1>
+<p class="sub"><b>DGSS_TOO_System v5.9.lua</b> &nbsp;&middot;&nbsp; Spawns 30 rotating insurgent target templates across 60 zones with 9-line CAS briefs, F10 menu &amp; auto-maintenance</p>
+
+<h2 id="overview">How It Works</h2>
+<p>The TOO system maintains a minimum of 8 active insurgent targets on the map at all times. Each target is a combination of static buildings (tents, structures) and a ground unit group (infantry, technicals, AA). Templates are rotated sequentially (1&ndash;30) and placed randomly within one of 60 <code>TOOZONE</code> trigger zones. Players access targets via F10 radio menu with slot-based dynamic mapping.</p>
+
+<div class="flow">
+  <div class="flow-s">Init (+1 s)<br><small>spawn 8 targets</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 60 s<br><small>maintenanceCheck()</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Dead targets<br>cleaned</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">New targets<br>spawned to fill</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 10 s<br><small>menu update</small></div>
+</div>
+
+<div class="box box-info"><strong>Zone system:</strong> Each zone can hold at most one target at a time (<code>occupiedZones</code> tracking). When a target dies, its zone is freed for re-use. With 60 zones and 8 targets, there's always variety in placement.</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td><code>mist.lua</code></td><td>Required. Uses <code>mist.dynAdd</code> and <code>mist.dynAddStatic</code> for group/static spawning.</td></tr>
+  <tr><td>DCS World 2.5+</td><td>Uses <code>trigger</code>, <code>land</code>, <code>timer</code>, <code>country</code>, <code>Group</code>, <code>missionCommands</code>.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  &rarr;  DO SCRIPT FILE  &rarr;  mist_4_5_126.lua
+                       &rarr;  DO SCRIPT FILE  &rarr;  DGSS_TOO_System v5.9.lua</pre>
+<div class="box box-warn">MIST must be loaded first. The script's <code>delayedInit()</code> waits for <code>missionCommands</code> availability and retries every 2 seconds if needed.</div>
+
+<h2 id="cfg-general">Configuration &mdash; General</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">TOO_CONFIG.minTargetsOnMap</span><span class="cd">8</span><span class="cq">Minimum active targets maintained on the map at all times.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>The maintenance loop checks every 60 seconds and spawns new targets until this count is reached. If all 60 zones are occupied (which can't happen at 8 targets), no more are spawned.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">TOO_CONFIG.maxAttempts</span><span class="cd">12</span><span class="cq">Maximum spawn retries per target if initial position fails.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Each <code>spawnTargetOfOpportunity()</code> call tries up to 5 positions (inner retry). If the group fails to spawn (no valid position in zone), the maintenance loop retries up to <code>maxAttempts</code> total.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">maintenanceCheckInterval</span><span class="cd">1800 s (config) / 60 s (actual)</span><span class="cq">How often dead targets are cleaned and new ones spawned.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>The config value is 1800 s (30 min) but the actual scheduler runs <code>maintenanceCheck()</code> every 60 seconds. This ensures fast respawns. The config value is defined but not directly used &mdash; the 60 s timer overrides it.</p></div>
+</div>
+
+<h2 id="cfg-zones">Configuration &mdash; Spawn Zones</h2>
+<p>60 trigger zones named <code>TOOZONE1</code> through <code>TOOZONE60</code>. Each zone is a circular trigger zone in the ME. The script picks random unoccupied zones for each new target.</p>
+<div class="box box-tip">Place zones in areas with interesting terrain for CAS practice. Avoid placing zones on water, steep mountains, or inside friendly base perimeters. The larger the zone radius, the more variety in target placement within that zone.</div>
+
+<h2 id="cfg-templates">Configuration &mdash; Templates</h2>
+<p>30 templates defined in <code>TOO_TEMPLATES</code>, cycled sequentially. Each template has:</p>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><code>name</code></td><td>Template identifier (e.g. <code>Taliban_Kandahar_Cell</code>)</td></tr>
+  <tr><td><code>buildings</code></td><td>Array of static objects: <code>{type, offset={x,y}}</code>. Types: <code>WC</code>, <code>Tent04</code>, <code>Tent05</code>, <code>Building07_PBR</code>, <code>Building08_PBR</code></td></tr>
+  <tr><td><code>units</code></td><td>Array of ground units: <code>{type, offset={x,y}}</code>. Types include infantry (AK, RPG, Stinger), technicals (P20, HL_DSHK, tt_ZU-23), artillery (Grad-URAL, 2B11 mortar), light AA (HQ-7), vehicles (LAZ Bus, Ural)</td></tr>
+</table>
+<p>Templates range from 9&ndash;18 units and 1&ndash;5 buildings each, with offsets spread across a ~160 m square area.</p>
+
+<h3>All 30 Template Names</h3>
+<table>
+  <tr><td>1. Taliban_Kandahar_Cell</td><td>11. Taliban_Urozgan_Trap</td><td>21. Taliban_Jawzjan_Crew</td></tr>
+  <tr><td>2. Taliban_Badakhshan_Outpost</td><td>12. Taliban_Wardak_Village</td><td>22. Taliban_Kapisa_Cache</td></tr>
+  <tr><td>3. Taliban_Ghazni_Fighters</td><td>13. Taliban_Zabul_Desert_Pos</td><td>23. Taliban_Kunduz_Support</td></tr>
+  <tr><td>4. Taliban_Helmand_Garrison</td><td>14. Taliban_Nangarhar_Command</td><td>24. Taliban_Laghman_Rear</td></tr>
+  <tr><td>5. Taliban_Kunar_Ambush</td><td>15. Taliban_Khost_Stronghold</td><td>25. Taliban_Maidan_Sabotage</td></tr>
+  <tr><td>6. Taliban_Logar_Defense</td><td>16. Taliban_Balkh_Outpost</td><td>26. Taliban_Nimruz_Battle</td></tr>
+  <tr><td>7. Taliban_Nurestan_Cache</td><td>17. Taliban_Bamyan_Guard</td><td>27. Taliban_Panjshir_Fortress</td></tr>
+  <tr><td>8. Taliban_Paktia_Checkpoint</td><td>18. Taliban_Daykundi_Squad</td><td>28. Taliban_Parwan_Defense</td></tr>
+  <tr><td>9. Taliban_Samangan_Force</td><td>19. Taliban_Faryab_Fighters</td><td>29. Taliban_Saripul_Garrison</td></tr>
+  <tr><td>10. Taliban_Takhar_Patrol</td><td>20. Taliban_Ghor_Ambush</td><td>30. Taliban_Aybak_Operations</td></tr>
+</table>
+
+<h2 id="spawn-flow">Spawn Flow</h2>
+<ol>
+  <li>Pick next template in sequence (cycles 1&ndash;30).</li>
+  <li>Select a random unoccupied zone from <code>TOO_ZONES</code>.</li>
+  <li>Generate random position within zone radius (uniform circle distribution).</li>
+  <li>Spawn static buildings via <code>mist.dynAddStatic</code> (country: CJTF_RED, category: Fortifications).</li>
+  <li>Spawn unit group via <code>mist.dynAdd</code> (country: CJTF_RED, category: vehicle, task: "Ground Nothing").</li>
+  <li>Verify group exists and has live units.</li>
+  <li>Register in <code>activeTargets</code>, mark zone as occupied, place map marker at first unit position.</li>
+</ol>
+
+<h2 id="maintenance">Maintenance Loop (60 s)</h2>
+<p>Every 60 seconds <code>maintenanceCheck()</code> runs:</p>
+<ul>
+  <li><code>cleanupDeadTargets()</code> &mdash; removes dead groups, frees zones, destroys orphaned statics via <code>mist.removeStatic</code>.</li>
+  <li><code>markerManagerCleanup()</code> &mdash; removes map markers for dead groups.</li>
+  <li><code>cleanupPlayerMenus()</code> &mdash; clears menu tracking for disconnected players.</li>
+  <li><code>updateDestroyedBuildings()</code> &mdash; counts destroyed statics per group via <code>Object.getByName</code>.</li>
+  <li>Re-applies markers to living groups missing one.</li>
+  <li>Spawns new targets until <code>minTargetsOnMap = 8</code> is reached.</li>
+</ul>
+
+<h2 id="markers">Map Markers</h2>
+<p>Each active target gets a map marker prefixed <code>[TOO]</code> with the template name and grid reference. Markers are placed at the first unit's actual position (not zone centre). The <code>markerManager</code> tracks marker IDs and cleans up on target death.</p>
+
+<h2 id="nineline">9-Line CAS Brief</h2>
+<p>Generated on demand via F10 menu. Format:</p>
+<pre>1. IP:        GRID &lt;ipGrid&gt;
+2. HEADING:   &lt;bearing&gt; degrees
+3. DISTANCE:  On Grid &lt;ipGrid&gt; - X.X km from center
+4. ELEVATION: &lt;meters&gt;
+5. TARGET:    &lt;type&gt; (&lt;count&gt; units)
+6. LOCATION:  &lt;MGRS&gt; / &lt;DD&deg;MM'SS"&gt;
+7. MARK:      VISUAL ONLY
+8. FRIENDLIES: CLEAR
+9. REMARKS:   &lt;displayName&gt;</pre>
+<p>Bearing and distance are calculated from the grid centre to give pilots an ingress reference.</p>
+
+<h2 id="menu">F10 Radio Menu</h2>
+<p>Each BLUE player group gets a <strong>Mission Targets</strong> sub-menu:</p>
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td>List Active Targets</td><td>Shows total count and all active target names.</td></tr>
+  <tr><td>Target 1 &ndash; 8</td><td>Slot-based sub-menus that dynamically map to living targets.</td></tr>
+</table>
+<p>Each target slot has:</p>
+<ul>
+  <li><strong>9-Line Brief</strong> &mdash; Full 9-line CAS callout (displayed 30 s).</li>
+  <li><strong>Target Status</strong> &mdash; Shows alive/killed unit count and intact/destroyed building count.</li>
+  <li><strong>What Target Is This?</strong> &mdash; Template name, total units, grid reference.</li>
+</ul>
+<div class="box box-info">Slots are dynamic &mdash; Target 1 always maps to the first living target, regardless of spawn order. No menu rebuild is needed when targets die.</div>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>MIST</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>mist_4_5_126.lua</code>.</li>
+  <li><strong>Load script</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>DGSS_TOO_System v5.9.lua</code>.</li>
+  <li><strong>60 trigger zones</strong> &mdash; Place circular trigger zones named <code>TOOZONE1</code> through <code>TOOZONE60</code>. Radius should be 2&ndash;10 km for variety.</li>
+  <li><strong>Country availability</strong> &mdash; Ensure CJTF_RED (or the configured country) is available in the mission. Units spawn as this country.</li>
+  <li><strong>Terrain check</strong> &mdash; Avoid placing zones entirely over water. The script does not have a water check &mdash; if a random position in a zone is over water, the spawn will fail and retry.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>No targets spawn</td><td>MIST not loaded, or <code>TOO_CONFIG.enabled = false</code>. Check <code>dcs.log</code> for <code>[TOO]</code> errors.</td></tr>
+  <tr><td>Fewer than 8 targets active</td><td>Not enough valid zones (all occupied or positions fail). Check zone placement covers land areas.</td></tr>
+  <tr><td>Menu not appearing</td><td>Menus update every 10 s. Wait after spawning. Check <code>dcs.log</code> for <code>[TOO]</code> menu init messages.</td></tr>
+  <tr><td>"Target slot empty"</td><td>That slot number doesn't have a living target. Try a lower number or check "List Active Targets".</td></tr>
+  <tr><td>9-Line shows wrong position</td><td>Position is taken from the first living unit in the group, which may have moved from the spawn point.</td></tr>
+  <tr><td>Static buildings not cleaned up</td><td><code>mist.removeStatic</code> is called on target death. If statics persist, MIST may have lost track. Will be cleaned on next maintenance cycle.</td></tr>
+  <tr><td>Log prefix</td><td>All messages prefixed <code>[TOO]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"\u25B2 close":"\u25BC details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

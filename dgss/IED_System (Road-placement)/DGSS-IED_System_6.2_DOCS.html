@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS IED System v6.2 — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:10px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:80px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+  .flow-s{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;font-size:12px;line-height:1.5}
+  .flow-a{font-size:18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">DGSS<br><span>IED System</span><br><span style="font-size:9px;color:var(--muted)">Road v6.2</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-general">General</a>
+  <a href="#cfg-road">Road Placement</a>
+  <a href="#cfg-explosion">Explosion</a>
+  <a href="#cfg-insurgent">Insurgent Spawn</a>
+  <a href="#cfg-exclusion">Exclusion Zones</a>
+  <div class="grp">Modes</div>
+  <a href="#mode-route">Route Mode</a>
+  <a href="#mode-zone">Zone Mode (Legacy)</a>
+  <div class="grp">Systems</div>
+  <a href="#pathfinding">Async Pathfinding</a>
+  <a href="#lifecycle">IED Lifecycle</a>
+  <a href="#maintenance">Maintenance</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS IED System &mdash; Road Placement</h1>
+<p class="sub"><b>DGSS-IED_System 6.2_RoadPlacement.lua</b> &nbsp;&middot;&nbsp; Places IEDs along road networks between bases with async pathfinding, insurgent ambushes &amp; 24/7 server support</p>
+
+<h2 id="overview">How It Works</h2>
+<p>The IED system uses DCS's <code>land.findPathOnRoads()</code> API to discover road networks between base pairs. It samples positions along each route, validates them against <code>_IED_AREA</code> trigger zones, enforces minimum spacing (2 km), and spawns prop objects (oil barrel + vehicle) at each position. When a BLUE convoy vehicle enters the trigger radius, the IED detonates after a random vehicle count threshold (1&ndash;8).</p>
+
+<div class="flow">
+  <div class="flow-s">Init (+3 s)<br><small>discoverIEDZones()</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Async pathfind<br><small>1.5 s per route</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Round-robin<br>IED placement</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 10 s<br><small>checkActiveIEDs()</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Detonation<br><small>+ insurgent ambush</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Reset after<br>30 min</div>
+</div>
+
+<div class="box box-info"><strong>Global namespace:</strong> <code>DGSS_IED</code>. Two placement modes: <strong>Route Mode</strong> (default, recommended) pathfinds between all base pairs; <strong>Zone Mode</strong> (legacy) samples roads within individual zones.</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td>DCS World 2.7+</td><td>Uses <code>land.findPathOnRoads()</code>, <code>coalition.addStaticObject()</code>, <code>trigger.action.explosion()</code>.</td></tr>
+  <tr><td>None (standalone)</td><td>Does not require MIST, MOOSE, or any external libraries. Uses only native DCS APIs.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  &rarr;  DO SCRIPT FILE  &rarr;  DGSS-IED_System 6.2_RoadPlacement.lua</pre>
+<div class="box box-warn">The script auto-initialises 3 seconds after load. No manual init call needed. Route Mode pathfinding starts 15 seconds after init to let the mission fully load.</div>
+
+<h2 id="cfg-general">Configuration &mdash; General</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">COALITION</span><span class="cd">BLUE</span><span class="cq">Coalition whose vehicles trigger IEDs.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Only ground units from this coalition are checked against IED trigger radii. Change to <code>coalition.side.RED</code> to flip the scenario.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">CHECK_INTERVAL</span><span class="cd">10 s</span><span class="cq">How often active IEDs are checked for nearby vehicles.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Every 10 seconds <code>checkActiveIEDs()</code> iterates all BLUE ground groups and checks each against all non-exploded IEDs. A spatial pre-filter (Manhattan distance &lt;200) skips distant groups. At 10 convoys a scan has ~150 checks &mdash; negligible CPU.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_ACTIVE_IEDS</span><span class="cd">75</span><span class="cq">Maximum total IEDs on the map at any time.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Caps the total number of non-exploded IEDs. If the limit is reached, no new IEDs are placed until existing ones detonate and reset. The round-robin distributor ensures fair allocation across all base pairs before the cap is hit.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">RESET_TIME</span><span class="cd">1800 s (30 min)</span><span class="cq">Time before an exploded IED respawns new props at the same location.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>After detonation, a <code>timer.scheduleFunction</code> re-arms the IED at 30 minutes. The same position is reused with a new random trigger count (1&ndash;8 vehicles). Designed for 24/7 server operation where convoys repeat routes.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">DETECTION_RADIUS</span><span class="cd">15 m</span><span class="cq">Extra buffer added to the 50 m core trigger radius.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Total trigger radius is <code>50 + DETECTION_RADIUS = 65 m</code>. Units within this circle around the IED props are counted. Increase for wider roads; decrease for precision placement.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">CLEANUP_INTERVAL</span><span class="cd">3600 s (1 hr)</span><span class="cq">Maintenance cleanup cycle for long-running servers.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p><code>performMaintenance()</code> cleans dead insurgent group references, invalid static-to-IED mappings, oversized position tables, and orphaned reset timers. Logs memory stats after each run.</p></div>
+</div>
+
+<h2 id="cfg-road">Configuration &mdash; Road Placement</h2>
+<p>All values in <code>DGSS_IED.ROAD_PLACEMENT</code>:</p>
+<table>
+  <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>searchRadius</code></td><td>25,000 m</td><td>Max radius from zone centre to search for roads (legacy zone mode).</td></tr>
+  <tr><td><code>roadOffsetMin / Max</code></td><td>8 &ndash; 15 m</td><td>Random offset from road edge &mdash; ensures IED props are beside the road, not on it.</td></tr>
+  <tr><td><code>iedsPerZone</code></td><td>2</td><td>Max IEDs per zone in legacy zone mode.</td></tr>
+  <tr><td><code>minIEDSpacing</code></td><td>2,000 m</td><td>Minimum distance between any two IEDs &mdash; prevents clustering.</td></tr>
+  <tr><td><code>routesPerBasePair</code></td><td>2</td><td>Number of different routes to try between each pair of bases.</td></tr>
+  <tr><td><code>pointsPerRoute</code></td><td>5</td><td>Number of sample positions per route for IED candidate spots.</td></tr>
+  <tr><td><code>minPathLength</code></td><td>7,000 m</td><td>Minimum road path length to qualify &mdash; filters out short side roads.</td></tr>
+  <tr><td><code>pathfindDelay</code></td><td>1.5 s</td><td>Delay between async pathfinding calls to prevent frame stutters.</td></tr>
+</table>
+
+<h2 id="cfg-explosion">Configuration &mdash; Explosion</h2>
+<table>
+  <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>EXPLOSION.power</code></td><td>500 kg TNT</td><td>Explosion power. 500 is enough to destroy light vehicles; increase for armoured convoys.</td></tr>
+</table>
+<p>The explosion also triggers: large smoke effect, 8 signal flares in a circle, and a coalition text message with MGRS coordinates.</p>
+
+<h2 id="cfg-insurgent">Configuration &mdash; Insurgent Spawn</h2>
+<table>
+  <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>enabled</code></td><td><code>true</code></td><td>Toggle insurgent ambushes on/off.</td></tr>
+  <tr><td><code>spawnChance</code></td><td>40%</td><td>Probability of insurgents spawning when an IED detonates.</td></tr>
+  <tr><td><code>minCount / maxCount</code></td><td>10 &ndash; 15</td><td>Number of insurgent infantry spawned per ambush.</td></tr>
+  <tr><td><code>minDistance / maxDistance</code></td><td>100 &ndash; 300 m</td><td>Spawn distance from the IED position.</td></tr>
+  <tr><td><code>unitTypes</code></td><td>AK, RPG, AK ver2</td><td>DCS unit types: <code>Infantry AK Ins</code>, <code>Soldier RPG</code>, <code>Infantry AK ver2</code>.</td></tr>
+</table>
+<p>Insurgent groups are scheduled for cleanup 10 minutes after spawn if destroyed, with a secondary 10-minute check if still alive.</p>
+
+<h2 id="cfg-exclusion">Configuration &mdash; Base Exclusion Zones</h2>
+<p>IEDs are never placed inside these trigger zones (friendly bases / FOBs). The same list is used as the base endpoints for route pathfinding.</p>
+<pre>KANDAHAR, BAGRAM, KABUL, JALALABAD, FOB_SALERNO, FOB_LONDON,
+FOB_PARIS, FOB_DALLAS, FOB_WARSAW, FOB_URGOON, TARINKOT, CHAGHCHARAN</pre>
+
+<h2 id="mode-route">Route Mode (Default)</h2>
+<p>When <code>USE_ROUTE_MODE = true</code>, the system:</p>
+<ol>
+  <li>Builds a pathfinding queue for all base pairs &times; <code>routesPerBasePair</code> routes.</li>
+  <li>Processes one pathfind per <code>pathfindDelay</code> (1.5 s) to avoid frame spikes.</li>
+  <li>Caches results in <code>ROUTE_CACHE</code>. Route 1 is direct; routes 2+ use intermediate waypoints offset perpendicular to the direct line at 25%&ndash;75% along the path.</li>
+  <li>After all routes are cached, <code>activateIEDsOnRoutes()</code> samples candidate positions, validates them against <code>_IED_AREA</code> zones and exclusion zones, checks min spacing, then distributes IEDs in a round-robin across base pairs until <code>MAX_ACTIVE_IEDS</code> is reached.</li>
+</ol>
+<div class="box box-tip"><strong>Priority routes:</strong> KABUL &harr; BAGRAM &harr; JALALABAD are processed first to ensure the most active convoy corridor gets IEDs before the cap fills.</div>
+
+<h2 id="mode-zone">Zone Mode (Legacy)</h2>
+<p>When <code>USE_ROUTE_MODE = false</code>, IEDs are placed within individual <code>_IED_AREA</code> zones by sampling random points and finding road paths back to the zone centre. Zones are activated one per <code>ZONE_SPAWN_DELAY</code> (15 s). Limited to <code>iedsPerZone</code> per zone.</p>
+
+<h2 id="pathfinding">Async Pathfinding</h2>
+<p>The <code>processPathfindQueue()</code> function processes one pathfinding request per frame interval (1.5 s). Each request calls <code>land.findPathOnRoads("roads", fromX, fromZ, toX, toZ)</code> and caches the result. Progress is logged as a percentage. When the queue is empty, <code>activateIEDsOnRoutes()</code> is called to place IEDs from the cached routes.</p>
+<p>For alternate routes (routeNum &ge; 2), an intermediate waypoint is constructed perpendicular to the direct line between bases. The path is built in two segments (base A &rarr; waypoint &rarr; base B) to discover different road networks.</p>
+
+<h2 id="lifecycle">IED Lifecycle</h2>
+<ol>
+  <li><strong>Placement</strong> &mdash; Props spawned: <code>Oil Barrel</code> (hidden static) + random vehicle (<code>P20_drivable</code> or <code>VAZ Car</code>), offset 8&ndash;15 m from road.</li>
+  <li><strong>Detection</strong> &mdash; Every 10 s, BLUE ground units within 65 m are counted. Each unique unit increments <code>vehiclesSeen</code>.</li>
+  <li><strong>Detonation</strong> &mdash; When <code>vehiclesSeen &ge; triggerCount</code> (random 1&ndash;8), or if an IED prop is destroyed by fire/bombing: explosion (500 kg TNT) + smoke + flares + MGRS text message.</li>
+  <li><strong>Insurgent ambush</strong> &mdash; 40% chance of 10&ndash;15 infantry spawning 100&ndash;300 m away.</li>
+  <li><strong>Reset</strong> &mdash; After 30 minutes, props respawn at the same location with a new random trigger count.</li>
+</ol>
+
+<h2 id="maintenance">Maintenance (24/7 Support)</h2>
+<p><code>performMaintenance()</code> runs every hour and cleans:</p>
+<ul>
+  <li>Dead insurgent group references</li>
+  <li>Invalid static-to-IED mappings</li>
+  <li>Oversized <code>IED_POSITIONS</code> table (trimmed to <code>MAX_TRACKED_POSITIONS = 500</code>)</li>
+  <li>Orphaned reset timers for deleted IEDs</li>
+</ul>
+<p>Memory stats (active, exploded, groups, mappings, positions, timers) are logged after each run.</p>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>Load script</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>DGSS-IED_System 6.2_RoadPlacement.lua</code>.</li>
+  <li><strong>IED area zones</strong> &mdash; Place trigger zones containing <code>_IED_AREA</code> in their name. IEDs are only placed at road positions inside these zones.</li>
+  <li><strong>Base exclusion zones</strong> &mdash; Ensure all entries in <code>BASE_EXCLUSION_ZONES</code> exist as trigger zones in the ME (KANDAHAR, BAGRAM, etc.). IEDs won't spawn inside them, and they serve as route endpoints.</li>
+  <li><strong>Road network</strong> &mdash; The DCS map must have road data. Syria, Caucasus, and Persian Gulf all have adequate road networks. The script uses <code>land.findPathOnRoads("roads", ...)</code>.</li>
+  <li><strong>BLUE convoys</strong> &mdash; Place or spawn BLUE ground groups that traverse the road network. The IED system detects any BLUE ground unit, not just convoy-specific groups.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>"WARNING: No IEDs placed"</td><td>No roads found between bases, or no <code>_IED_AREA</code> zones contain road positions. Check that your IED area zones overlap actual road networks. Use <code>DGSS_IED.getStats()</code> to check counts.</td></tr>
+  <tr><td>IEDs cluster near one base</td><td><code>minIEDSpacing</code> may be too low or IED area zones don't cover spread routes. Increase zone coverage or add more <code>_IED_AREA</code> zones along highways.</td></tr>
+  <tr><td>Frame stutter during init</td><td>Pathfinding is running too fast. Increase <code>pathfindDelay</code> (default 1.5 s). Each <code>land.findPathOnRoads()</code> call causes a brief stall.</td></tr>
+  <tr><td>IED never triggers</td><td>Trigger radius is 65 m. Ground units must physically drive within range. Check that convoys are using roads, not off-road waypoints.</td></tr>
+  <tr><td>Insurgents not spawning</td><td><code>INSURGENT_SPAWN.enabled</code> must be <code>true</code> and the 40% random chance must pass. Check <code>dcs.log</code> for <code>[IED-Road] No insurgent ambush at</code>.</td></tr>
+  <tr><td>IED not resetting after 30 min</td><td>Check <code>dcs.log</code> for <code>[IED-Road] IED ... will reset in 30 minutes</code>. If the timer was cancelled by maintenance, the IED data may have been cleaned up.</td></tr>
+  <tr><td>Log prefix</td><td>All messages prefixed <code>[IED-Road]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"\u25B2 close":"\u25BC details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

@@ -81,27 +81,67 @@ ConvoySystem.homeZones = {
     "KIRYAT_SHMONA",
     "MEGIDDO",
     "HAIFA",
-    "FOB_SALERNO",
-    "FOB_LONDON",
-    "FOB_PARIS",
-    "FOB_DALLAS",
-    "FOB_WARSAW",
-    "FOB_URGOON",
+    "FOB_ALPHA",
+    "FOB_BRAVO",
+    "FOB_CHARLIE",
+    "FOB_DELTA",
+    "FOB_ECHO",
+    "FOB_FOXTROT",
+    "FOB_HOTEL",
+    "FOB_GOLF",
+    "FOB_INDIA",
+    -- Syrian capturable airbases
+    "MEZZEH",
+    "DAMASCUS",
+    "MARJ_RUHAYYIL",
+    "AN_NASIRIYAH",
+    "KHALKHALAH",
+    "AT_TANF",
+    "SAYQAL",
+    "THALAH",
+    "PALMYRA",
+    "SHAYRAT",
+    "TABQA",
+    "HAMA",
+    "DEIR_EZ_ZOR",
+    "ALEPPO",
+    "AL_QUSAYR",
+    "BASSEL_AL_ASSAD",
 }
 
 -- Resupply Destination Zones (must match trigger zones in mission - typically ZONE_DEST appended)
 ConvoySystem.destinationZones = {
-    {name = "RAMAT_DAVID", fullName = "Ramat David", zoneName = "RAMAT_DAVID_Spawn"},
-    {name = "ROSH_PINA", fullName = "Rosh Pina", zoneName = "ROSH_PINA_Spawn"},
-    {name = "KIRYAT_SHMONA", fullName = "Kiryat Shmona", zoneName = "KIRYAT_SHMONA_Spawn"},
-    {name = "MEGIDDO", fullName = "Megiddo", zoneName = "MEGIDDO_Spawn"},
-    {name = "HAIFA", fullName = "Haifa", zoneName = "HAIFA_Spawn"},
-    {name = "FOB_SALERNO", fullName = "FOB SALERNO", zoneName = "FOB_SALERNO_Spawn"},
-    {name = "FOB_LONDON", fullName = "FOB_LONDON", zoneName = "FOB_LONDON_Spawn"},
-    {name = "FOB_PARIS", fullName = "FOB_PARIS", zoneName = "FOB_PARIS_Spawn"},
-    {name = "FOB_DALLAS", fullName = "FOB_DALLAS", zoneName = "FOB_DALLAS_Spawn"},
-    {name = "FOB_WARSAW", fullName = "FOB_WARSAW", zoneName = "FOB_WARSAW_Spawn"},
-    {name = "FOB_URGOON", fullName = "FOB_URGOON", zoneName = "FOB_URGOON_Spawn"},
+    {name = "RAMAT_DAVID",    fullName = "Ramat David", zoneName = "RAMAT_DAVID_Spawn"},
+    {name = "ROSH_PINA",      fullName = "Rosh Pina", zoneName = "ROSH_PINA_Spawn"},
+    {name = "KIRYAT_SHMONA",  fullName = "Kiryat Shmona", zoneName = "KIRYAT_SHMONA_Spawn"},
+    {name = "MEGIDDO",        fullName = "Megiddo", zoneName = "MEGIDDO_Spawn"},
+    {name = "HAIFA",          fullName = "Haifa", zoneName = "HAIFA_Spawn"},
+    {name = "FOB_ALPHA",       fullName = "FOB ALPHA", zoneName = "FOB_ALPHA_Spawn"},
+    {name = "FOB_BRAVO",       fullName = "FOB BRAVO", zoneName = "FOB_BRAVO_Spawn"},
+    {name = "FOB_CHARLIE", fullName = "FOB CHARLIE", zoneName = "FOB_CHARLIE_Spawn"},
+    {name = "FOB_DELTA", fullName = "FOB DELTA", zoneName = "FOB_DELTA_Spawn"},
+    {name = "FOB_ECHO", fullName = "FOB ECHO", zoneName = "FOB_ECHO_Spawn"},
+    {name = "FOB_FOXTROT", fullName = "FOB FOXTROT", zoneName = "FOB_FOXTROT_Spawn"},
+    {name = "FOB_HOTEL", fullName = "FOB HOTEL", zoneName = "FOB_HOTEL_Spawn"},
+    {name = "FOB_GOLF", fullName = "FOB GOLF", zoneName = "FOB_GOLF_Spawn"},
+    {name = "FOB_INDIA", fullName = "FOB INDIA", zoneName = "FOB_INDIA_Spawn"},
+    -- Syrian capturable airbases
+    {name = "MEZZEH",           fullName = "Mezzeh",           zoneName = "MEZZEH_Spawn"},
+    {name = "DAMASCUS",         fullName = "Damascus",         zoneName = "DAMASCUS_Spawn"},
+    {name = "MARJ_RUHAYYIL",    fullName = "Marj Ruhayyil",    zoneName = "MARJ_RUHAYYIL_Spawn"},
+    {name = "AN_NASIRIYAH",     fullName = "An Nasiriyah",     zoneName = "AN_NASIRIYAH_Spawn"},
+    {name = "KHALKHALAH",       fullName = "Khalkhalah",       zoneName = "KHALKHALAH_Spawn"},
+    {name = "AT_TANF",          fullName = "At Tanf",          zoneName = "AT_TANF_Spawn"},
+    {name = "SAYQAL",           fullName = "Sayqal",           zoneName = "SAYQAL_Spawn"},
+    {name = "THALAH",           fullName = "Tha'lah",          zoneName = "THALAH_Spawn"},
+    {name = "PALMYRA",          fullName = "Palmyra",          zoneName = "PALMYRA_Spawn"},
+    {name = "SHAYRAT",          fullName = "Shayrat",          zoneName = "SHAYRAT_Spawn"},
+    {name = "TABQA",            fullName = "Tabqa",            zoneName = "TABQA_Spawn"},
+    {name = "HAMA",             fullName = "Hama",             zoneName = "HAMA_Spawn"},
+    {name = "DEIR_EZ_ZOR",      fullName = "Deir ez-Zor",      zoneName = "DEIR_EZ_ZOR_Spawn"},
+    {name = "ALEPPO",           fullName = "Aleppo",           zoneName = "ALEPPO_Spawn"},
+    {name = "AL_QUSAYR",        fullName = "Al Qusayr",        zoneName = "AL_QUSAYR_Spawn"},
+    {name = "BASSEL_AL_ASSAD",  fullName = "Bassel Al-Assad",  zoneName = "BASSEL_AL_ASSAD_Spawn"},
 }
 
 -- Spawn zones (must match trigger zones in mission)
@@ -111,12 +151,32 @@ ConvoySystem.spawnZones = {
     KIRYAT_SHMONA = "KIRYAT_SHMONA_Spawn",
     MEGIDDO = "MEGIDDO_Spawn",
     HAIFA = "HAIFA_Spawn",
-    FOB_SALERNO = "FOB_SALERNO_Spawn",
-    FOB_LONDON = "FOB_LONDON_Spawn",
-    FOB_PARIS = "FOB_PARIS_Spawn",
-    FOB_DALLAS = "FOB_DALLAS_Spawn",
-    FOB_WARSAW = "FOB_WARSAW_Spawn",
-    FOB_URGOON = "FOB_URGOON_Spawn",
+    FOB_ALPHA = "FOB_ALPHA_Spawn",
+    FOB_BRAVO = "FOB_BRAVO_Spawn",
+    FOB_CHARLIE = "FOB_CHARLIE_Spawn",
+    FOB_DELTA = "FOB_DELTA_Spawn",
+    FOB_ECHO = "FOB_ECHO_Spawn",
+    FOB_FOXTROT = "FOB_FOXTROT_Spawn",
+    FOB_HOTEL = "FOB_HOTEL_Spawn",
+    FOB_GOLF = "FOB_GOLF_Spawn",
+    FOB_INDIA = "FOB_INDIA_Spawn",
+    -- Syrian capturable airbases
+    MEZZEH          = "MEZZEH_Spawn",
+    DAMASCUS        = "DAMASCUS_Spawn",
+    MARJ_RUHAYYIL   = "MARJ_RUHAYYIL_Spawn",
+    AN_NASIRIYAH    = "AN_NASIRIYAH_Spawn",
+    KHALKHALAH      = "KHALKHALAH_Spawn",
+    AT_TANF         = "AT_TANF_Spawn",
+    SAYQAL          = "SAYQAL_Spawn",
+    THALAH          = "THALAH_Spawn",
+    PALMYRA         = "PALMYRA_Spawn",
+    SHAYRAT         = "SHAYRAT_Spawn",
+    TABQA           = "TABQA_Spawn",
+    HAMA            = "HAMA_Spawn",
+    DEIR_EZ_ZOR     = "DEIR_EZ_ZOR_Spawn",
+    ALEPPO          = "ALEPPO_Spawn",
+    AL_QUSAYR       = "AL_QUSAYR_Spawn",
+    BASSEL_AL_ASSAD = "BASSEL_AL_ASSAD_Spawn",
 }
 -- Airbase name mappings (zone name -> DCS airbase name)
 -- Some zones may not have airbases, or the airbase name differs from the zone name
@@ -126,12 +186,32 @@ ConvoySystem.airbaseNames = {
     KIRYAT_SHMONA = "Kiryat Shmona",
     MEGIDDO = "Megiddo",
     HAIFA = "Haifa",
-    FOB_SALERNO = "FOB Salerno",
-    FOB_LONDON = "FOB LONDON",
-    FOB_PARIS = "FOB PARIS",
-    FOB_DALLAS = "FOB DALLAS",
-    FOB_WARSAW = "FOB WARSAW",
-    FOB_URGOON = "FOB_URGOON",
+    FOB_ALPHA = "FOB_Alpha",
+    FOB_BRAVO = "FOB_Bravo",
+    FOB_CHARLIE = "FOB_Charlie",
+    FOB_DELTA = "FOB_Delta",
+    FOB_ECHO = "FOB_Echo",
+    FOB_FOXTROT = "FOB_Foxtrot",
+    FOB_HOTEL = "FOB_Hotel",
+    FOB_GOLF = "FOB_Golf",
+    FOB_INDIA = "FOB_India",
+    -- Syrian capturable airbases
+    MEZZEH          = "Mezzeh",
+    DAMASCUS        = "Damascus",
+    MARJ_RUHAYYIL   = "Marj Ruhayyil",
+    AN_NASIRIYAH    = "An Nasiriyah",
+    KHALKHALAH      = "Khalkhalah",
+    AT_TANF         = "At Tanf",
+    SAYQAL          = "Sayqal",
+    THALAH          = "Tha'lah",
+    PALMYRA         = "Palmyra",
+    SHAYRAT         = "Shayrat",
+    TABQA           = "Tabqa",
+    HAMA            = "Hama",
+    DEIR_EZ_ZOR     = "Deir ez-Zor",
+    ALEPPO          = "Aleppo",
+    AL_QUSAYR       = "Al Qusayr",
+    BASSEL_AL_ASSAD = "Bassel Al-Assad",
 }
 
 -- ============================================================================
@@ -2197,130 +2277,237 @@ local function startConvoySystem()
     env.info("ConvoySystem: Convoy update timer scheduled (interval: " .. ConvoySystem.updateInterval .. "s)")
     
     -- ========================================================================
-    -- COALITION-WIDE RADIO MENU (Nested structure to stay within DCS limits)
     -- ========================================================================
-    
-    -- DCS has a limit of ~10 items per menu level, so we use:
-    -- F10 → Convoy Operations → [Template] → [Origin] → [Destination]
-    
+    -- COALITION-WIDE RADIO MENU  (Paged — max 9 items per menu level)
+    -- ========================================================================
+    -- Flow (same as old menu, pagination added at zone list levels):
+    --
+    --   F10 → Convoy Operations
+    --           → [Template Name]
+    --               → Spawn From: Page 1  (up to 9 origin zones)
+    --                   → Zone Name       (origin selected)
+    --                       → Send To: Page 1  (up to 9 destinations)
+    --                           → Zone Name    ← spawns the convoy
+    --                       → Send To: Page 2
+    --                       → Send To: Page 3
+    --               → Spawn From: Page 2
+    --               → Spawn From: Page 3
+    --
+    -- PAGE_SIZE = 9 keeps every menu safely within DCS's 10-item limit.
+    -- All pages are built statically at mission start.
+    -- ========================================================================
+
+    local PAGE_SIZE     = 9
     local blueCoalition = coalition.side.BLUE
-    env.info("ConvoySystem: Creating coalition-wide radio menu for BLUE coalition")
-    
-    -- Root menu: F10 -> Convoy Operations
-    local convoyRootMenu = missionCommands.addSubMenuForCoalition(blueCoalition, "Convoy Operations")
-    env.info("ConvoySystem: Created root menu 'Convoy Operations'")
-    
-    -- For each convoy template, create a submenu
-    for templateIndex, template in ipairs(ConvoySystem.templates) do
-        local templateMenuName = template.name
-        local templateMenu = missionCommands.addSubMenuForCoalition(blueCoalition, templateMenuName, convoyRootMenu)
-        env.info("ConvoySystem: Created template menu: " .. templateMenuName)
-        
-        -- For each origin (spawn point), create a submenu
-        for homeZone, spawnZoneName in pairs(ConvoySystem.spawnZones) do
-            local originMenu = missionCommands.addSubMenuForCoalition(blueCoalition, "From " .. homeZone, templateMenu)
-            
-            -- For each destination, add a spawn command
-            for _, destination in ipairs(ConvoySystem.destinationZones) do
-                if homeZone ~= destination.name then  -- Don't spawn convoy to same location
-                    missionCommands.addCommandForCoalition(
-                        blueCoalition,
-                        "To " .. destination.fullName,
-                        originMenu,
-                        function()
-                            -- Check max convoy limit
-                            local activeCount = getActiveConvoyCount()
-                            if activeCount >= ConvoySystem.maxActiveConvoys then
-                                trigger.action.outTextForCoalition(
-                                    blueCoalition,
-                                    "CONVOY LIMIT REACHED!\nMaximum " .. ConvoySystem.maxActiveConvoys .. " convoys allowed.\nWait for a convoy to arrive or be destroyed.",
-                                    10
-                                )
-                                env.info("ConvoySystem: Spawn blocked - max convoy limit reached (" .. activeCount .. "/" .. ConvoySystem.maxActiveConvoys .. ")")
-                                return
-                            end
-                            
-                            -- Check cooldown for this template
-                            local onCooldown, remaining = isTemplateOnCooldown(templateIndex)
-                            if onCooldown then
-                                trigger.action.outTextForCoalition(
-                                    blueCoalition,
-                                    template.name .. " ON COOLDOWN!\nAvailable in: " .. formatTime(remaining),
-                                    10
-                                )
-                                env.info("ConvoySystem: Spawn blocked - template " .. templateIndex .. " on cooldown (" .. formatTime(remaining) .. " remaining)")
-                                return
-                            end
-                            
-                            -- Spawn the convoy
-                            env.info("ConvoySystem: Menu command triggered - Template: " .. templateIndex .. 
-                                     ", From: " .. homeZone .. ", To: " .. destination.zoneName)
-                            
-                            local convoyId = nil
-                            local ok, result = pcall(function()
-                                return spawnConvoyGroup(templateIndex, blueCoalition, spawnZoneName, destination.zoneName)
-                            end)
-                            
-                            if not ok then
-                                env.error("ConvoySystem: SPAWN ERROR - " .. tostring(result))
-                                trigger.action.outTextForCoalition(blueCoalition, "Convoy spawn error! Check DCS log.", 10)
-                                return
-                            end
-                            
-                            convoyId = result  -- Now returns convoyId instead of boolean
-                            
-                            if convoyId then
-                                -- Track requester for leaderboard (try to find any player in game)
-                                local requesterName = "Unknown"
-                                local blueGroups = coalition.getGroups(blueCoalition, Group.Category.AIRPLANE)
-                                for _, grp in ipairs(blueGroups or {}) do
-                                    if grp and grp:isExist() then
-                                        for _, unit in ipairs(grp:getUnits() or {}) do
-                                            if unit and unit:isExist() and unit:getPlayerName() then
-                                                requesterName = unit:getPlayerName()
-                                                break
-                                            end
-                                        end
-                                    end
-                                    if requesterName ~= "Unknown" then break end
-                                end
-                                
-                                -- Also check helicopters
-                                if requesterName == "Unknown" then
-                                    blueGroups = coalition.getGroups(blueCoalition, Group.Category.HELICOPTER)
-                                    for _, grp in ipairs(blueGroups or {}) do
-                                        if grp and grp:isExist() then
-                                            for _, unit in ipairs(grp:getUnits() or {}) do
-                                                if unit and unit:isExist() and unit:getPlayerName() then
-                                                    requesterName = unit:getPlayerName()
-                                                    break
-                                                end
-                                            end
-                                        end
-                                        if requesterName ~= "Unknown" then break end
-                                    end
-                                end
-                                
-                                ConvoySystem.convoyRequesters[convoyId] = requesterName
-                                env.info("ConvoySystem: Convoy " .. convoyId .. " requested by: " .. requesterName)
-                                
-                                local message = "Convoy Dispatched!\n" .. template.name .. 
-                                               "\nFrom: " .. homeZone .. 
-                                               "\nDestination: " .. destination.fullName
-                                trigger.action.outTextForCoalition(blueCoalition, message, 10)
-                                env.info("ConvoySystem: " .. message:gsub("\n", " | "))
-                            else
-                                trigger.action.outTextForCoalition(blueCoalition, "Failed to spawn convoy from " .. homeZone .. "!\nCheck that spawn zone exists.", 10)
-                                env.warning("ConvoySystem: Failed to spawn convoy from " .. homeZone)
-                            end
+
+    env.info("ConvoySystem: Building paged coalition radio menu for BLUE")
+
+    local allZones = ConvoySystem.destinationZones
+
+    -- Split a list into pages of PAGE_SIZE
+    local function makePages(list)
+        local pages = {}
+        local i = 1
+        while i <= #list do
+            local page = {}
+            for j = i, math.min(i + PAGE_SIZE - 1, #list) do
+                page[#page + 1] = list[j]
+            end
+            pages[#pages + 1] = page
+            i = i + PAGE_SIZE
+        end
+        return pages
+    end
+
+    -- Check if an origin zone is currently RED-owned via the ABC capture system.
+    -- Returns true (block) only when ABC is loaded AND the zone explicitly returns "RED".
+    -- Zones not registered in ABC (e.g. permanent Israeli airbases) return false → always allowed.
+    local function isZoneRedOwned(zoneName)
+        if not ABC or type(ABC.getOwner) ~= "function" then return false end
+        local dcsName = ConvoySystem.airbaseNames[zoneName]
+        if not dcsName then return false end
+        return ABC.getOwner(dcsName) == "RED"
+    end
+
+    -- Find a player name across airplane + helicopter groups (for requester tracking)
+    local function findRequesterName()
+        local cats = { Group.Category.AIRPLANE, Group.Category.HELICOPTER }
+        for _, cat in ipairs(cats) do
+            for _, grp in ipairs(coalition.getGroups(blueCoalition, cat) or {}) do
+                if grp and grp:isExist() then
+                    for _, unit in ipairs(grp:getUnits() or {}) do
+                        if unit and unit:isExist() and unit:getPlayerName() then
+                            return unit:getPlayerName()
                         end
-                    )
+                    end
                 end
             end
         end
+        return "Unknown"
     end
-    
-    env.info("ConvoySystem: Coalition radio menu initialization complete")
+
+    local zonePages = makePages(allZones)
+    local numZonePages = #zonePages
+
+    -- Root menu
+    local convoyRootMenu = missionCommands.addSubMenuForCoalition(blueCoalition, "Convoy Operations")
+    env.info("ConvoySystem: Created root menu 'Convoy Operations'")
+
+    -- ── Template level ──────────────────────────────────────────────────────
+    for templateIndex, template in ipairs(ConvoySystem.templates) do
+        local templateMenu = missionCommands.addSubMenuForCoalition(
+            blueCoalition, template.name, convoyRootMenu)
+
+        -- ── Origin page level ────────────────────────────────────────────────
+        for originPageNum, originPage in ipairs(zonePages) do
+            local originPageLabel = (numZonePages > 1)
+                and ("Spawn From: Page " .. originPageNum)
+                or  "Spawn From..."
+
+            local originPageMenu = missionCommands.addSubMenuForCoalition(
+                blueCoalition, originPageLabel, templateMenu)
+
+            -- ── Individual origin zone ───────────────────────────────────────
+            for _, originZone in ipairs(originPage) do
+                local spawnZoneName = ConvoySystem.spawnZones[originZone.name]
+                local originMenu = missionCommands.addSubMenuForCoalition(
+                    blueCoalition, originZone.fullName, originPageMenu)
+
+                -- ── Destination page level ───────────────────────────────────
+                for destPageNum, destPage in ipairs(zonePages) do
+
+                    local validDests = {}
+                    for _, dest in ipairs(destPage) do
+                        if dest.name ~= originZone.name then
+                            validDests[#validDests + 1] = dest
+                        end
+                    end
+
+                    if #validDests > 0 then
+                        local destPageLabel = (numZonePages > 1)
+                            and ("Send To: Page " .. destPageNum)
+                            or  "Send To..."
+
+                        local destPageMenu = missionCommands.addSubMenuForCoalition(
+                            blueCoalition, destPageLabel, originMenu)
+
+                        -- ── Destination command ──────────────────────────────
+                        for _, destination in ipairs(validDests) do
+                            local capOriginName = originZone.name
+                            local capOriginFull = originZone.fullName
+                            local capSpawnZone  = spawnZoneName
+                            local capDest       = destination
+                            local capTplIndex   = templateIndex
+                            local capTplName    = template.name
+
+                            missionCommands.addCommandForCoalition(
+                                blueCoalition,
+                                destination.fullName,
+                                destPageMenu,
+                                function()
+                                    -- Max convoy limit check
+                                    local activeCount = getActiveConvoyCount()
+                                    if activeCount >= ConvoySystem.maxActiveConvoys then
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition,
+                                            "CONVOY LIMIT REACHED!\nMaximum " ..
+                                            ConvoySystem.maxActiveConvoys ..
+                                            " convoys allowed.\nWait for a convoy to arrive or be destroyed.",
+                                            10
+                                        )
+                                        env.info("ConvoySystem: Spawn blocked - max convoys reached (" ..
+                                                 activeCount .. "/" .. ConvoySystem.maxActiveConvoys .. ")")
+                                        return
+                                    end
+
+                                    -- Cooldown check
+                                    local onCooldown, remaining = isTemplateOnCooldown(capTplIndex)
+                                    if onCooldown then
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition,
+                                            capTplName .. " ON COOLDOWN!\nAvailable in: " ..
+                                            formatTime(remaining),
+                                            10
+                                        )
+                                        env.info("ConvoySystem: Spawn blocked - template " .. capTplIndex ..
+                                                 " on cooldown (" .. formatTime(remaining) .. " remaining)")
+                                        return
+                                    end
+
+                                    -- Ownership check: block spawn from RED-held zones
+                                    if isZoneRedOwned(capOriginName) then
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition,
+                                            "SPAWN DENIED!\n" .. capOriginFull ..
+                                            " is currently under RED control.\nCapture it first before dispatching convoys from here.",
+                                            12
+                                        )
+                                        env.info("ConvoySystem: Spawn blocked - " .. capOriginName ..
+                                                 " is RED-owned")
+                                        return
+                                    end
+
+                                    -- Spawn zone sanity check
+                                    if not capSpawnZone then
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition,
+                                            "No spawn zone defined for " .. capOriginName .. "!",
+                                            10
+                                        )
+                                        env.warning("ConvoySystem: No spawnZone entry for " .. capOriginName)
+                                        return
+                                    end
+
+                                    env.info("ConvoySystem: Menu command - Template: " .. capTplIndex ..
+                                             ", From: " .. capOriginName ..
+                                             ", To: " .. capDest.zoneName)
+
+                                    -- Spawn
+                                    local ok, result = pcall(function()
+                                        return spawnConvoyGroup(capTplIndex, blueCoalition,
+                                                                capSpawnZone, capDest.zoneName)
+                                    end)
+
+                                    if not ok then
+                                        env.error("ConvoySystem: SPAWN ERROR - " .. tostring(result))
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition, "Convoy spawn error! Check DCS log.", 10)
+                                        return
+                                    end
+
+                                    local convoyId = result
+
+                                    if convoyId then
+                                        local requesterName = findRequesterName()
+                                        ConvoySystem.convoyRequesters[convoyId] = requesterName
+                                        env.info("ConvoySystem: Convoy " .. convoyId ..
+                                                 " requested by: " .. requesterName)
+
+                                        local msg = "Convoy Dispatched!\n" .. capTplName ..
+                                                    "\nFrom: " .. capOriginFull ..
+                                                    "\nDestination: " .. capDest.fullName
+                                        trigger.action.outTextForCoalition(blueCoalition, msg, 10)
+                                        env.info("ConvoySystem: " .. msg:gsub("\n", " | "))
+                                    else
+                                        trigger.action.outTextForCoalition(
+                                            blueCoalition,
+                                            "Failed to spawn convoy from " .. capOriginName ..
+                                            "!\nCheck that spawn zone exists in ME.",
+                                            10
+                                        )
+                                        env.warning("ConvoySystem: Failed to spawn convoy from " ..
+                                                    capOriginName)
+                                    end
+                                end
+                            )
+                        end  -- destination loop
+                    end  -- validDests guard
+                end  -- dest page loop
+            end  -- origin zone loop
+        end  -- origin page loop
+    end  -- template loop
+
+    env.info("ConvoySystem: Paged coalition radio menu initialization complete")
     
     env.info("ConvoySystem: ============ SYSTEM INITIALIZATION COMPLETE ============")
 end

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYRIA ISIS TOO Script — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:10px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:80px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+  .flow-s{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;font-size:12px;line-height:1.5}
+  .flow-a{font-size:18px;color:var(--muted)}
+  .vs-table td:first-child{font-weight:600;color:var(--accent)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">SYRIA<br><span>ISIS TOO</span><br><span style="font-size:9px;color:var(--muted)">Script</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#vs-too">vs TOO System v5.9</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-general">General Settings</a>
+  <a href="#cfg-zones">Dynamic Zone Discovery</a>
+  <a href="#cfg-spawn-count">Per-Zone Spawn Count</a>
+  <a href="#cfg-water">Water Check</a>
+  <a href="#cfg-templates">Templates</a>
+  <div class="grp">Systems</div>
+  <a href="#spawn-flow">Spawn Flow</a>
+  <a href="#maintenance">Maintenance</a>
+  <a href="#markers">Map Markers</a>
+  <a href="#nineline">9-Line CAS Brief</a>
+  <div class="grp">Usage</div>
+  <a href="#menu">F10 Radio Menu</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>SYRIA ISIS Target of Opportunity Script</h1>
+<p class="sub"><b>SYRIA_ISIS_TOO_Script.lua</b> &nbsp;&middot;&nbsp; Dynamic zone discovery, per-zone multi-spawn, water check &mdash; ISIS variant of the TOO system for the Syria theatre</p>
+
+<h2 id="overview">How It Works</h2>
+<p>This script is the Syria-theatre counterpart of the <em>DGSS TOO System v5.9</em>. It discovers <code>TOOZONE_</code> prefixed trigger zones at runtime (up to 20), spawns 1&ndash;3 ISIS target groups per zone, and maintains a minimum active target count on the map. Template sets represent ISIS/Daesh positions including infantry, technicals, AA (ZSU-23-4 Shilka), and mortar emplacements.</p>
+
+<div class="flow">
+  <div class="flow-s">Boot (+1 s)<br><small>discover zones</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Init spawns<br><small>1&ndash;3 per zone</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 60 s<br><small>maintenanceCheck()</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Water check<br><small>reject water pts</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 10 s<br><small>menu update</small></div>
+</div>
+
+<h2 id="vs-too">Differences from TOO System v5.9</h2>
+<table class="vs-table">
+  <tr><th>Feature</th><th>TOO System v5.9</th><th>ISIS TOO Script</th></tr>
+  <tr><td>Zone naming</td><td><code>TOOZONE1</code>&ndash;<code>TOOZONE60</code> (static list)</td><td><code>TOOZONE_1</code>&ndash;<code>TOOZONE_20</code> (runtime discovery)</td></tr>
+  <tr><td>Zone count</td><td>60 fixed</td><td>Up to 20, dynamically scanned (<code>ZONE_SCAN_MAX</code>)</td></tr>
+  <tr><td>Spawns per zone</td><td>1 (one target per zone)</td><td>1&ndash;3 (<code>MIN_SPAWNS_PER_ZONE</code> / <code>MAX_SPAWNS_PER_ZONE</code>)</td></tr>
+  <tr><td>Water check</td><td>None &mdash; spawn fails silently on water</td><td><code>land.getSurfaceType()</code> rejects <code>WATER</code> surfaces</td></tr>
+  <tr><td>Templates</td><td>30 Taliban-themed</td><td>30 ISIS/Daesh-themed (includes Shilka ZSU-23-4)</td></tr>
+  <tr><td>F10 menu name</td><td>"Mission Targets"</td><td>"ISIS Targets"</td></tr>
+  <tr><td>Log prefix</td><td><code>[TOO]</code></td><td><code>[ISIS_TOO]</code></td></tr>
+  <tr><td>Theatre</td><td>Generic / Afghanistan</td><td>Syria</td></tr>
+</table>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td><code>mist.lua</code></td><td>Required. Uses <code>mist.dynAdd</code>, <code>mist.dynAddStatic</code>.</td></tr>
+  <tr><td>DCS World 2.5+ (Syria map)</td><td>Uses <code>trigger</code>, <code>land</code>, <code>timer</code>, <code>country</code>, <code>Group</code>, <code>missionCommands</code>.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  &rarr;  DO SCRIPT FILE  &rarr;  mist_4_5_126.lua
+                       &rarr;  DO SCRIPT FILE  &rarr;  SYRIA_ISIS_TOO_Script.lua</pre>
+<div class="box box-warn">MIST must be loaded first. The script retries <code>delayedInit()</code> every 2 seconds until <code>missionCommands</code> is available.</div>
+
+<h2 id="cfg-general">Configuration &mdash; General</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ISIS_TOO_CONFIG.minTargetsOnMap</span><span class="cd">8</span><span class="cq">Minimum active targets maintained on the map at all times.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Maintenance checks every 60 s. If active count drops below 8, new targets are spawned in available zones. With per-zone multi-spawn, 20 zones can easily hold more than 8 total targets.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ISIS_TOO_CONFIG.maxAttempts</span><span class="cd">12</span><span class="cq">Max spawn retries per target when position fails.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Applies to each <code>spawnTargetOfOpportunity()</code> call. With the water check enabled, positions landing on water are rejected and a new random point in the zone is tried (up to 5 inner retries per attempt).</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ISIS_TOO_CONFIG.maintenanceCheckInterval</span><span class="cd">1800 s (config) / 60 s (actual)</span><span class="cq">Dead-target cleanup and respawn loop interval.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Same as the TOO System &mdash; config declares 1800 s but the actual <code>timer.scheduleFunction</code> runs every 60 s. Ensures fast respawn cycles.</p></div>
+</div>
+
+<h2 id="cfg-zones">Configuration &mdash; Dynamic Zone Discovery</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">ZONE_SCAN_MAX</span><span class="cd">20</span><span class="cq">Maximum zone index to scan at boot.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>At startup, the script iterates from 1 to 20 and calls <code>trigger.misc.getZone("TOOZONE_" .. i)</code>. Found zones are added to <code>ISIS_TOO_ZONES</code>. Gaps are allowed &mdash; if <code>TOOZONE_3</code> is missing but <code>TOOZONE_4</code> exists, both 1-2 and 4+ are still discovered.</p></div>
+</div>
+<pre>-- Runtime discovery
+for i = 1, ZONE_SCAN_MAX do
+    local zoneData = trigger.misc.getZone("TOOZONE_" .. i)
+    if zoneData then
+        ISIS_TOO_ZONES[#ISIS_TOO_ZONES + 1] = {
+            name   = "TOOZONE_" .. i,
+            point  = zoneData.point,
+            radius = zoneData.radius
+        }
+    end
+end</pre>
+<div class="box box-tip">You can add more zones to the ME at any time &mdash; just name them <code>TOOZONE_N</code> (up to 20). No script edits needed. To support more than 20, increase <code>ZONE_SCAN_MAX</code>.</div>
+
+<h2 id="cfg-spawn-count">Configuration &mdash; Per-Zone Spawn Count</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MIN_SPAWNS_PER_ZONE</span><span class="cd">1</span><span class="cq">Minimum targets to spawn per zone during initialization.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Each zone gets at least 1 target group. Tracked in <code>zoneSpawnCount[zoneName]</code>.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">MAX_SPAWNS_PER_ZONE</span><span class="cd">3</span><span class="cq">Maximum targets per zone during initialization.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>A random count between 1 and 3 is chosen for each zone: <code>math.random(MIN_SPAWNS_PER_ZONE, MAX_SPAWNS_PER_ZONE)</code>. This gives density variation &mdash; some zones feel empty, others are target-rich. With 20 zones &times; avg 2 targets = ~40 initial targets.</p></div>
+</div>
+
+<h2 id="cfg-water">Water Check</h2>
+<p>Before spawning at a random position, the script calls:</p>
+<pre>local surfaceType = land.getSurfaceType({x = pos.x, y = pos.z})
+if surfaceType == land.SurfaceType.WATER then
+    -- reject position, try another random point
+end</pre>
+<div class="box box-info">This prevents units from spawning on rivers, lakes, or coastal water. The TOO System v5.9 (Afghanistan) lacks this check. On the Syria map with significant coastline, this is essential to avoid lost spawns.</div>
+
+<h2 id="cfg-templates">Configuration &mdash; Templates</h2>
+<p>30 ISIS templates defined in <code>ISIS_TOO_TEMPLATES</code>. Same structure as the TOO System but with ISIS-themed names and some different unit compositions.</p>
+
+<h3>Template Structure</h3>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><code>name</code></td><td>Template identifier (e.g. <code>ISIS_Raqqa_Bastion</code>)</td></tr>
+  <tr><td><code>buildings</code></td><td>Array of static objects: <code>{type, offset={x,y}}</code>. Types include tents, buildings, outhouses.</td></tr>
+  <tr><td><code>units</code></td><td>Array of ground units: <code>{type, offset={x,y}}</code>. Includes infantry, technicals, mortar, Shilka (ZSU-23-4), Grad-URAL, HQ-7.</td></tr>
+</table>
+
+<h3>All 30 Template Names</h3>
+<table>
+  <tr><td>1. ISIS_Raqqa_Bastion</td><td>11. ISIS_Hama_Outpost</td><td>21. ISIS_Tartus_Infiltrators</td></tr>
+  <tr><td>2. ISIS_Deir_ez_Zor_HQ</td><td>12. ISIS_Hasaka_Garrison</td><td>22. ISIS_Suwayda_Stronghold</td></tr>
+  <tr><td>3. ISIS_Aleppo_Cell</td><td>13. ISIS_Tabqa_Dam_Force</td><td>23. ISIS_Qamishli_Scouts</td></tr>
+  <tr><td>4. ISIS_Palmyra_Garrison</td><td>14. ISIS_Manbij_Defense</td><td>24. ISIS_Afrin_Ambush</td></tr>
+  <tr><td>5. ISIS_Kobani_Siege</td><td>15. ISIS_Mayadeen_Bastion</td><td>25. ISIS_Jarablus_Border</td></tr>
+  <tr><td>6. ISIS_Damascus_Outskirts</td><td>16. ISIS_Bukamal_Smugglers</td><td>26. ISIS_Azaz_Convoy</td></tr>
+  <tr><td>7. ISIS_Idlib_Fighters</td><td>17. ISIS_Shadadi_Camp</td><td>27. ISIS_Salqin_Hideout</td></tr>
+  <tr><td>8. ISIS_Daraa_Checkpoint</td><td>18. ISIS_Sukhna_Patrol</td><td>28. ISIS_Bab_alHawa_Crossing</td></tr>
+  <tr><td>9. ISIS_Latakia_Night_Ops</td><td>19. ISIS_Saraqib_Ambush</td><td>29. ISIS_Jisr_alShughur_Post</td></tr>
+  <tr><td>10. ISIS_Homs_Siege</td><td>20. ISIS_Quneitra_Raiders</td><td>30. ISIS_Zabadani_Siege</td></tr>
+</table>
+
+<div class="box box-info"><strong>Shilka (ZSU-23-4)</strong> appears in several templates, providing short-range anti-air defence. Pilots should expect light AAA around some target clusters, especially in larger templates.</div>
+
+<h2 id="spawn-flow">Spawn Flow</h2>
+<ol>
+  <li>Boot: discover all <code>TOOZONE_N</code> zones (N = 1&ndash;20).</li>
+  <li>For each discovered zone, pick <code>math.random(1, 3)</code> spawn count.</li>
+  <li>For each spawn in a zone:
+    <ol type="a">
+      <li>Pick next template in sequential rotation (cycles 1&ndash;30).</li>
+      <li>Generate random position within zone radius.</li>
+      <li><strong>Water check</strong> &mdash; reject if <code>land.SurfaceType.WATER</code>, retry.</li>
+      <li>Spawn static buildings via <code>mist.dynAddStatic</code> (CJTF_RED).</li>
+      <li>Spawn unit group via <code>mist.dynAdd</code> (CJTF_RED).</li>
+      <li>Verify group alive, register in <code>activeTargets</code>, increment <code>zoneSpawnCount</code>.</li>
+      <li>Place map marker at first unit position.</li>
+    </ol>
+  </li>
+</ol>
+
+<h2 id="maintenance">Maintenance Loop (60 s)</h2>
+<p>Identical structure to the TOO System v5.9:</p>
+<ul>
+  <li><code>cleanupDeadTargets()</code> &mdash; removes dead groups, decrements <code>zoneSpawnCount</code>, destroys orphaned statics.</li>
+  <li><code>markerManagerCleanup()</code> &mdash; removes markers for dead groups.</li>
+  <li><code>cleanupPlayerMenus()</code> &mdash; clears menu tracking for disconnected players.</li>
+  <li><code>updateDestroyedBuildings()</code> &mdash; counts destroyed statics per group.</li>
+  <li>Re-applies markers to living groups missing one.</li>
+  <li>Spawns new targets until <code>minTargetsOnMap = 8</code> reached (respects per-zone max of 3).</li>
+</ul>
+
+<h2 id="markers">Map Markers</h2>
+<p>Each active target gets a map marker prefixed <code>[ISIS_TOO]</code> with the template name and grid reference. Managed by the <code>markerManager</code> — markers are removed automatically when targets die.</p>
+
+<h2 id="nineline">9-Line CAS Brief</h2>
+<p>Same format as the TOO System:</p>
+<pre>1. IP:        GRID &lt;ipGrid&gt;
+2. HEADING:   &lt;bearing&gt; degrees
+3. DISTANCE:  On Grid &lt;ipGrid&gt; - X.X km from center
+4. ELEVATION: &lt;meters&gt;
+5. TARGET:    &lt;type&gt; (&lt;count&gt; units)
+6. LOCATION:  &lt;MGRS&gt; / &lt;DD&deg;MM'SS"&gt;
+7. MARK:      VISUAL ONLY
+8. FRIENDLIES: CLEAR
+9. REMARKS:   &lt;displayName&gt;</pre>
+
+<h2 id="menu">F10 Radio Menu</h2>
+<p>Each BLUE player group gets an <strong>ISIS Targets</strong> sub-menu:</p>
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td>List Active Targets</td><td>Shows total count and all active target names.</td></tr>
+  <tr><td>Target 1 &ndash; 8</td><td>Slot-based sub-menus dynamically mapped to living targets.</td></tr>
+</table>
+<p>Each target slot has:</p>
+<ul>
+  <li><strong>9-Line Brief</strong> &mdash; Full 9-line CAS callout (displayed 30 s).</li>
+  <li><strong>Target Status</strong> &mdash; Alive/killed unit count, intact/destroyed building count.</li>
+  <li><strong>What Target Is This?</strong> &mdash; Template name, total units, grid reference.</li>
+</ul>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>MIST</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>mist_4_5_126.lua</code>.</li>
+  <li><strong>Load script</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>SYRIA_ISIS_TOO_Script.lua</code>.</li>
+  <li><strong>Trigger zones</strong> &mdash; Place circular trigger zones named <code>TOOZONE_1</code> through <code>TOOZONE_N</code> (up to 20). Gaps are OK. Minimum 1 zone required.</li>
+  <li><strong>Zone placement (Syria)</strong> &mdash; The Syria map has significant coastline. Place zones over land. The water check will reject water positions, but zones entirely over water will waste spawn attempts.</li>
+  <li><strong>Zone radius</strong> &mdash; 2&ndash;10 km recommended. Larger zones spread targets out so multiple groups in one zone don't overlap.</li>
+  <li><strong>Country</strong> &mdash; CJTF_RED must be available. Units and statics spawn as this country.</li>
+</ol>
+<div class="box box-tip">With per-zone multi-spawn (1&ndash;3), even 10 zones can produce 10&ndash;30 initial targets. You don't need 60 zones like the Afghanistan variant.</div>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>No targets spawn at startup</td><td>No <code>TOOZONE_</code> zones found. Check zone names are exactly <code>TOOZONE_1</code>, <code>TOOZONE_2</code>, etc.</td></tr>
+  <tr><td>Fewer spawns than expected</td><td>Water check is rejecting positions. Ensure zones aren't mostly over water. Check <code>dcs.log</code> for <code>[ISIS_TOO]</code> water rejection messages.</td></tr>
+  <tr><td>MIST errors on load</td><td>MIST not loaded before this script. Check mission trigger order.</td></tr>
+  <tr><td>Menu shows "no active targets"</td><td>All targets destroyed &mdash; maintenance runs every 60 s and will respawn. Wait up to 60 s.</td></tr>
+  <tr><td>"Target slot empty"</td><td>Slot number exceeds living target count. Use "List Active Targets" first.</td></tr>
+  <tr><td>Zone not discovered</td><td>Zone name doesn't match pattern <code>TOOZONE_N</code> or N > 20. Increase <code>ZONE_SCAN_MAX</code> if needed.</td></tr>
+  <tr><td>Too many targets</td><td>Reduce <code>MAX_SPAWNS_PER_ZONE</code> or remove some zones. With 20 zones &times; 3 max = up to 60 targets.</td></tr>
+  <tr><td>Shilka engaging aircraft unexpectedly</td><td>Some templates include ZSU-23-4 Shilka. This is by design &mdash; provides light AAA challenge. Remove from template <code>units</code> array if unwanted.</td></tr>
+  <tr><td>Log prefix</td><td>All messages prefixed <code>[ISIS_TOO]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"\u25B2 close":"\u25BC details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

@@ -157,6 +157,16 @@
   <div class="ch" onclick="tog(this)"><span class="ck">Status monitor interval</span><span class="cd">60 s</span><span class="cq">How often dead teams are cleaned from the registry.</span><span class="ct">▼ details</span></div>
   <div class="cb"><p>Dead JTAC groups are detected and removed from <code>DGSS_CTLD.JTAC_REGISTRY</code> every 60 seconds. Cleanup loop (full group audit) runs every 600 seconds.</p></div>
 </div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">JTAC scan loop</span><span class="cd">15 s</span><span class="cq">How often each JTAC rescans for targets and issues new 9-line callouts.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>The main JTAC scheduling loop (<code>scheduleJtacLoop</code>) runs every 15 seconds for each active JTAC. On each cycle, the JTAC collects all RED units within <code>SCAN_RADIUS</code>, performs line-of-sight checks, picks the best target (nearest visible or manual override), and updates the laser and CAS callout if the target changed.</p>
+  <p><strong>Performance note (Feb 2026):</strong> Reduced from 8 s to 15 s. The previous interval also contained a double LOS raycast bug — <code>land.isVisible()</code> was called once inside a <code>pcall()</code> and then again outside it. This has been fixed; the LOS check now runs exactly once per target per cycle via <code>pcall(land.isVisible, ...)</code>.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Menu builder interval</span><span class="cd">15 s</span><span class="cq">How often the static JTAC menu tree is fully rebuilt.</span><span class="ct">▼ details</span></div>
+  <div class="cb"><p>The <code>staticJtacMenuBuilder</code> timer checks every 15 seconds whether the set of active JTACs has changed. If so, the F10 JTAC Control sub-menu is torn down and rebuilt from scratch to reflect current JTAC teams.</p>
+  <p><strong>Performance note (Feb 2026):</strong> Reduced from 5 s to 15 s. Menu rebuilds are relatively expensive (they touch <code>missionCommands</code>), but the set of active JTACs changes infrequently in practice, so a 15-second poll is more than sufficient.</p></div>
+</div>
 
 <h2 id="cfg-laser">Config — Laser Codes</h2>
 <p>Each JTAC team is assigned a unique 4-digit laser code automatically from a pool. The code is announced in the 9-line callout message. Players must dial in the correct code on their targeting pod or LGB seeker.</p>

@@ -3,24 +3,24 @@
 ---------------------------------------------------------------------
 
 ConvoyTemplate1  = { units = { {type="BRDM-2"},{type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"}, } }
-ConvoyTemplate2  = { units = { {type="BTR-60"},{type="Ural-375 ZU-23 Insurgent"},{type="HL_KORD"},{type="ural_4230_civil_t"},{type="HL_ZU-23"}, } }
+ConvoyTemplate2  = { units = { {type="BTR-60"},{type="Ural-375 ZU-23 Insurgent"},{type="HL_KORD"},{type="Osa 9A33 ln"},{type="HL_ZU-23"}, } }
 ConvoyTemplate3  = { units = { {type="Ural-375"},{type="HL_DSHK"},{type="BRDM-2"},{type="HL_KORD"}, } }
 ConvoyTemplate4  = { units = { {type="BTR-60"},{type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="HL_DSHK"}, } }
-ConvoyTemplate5  = { units = { {type="ural_4230_civil_t"},{type="HL_KORD"},{type="Ural-375 ZU-23 Insurgent"},{type="BRDM-2"}, } }
-ConvoyTemplate6  = { units = { {type="HL_ZU-23"},{type="Ural-375"},{type="HL_DSHK"},{type="BTR-60"},{type="ural_4230_civil_t"}, } }
+ConvoyTemplate5  = { units = { {type="Osa 9A33 ln"},{type="HL_KORD"},{type="Ural-375 ZU-23 Insurgent"},{type="BRDM-2"}, } }
+ConvoyTemplate6  = { units = { {type="HL_ZU-23"},{type="Ural-375"},{type="HL_DSHK"},{type="BTR-60"},{type="Osa 9A33 ln"}, } }
 ConvoyTemplate7  = { units = { {type="BRDM-2"},{type="HL_KORD"},{type="Ural-375"},{type="Ural-375 ZU-23 Insurgent"}, } }
 ConvoyTemplate8  = { units = { {type="tt_ZU-23"},{type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"}, } }
-ConvoyTemplate9  = { units = { {type="ural_4230_civil_t"},{type="HL_ZU-23"},{type="HL_KORD"},{type="BRDM-2"},{type="Ural-375"}, } }
+ConvoyTemplate9  = { units = { {type="Osa 9A33 ln"},{type="HL_ZU-23"},{type="HL_KORD"},{type="BRDM-2"},{type="Ural-375"}, } }
 ConvoyTemplate10 = { units = { {type="Ural-375 ZU-23 Insurgent"},{type="HL_DSHK"},{type="tt_ZU-23"},{type="BTR-60"}, } }
-ConvoyTemplate11 = { units = { {type="HL_KORD"},{type="ural_4230_civil_t"},{type="BRDM-2"},{type="HL_ZU-23"}, } }
+ConvoyTemplate11 = { units = { {type="HL_KORD"},{type="Osa 9A33 ln"},{type="BRDM-2"},{type="HL_ZU-23"}, } }
 ConvoyTemplate12 = { units = { {type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"},{type="BTR-60"},{type="HL_KORD"}, } }
-ConvoyTemplate13 = { units = { {type="BRDM-2"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="ural_4230_civil_t"}, } }
+ConvoyTemplate13 = { units = { {type="BRDM-2"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="Osa 9A33 ln"}, } }
 ConvoyTemplate14 = { units = { {type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"},{type="HL_KORD"}, } }
-ConvoyTemplate15 = { units = { {type="ural_4230_civil_t"},{type="HL_DSHK"},{type="BRDM-2"},{type="tt_ZU-23"},{type="Ural-375"}, } }
+ConvoyTemplate15 = { units = { {type="Osa 9A33 ln"},{type="HL_DSHK"},{type="BRDM-2"},{type="tt_ZU-23"},{type="Ural-375"}, } }
 ConvoyTemplate16 = { units = { {type="HL_KORD"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
-ConvoyTemplate17 = { units = { {type="BRDM-2"},{type="HL_DSHK"},{type="ural_4230_civil_t"},{type="HL_KORD"}, } }
+ConvoyTemplate17 = { units = { {type="BRDM-2"},{type="HL_DSHK"},{type="Osa 9A33 ln"},{type="HL_KORD"}, } }
 ConvoyTemplate18 = { units = { {type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="BRDM-2"}, } }
-ConvoyTemplate19 = { units = { {type="ural_4230_civil_t"},{type="HL_KORD"},{type="HL_DSHK"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
+ConvoyTemplate19 = { units = { {type="Osa 9A33 ln"},{type="HL_KORD"},{type="HL_DSHK"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
 ConvoyTemplate20 = { units = { {type="HL_ZU-23"},{type="BRDM-2"},{type="Ural-375"},{type="HL_KORD"}, } }
 
 CONVOY_TEMPLATES = {

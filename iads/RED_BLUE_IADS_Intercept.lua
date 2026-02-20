@@ -40,9 +40,9 @@
 local IADS_CFG = {
 
     -- ── Polling intervals (seconds) ──────────────────────────────────────────
-    UPDATE_INTERVAL         = 5,    -- Main IADS update loop
+    UPDATE_INTERVAL         = 10,   -- Main IADS update loop  (was 5 – reduced API load)
     AIR_INTERCEPT_INTERVAL  = 10,   -- Air-intercept zone check loop
-    WEAPON_TRACK_INTERVAL   = 1,    -- Incoming weapon tracking loop
+    WEAPON_TRACK_INTERVAL   = 2,    -- Incoming weapon tracking loop (was 1 – 2s still reactive)
     RTB_CHECK_INTERVAL      = 15,   -- RTB/despawn check loop
     NODE_REFRESH_INTERVAL   = 900,  -- Full SAM/EWR node-list rebuild (15 min)
                                     -- Dead groups are silently dropped each cycle;
@@ -54,6 +54,15 @@ local IADS_CFG = {
     SAM_FIRE_DELAY_MIN      = 0,       -- seconds – random delay before engaging (0 = instant)
     SAM_FIRE_DELAY_MAX      = 3,       -- tighter window = faster, more dangerous SAMs
     SAM_MAX_ENGAGE_PER_CONTACT = 2,    -- max SAM nodes assigned to the same contact
+
+    -- ── Low-altitude jet immunity (RED SAMs, excludes SHORAD) ──────────
+    -- Fixed-wing aircraft (jets) flying below this AGL threshold are ignored
+    -- by long-range RED SAMs, simulating radar ground-clutter masking at
+    -- terrain-hugging altitudes.  SHORAD groups (name contains "SHORAD")
+    -- are EXEMPT — they will still engage low-flying jets.  Helicopters are
+    -- also unaffected.  Set to 0 to disable.
+    -- Only affects RED and LEBANON IADS networks.
+    SAM_LOW_JET_IMMUNITY_AGL = 75,    -- metres AGL – jets below this are invisible to non-SHORAD RED SAMs
 
     -- ── Probability of Kill helpers ──────────────────────────────────────────
     -- Each SAM computes a score; highest scorer engages.
@@ -310,41 +319,32 @@ local IADS_CFG = {
     --  callsign    : GCI radio callsign used in player-facing messages
     SQUADRONS = {
         RED = {
-            -- ── Damascus (2 squadrons – capital gets double coverage) ──────────
-            { callsign="FOXBAT",   homeBase="Mezzeh",          zone="RED_ZONE_DAMASCUS",      groupPrefix="RED_AIR_MEZZEH",        maxFlights=8 },
-            { callsign="FULCRUM",  homeBase="Damascus",        zone="RED_ZONE_DAMASCUS",      groupPrefix="RED_AIR_DAMASCUS",      maxFlights=8 },
-            -- ── South / SW Syria ─────────────────────────────────────────────
-            { callsign="FENCER",   homeBase="Marj Ruhayyil",   zone="RED_ZONE_AN_NASIRAYAH",  groupPrefix="RED_AIR_MARJ_RUHAYYIL", maxFlights=8 },
-            { callsign="SHAHIN",   homeBase="Khalkhalah",      zone="RED_ZONE_KHALKHALAH",    groupPrefix="RED_AIR_KHALKHALAH",    maxFlights=8 },
-            -- ── SE Syria / Iraqi border ──────────────────────────────────────
-            { callsign="NEMER",    homeBase="At Tanf",         zone="RED_ZONE_AT_TANF",       groupPrefix="RED_AIR_AT_TANF",       maxFlights=8 },
-            -- ── Central Syria ────────────────────────────────────────────────
-            { callsign="SOKOL",    homeBase="Sayqal",          zone="RED_ZONE_SAYQAL",        groupPrefix="RED_AIR_SAYQAL",        maxFlights=8 },
-            { callsign="FLANKER",  homeBase="Tha'lah",         zone="RED_ZONE_THALAH",        groupPrefix="RED_AIR_THALAH",        maxFlights=8 },
-            -- ── Palmyra / Eastern Syria ───────────────────────────────────────
-            { callsign="VYMPEL",   homeBase="Palmyra",         zone="RED_ZONE_PALMYRA",       groupPrefix="RED_AIR_PALMYRA",       maxFlights=8 },
-            { callsign="BUKET",    homeBase="Deir ez-Zor",     zone="RED_ZONE_DEIR_EZ-ZOR",   groupPrefix="RED_AIR_DEIR_EZ_ZOR",   maxFlights=8 },
-            -- ── Homs / Tabqa ─────────────────────────────────────────────────
-            { callsign="FROGFOOT", homeBase="Shayrat",         zone="RED_ZONE_TABQA",         groupPrefix="RED_AIR_SHAYRAT",       maxFlights=8 },
-            -- ── Hama / Aleppo ────────────────────────────────────────────────
-            { callsign="BERKUT",   homeBase="Hama",            zone="RED_ZONE_HAMA",          groupPrefix="RED_AIR_HAMA",          maxFlights=8 },
-            { callsign="ALKU",     homeBase="Hama",            zone="RED_ZONE_ALEPPO",        groupPrefix="RED_AIR_ALEPPO",        maxFlights=8 },  -- Closest user base to Aleppo zone
-            -- ── Latakia / Coastal (2 squadrons) ──────────────────────────────
-            { callsign="NASR",     homeBase="Al Qusayr",       zone="RED_ZONE_BASSEL_AL-ASSAD", groupPrefix="RED_AIR_AL_QUSAYR",     maxFlights=8 },
-            { callsign="KOBRA",    homeBase="Bassel Al-Assad", zone="RED_ZONE_BASSEL_AL-ASSAD", groupPrefix="RED_AIR_LATAKIA",       maxFlights=8 },
+            { callsign="FOXBAT",   homeBase="Mezzeh",          zone="RED_ZONE_MEZZEH",          groupPrefix="RED_AIR_MEZZEH",           maxFlights=8 },
+            { callsign="FULCRUM",  homeBase="Damascus",        zone="RED_ZONE_DAMASCUS",        groupPrefix="RED_AIR_DAMASCUS",         maxFlights=8 },
+            { callsign="FENCER",   homeBase="Marj Ruhayyil",   zone="RED_ZONE_MARJ_RUHAYYIL",   groupPrefix="RED_AIR_MARJ_RUHAYYIL",    maxFlights=8 },
+            { callsign="SHAHIN",   homeBase="Khalkhalah",      zone="RED_ZONE_KHALKHALAH",      groupPrefix="RED_AIR_KHALKHALAH",       maxFlights=8 },
+            { callsign="NEMER",    homeBase="At Tanf",         zone="RED_ZONE_AT_TANF",         groupPrefix="RED_AIR_AT_TANF",          maxFlights=8 },
+            { callsign="SOKOL",    homeBase="Sayqal",          zone="RED_ZONE_SAYQAL",          groupPrefix="RED_AIR_SAYQAL",           maxFlights=8 },
+            { callsign="FLANKER",  homeBase="Tha'lah",         zone="RED_ZONE_THALAH",          groupPrefix="RED_AIR_THALAH",           maxFlights=8 },
+            { callsign="VYMPEL",   homeBase="Palmyra",         zone="RED_ZONE_PALMYRA",         groupPrefix="RED_AIR_PALMYRA",          maxFlights=8 },
+            { callsign="BUKET",    homeBase="Deir ez-Zor",     zone="RED_ZONE_DEIR_EZ-ZOR",     groupPrefix="RED_AIR_DEIR_EZ_ZOR",      maxFlights=8 },
+            { callsign="FROGFOOT", homeBase="Shayrat",         zone="RED_ZONE_TABQA",           groupPrefix="RED_AIR_SHAYRAT",          maxFlights=8 },
+            { callsign="BERKUT",   homeBase="Hama",            zone="RED_ZONE_HAMA",            groupPrefix="RED_AIR_HAMA",             maxFlights=8 },
+            { callsign="ALKU",     homeBase="Aleppo",          zone="RED_ZONE_ALEPPO",          groupPrefix="RED_AIR_ALEPPO",           maxFlights=8 },
+            { callsign="NASR",     homeBase="Al Qusayr",       zone="RED_ZONE_AL_QUSAYR",       groupPrefix="RED_AIR_AL_QUSAYR",        maxFlights=8 },
+            { callsign="KOBRA",    homeBase="Bassel Al-Assad", zone="RED_ZONE_BASSEL_AL-ASSAD", groupPrefix="RED_AIR_BASSEL_AL-ASSAD",  maxFlights=8 },
+            { callsign="Faggot",   homeBase="An Nasiriyah",    zone="RED_ZONE_AN_NASIRIYAH",    groupPrefix="RED_AIR_AN_NASIRIYAH",     maxFlights=8 },
         },
         BLUE = {
             -- ── Northern Israel – Syria north / NE approach ──────────────────
-            { callsign="VIPER",   homeBase="Kiryat Shmona", zone="BLUE_ZONE_North",        groupPrefix="BLUE_AIR_KIRYAT_N",    maxFlights=8 },  -- DCS: "Kiryat Shmona" (user: Kiryat Shamona)
-            { callsign="EAGLE",   homeBase="Ramat David",   zone="BLUE_ZONE_North_2",      groupPrefix="BLUE_AIR_RAMAT_N2",    maxFlights=8 },
-            { callsign="HORNET",  homeBase="Ramat David",   zone="BLUE_ZONE_NorthEast",    groupPrefix="BLUE_AIR_RAMAT_NE",    maxFlights=8 },
+            { callsign="VIPER",   homeBase="Kiryat Shmona", zone="BLUE_ZONE_North",        groupPrefix="BLUE_AIR_KIRYAT_N",     maxFlights=8 },
+            { callsign="HORNET",  homeBase="Ramat David",   zone="BLUE_ZONE_RAMAT_DAVID",  groupPrefix="BLUE_AIR_RAMAT_DAVID",  maxFlights=8 },
             -- ── Central / NW Israel ───────────────────────────────────────────
-            { callsign="FALCON",  homeBase="Megiddo",       zone="BLUE_ZONE_NorthWest",    groupPrefix="BLUE_AIR_MEGIDDO",     maxFlights=8 },
-            { callsign="TIGER",   homeBase="Haifa",         zone="BLUE_ZONE_East",         groupPrefix="BLUE_AIR_HAIFA",       maxFlights=8 },
+            { callsign="FALCON",  homeBase="Megiddo",       zone="BLUE_ZONE_NorthWest",    groupPrefix="BLUE_AIR_MEGIDDO",      maxFlights=8 },
+            { callsign="TIGER",   homeBase="Haifa",         zone="BLUE_ZONE_East",         groupPrefix="BLUE_AIR_HAIFA",        maxFlights=8 },
             -- ── Southern Israel – Jordan / Iraqi border ───────────────────────
-            { callsign="ZEUS",    homeBase="Ben Gurion",    zone="BLUE_ZONE_South",        groupPrefix="BLUE_AIR_BENGURION_S",  maxFlights=8 },
-            { callsign="SPARTAN", homeBase="Ben Gurion",    zone="BLUE_ZONE_PrinceHassan", groupPrefix="BLUE_AIR_BENGURION_PH", maxFlights=8 },
-            { callsign="LANCER",  homeBase="Ben Gurion",    zone="BLUE_ZONE_H4",           groupPrefix="BLUE_AIR_BENGURION_H4", maxFlights=8 },
+            { callsign="SPARTAN", homeBase="Prince Hassan", zone="BLUE_ZONE_PrinceHassan", groupPrefix="BLUE_AIR_PrinceHassan", maxFlights=8 },
+            { callsign="LANCER",  homeBase="H4",            zone="BLUE_ZONE_H4",           groupPrefix="BLUE_AIR_H4",           maxFlights=8 },
         },
     },
 }
@@ -368,6 +368,12 @@ local function dist2d(p1, p2)
     local dx = p1.x - p2.x
     local dz = p1.z - p2.z
     return math.sqrt(dx*dx + dz*dz)
+end
+
+-- True altitude above ground level (terrain-aware)
+local function getAGL(pos)
+    local terrainAlt = land.getHeight(pos.x, pos.z)
+    return pos.y - terrainAlt
 end
 
 local function randomOffset(radius)
@@ -491,6 +497,23 @@ local airIntercept = { flights = gciState.RED.flights, zones = gciState.RED.zone
 --  SECTION 4 – EWR / CONTACT SHARING
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- Lightweight prune: remove destroyed groups from existing node lists.
+-- Called every UPDATE_INTERVAL tick to keep lists current without a full
+-- coalition.getGroups() rebuild (that rebuild runs on nodeRefreshLoop).
+local function pruneDeadNodes(coaName)
+    local state = IADS[coaName]
+    local alive = {}
+    for _, name in ipairs(state.samNodes) do
+        if groupAlive(name) then alive[#alive + 1] = name end
+    end
+    state.samNodes = alive
+    alive = {}
+    for _, name in ipairs(state.ewrNodes) do
+        if groupAlive(name) then alive[#alive + 1] = name end
+    end
+    state.ewrNodes = alive
+end
+
 -- excludePrefix (optional): skip groups whose name starts with this string.
 -- Used to stop the main RED IADS absorbing RED_SAM_LEBANON_ / RED_EWR_LEBANON_ groups.
 local function buildNodeList(coaName, coaID, samPrefix, ewrPrefix, excludePrefix)
@@ -556,6 +579,21 @@ local function gatherContacts(coaName, enemyCoa)
         and obj.getPoint then
             local p = obj:getPoint()
             if p and p.y and p.y > IADS_CFG.SAM_MIN_ENGAGE_ALT then
+
+                -- Tag low-flying jets so the engagement stage can skip non-SHORAD SAMs.
+                -- The contact is still added to the list (SHORAD needs to see it).
+                local isLowJet = false
+                if (coaName == "RED" or coaName == "LEBANON")
+                   and IADS_CFG.SAM_LOW_JET_IMMUNITY_AGL > 0 then
+                    local desc = obj:getDesc()
+                    if desc and desc.category == Unit.Category.AIRPLANE then
+                        local agl = getAGL(p)
+                        if agl < IADS_CFG.SAM_LOW_JET_IMMUNITY_AGL then
+                            isLowJet = true
+                        end
+                    end
+                end
+
                 local n = obj:getName()
                 if not seen[n] then
                     seen[n] = true
@@ -567,6 +605,7 @@ local function gatherContacts(coaName, enemyCoa)
                         name       = n,
                         detectedAt = now,
                         byRadar    = true,
+                        isLowJet   = isLowJet,
                     })
                 end
             end
@@ -693,6 +732,11 @@ local function optimizeEngagements(coaName)
             local bestSam2, bestScore2 = nil, 0
             for _, samName in ipairs(state.samNodes) do
                 if not usedSAMs[samName] then
+                    -- Low-jet immunity: non-SHORAD SAMs skip low-flying jets.
+                    -- SHORAD groups (name contains "SHORAD") always engage.
+                    if contact.isLowJet and not string.find(samName, "SHORAD") then
+                        -- This SAM is not SHORAD — skip the low-flying jet
+                    else
                     local sup = state.suppressedUntil[samName] or 0
                     if timer.getTime() >= sup then
                         local score = computeEngagementScore(samName, contact)
@@ -701,6 +745,7 @@ local function optimizeEngagements(coaName)
                             bestSam2   = samName
                         end
                     end
+                    end -- low-jet SHORAD check
                 end
             end
 
@@ -1085,12 +1130,11 @@ end
 
 local function iadsUpdateLoop()
 
-    -- Rebuild node lists (units can be killed between cycles).
-    -- Main RED excludes RED_SAM_LEBANON_ / RED_EWR_LEBANON_ groups (3rd arg = excludePrefix).
-    buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
-    buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
-    -- Lebanon sub-IADS: RED coalition units, own prefix, isolated from main RED.
-    buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
+    -- Prune dead SAM/EWR groups (lightweight – no coalition.getGroups calls).
+    -- Full node-list rebuild runs on nodeRefreshLoop every 15 min.
+    pruneDeadNodes("RED")
+    pruneDeadNodes("BLUE")
+    pruneDeadNodes("LEBANON")
 
     -- Gather air contacts for each side
     gatherContacts("RED",     coalition.side.BLUE)
@@ -1370,7 +1414,8 @@ local function countAirborne(sqd, gciSt)
 end
 
 -- Contacts from IADS[coaName].contacts that are within or approaching a zone
-local function getThreatsForZone(zoneName, coaName)
+-- cachedGroups (optional): pre-fetched enemy airplane list to avoid redundant API calls.
+local function getThreatsForZone(zoneName, coaName, cachedGroups)
     local threats = {}
     local zd = trigger.misc.getZone(zoneName)
     if not zd then
@@ -1385,8 +1430,11 @@ local function getThreatsForZone(zoneName, coaName)
     -- This means the GCI will scramble even if the enemy is below radar coverage,
     -- in a notch, or otherwise undetected.  Radar contacts (IADS[coaName].contacts)
     -- are still used for the picture broadcast; they are NOT used here.
-    local enemyCoa = (coaName == "RED") and coalition.side.BLUE or coalition.side.RED
-    local groups   = coalition.getGroups(enemyCoa, Group.Category.AIRPLANE)
+    local groups = cachedGroups
+    if not groups then
+        local enemyCoa = (coaName == "RED") and coalition.side.BLUE or coalition.side.RED
+        groups = coalition.getGroups(enemyCoa, Group.Category.AIRPLANE) or {}
+    end
     for _, grp in ipairs(groups or {}) do
         if grp and grp:isExist() then
             for _, u in ipairs(grp:getUnits()) do
@@ -1593,6 +1641,12 @@ local function gciInterceptLoop()
     local now      = timer.getTime()
     local squadrons = IADS_CFG.SQUADRONS or { RED = {}, BLUE = {} }
 
+    -- Cache enemy airplane groups once per coalition (avoids 21 redundant API calls)
+    local cachedEnemyAir = {
+        RED  = coalition.getGroups(coalition.side.BLUE, Group.Category.AIRPLANE) or {},
+        BLUE = coalition.getGroups(coalition.side.RED,  Group.Category.AIRPLANE) or {},
+    }
+
     for _, coalName in ipairs({"RED", "BLUE"}) do
         local gciSt   = gciState[coalName]
         local sqds    = squadrons[coalName] or {}
@@ -1605,7 +1659,7 @@ local function gciInterceptLoop()
 
         -- ── Per-squadron scramble / RTB logic ─────────────────────────────
         for _, sqd in ipairs(sqds) do
-            local threats  = getThreatsForZone(sqd.zone, coalName)
+            local threats  = getThreatsForZone(sqd.zone, coalName, cachedEnemyAir[coalName])
             local airborne = countAirborne(sqd, gciSt)
 
             if #threats > 0 then

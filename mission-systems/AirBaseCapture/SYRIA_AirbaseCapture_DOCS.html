@@ -166,6 +166,7 @@
   </div>
   <div class="cc-body">
     <p>Every <code>CHECK_INTERVAL</code> seconds the main <code>scanAll()</code> loop fires and checks every registered base. It counts ground units of each coalition inside the trigger zone, increments capture ticks if appropriate, and redraws labels if anything changed.</p>
+    <p><strong>Performance note (Feb 2026):</strong> <code>scanAll()</code> now builds a <code>_groupCache</code> at the start of each scan cycle — fetching all coalition ground groups once (6 API calls total) and reusing the cache for every zone's <code>countUnitsInZone()</code> call. Previously each zone counted units with its own <code>coalition.getGroups()</code> call, totalling ~180 API calls per scan. The cache is cleared at the end of the cycle.</p>
     <p><strong>Practical effect:</strong> This is the "heartbeat" of the entire system. Lowering it makes the game feel more real-time (units react quickly), raising it makes captures slower and less sensitive to brief incursions. At 180 s with 3 ticks, the minimum capture time is <strong>9 minutes</strong> of uncontested presence.</p>
     <p><strong>Tuning guide:</strong><br>
     &bull; Fast / arcade: <code>30</code> s &#x2192; min capture 1.5 min<br>

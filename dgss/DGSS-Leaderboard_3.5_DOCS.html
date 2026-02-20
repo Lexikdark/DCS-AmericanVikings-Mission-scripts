@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGSS Leaderboard v3.5 — Documentation</title>
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--border:#2a2f3e;--accent:#4a90e2;--red:#e05555;--blue:#4a90e2;--green:#5cb85c;--yellow:#e0a020;--text:#d4d8e2;--muted:#868d9e;--code-bg:#12151e;--sidebar:200px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.65 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:var(--sidebar);min-width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:18px 0}
+  nav .logo{padding:0 14px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);border-bottom:1px solid var(--border)}
+  nav .logo span{color:var(--yellow)}
+  nav a{display:block;padding:5px 14px;font-size:12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover,nav a.active{color:var(--text);border-left-color:var(--accent);background:rgba(74,144,226,.07)}
+  nav .grp{padding:9px 14px 3px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--border)}
+  main{margin-left:var(--sidebar);padding:36px 48px 80px;max-width:1060px;width:100%}
+  h1{font-size:26px;color:#fff;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:32px}
+  h2{font-size:16px;color:var(--accent);margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:13px;color:#c8cfe0;margin:20px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  p{margin-bottom:10px}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:4px}
+  a{color:var(--accent);text-decoration:none}
+  pre,code{font-family:"Cascadia Code","Fira Code","Consolas",monospace}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:14px 18px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0 14px}
+  code{background:#1e2230;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#b8c0d8}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 18px}
+  th{background:#1d2233;color:var(--muted);font-weight:600;padding:7px 12px;text-align:left;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:7px 12px;border:1px solid var(--border);vertical-align:top}
+  tr:nth-child(even) td{background:#13161f}
+  td code{font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .r{background:rgba(224,85,85,.18);color:var(--red)}
+  .g{background:rgba(92,184,92,.18);color:var(--green)}
+  .y{background:rgba(224,160,32,.18);color:var(--yellow)}
+  .b{background:rgba(74,144,226,.18);color:var(--blue)}
+  .box{border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+  .box-info{background:rgba(74,144,226,.1);border-left:3px solid var(--blue)}
+  .box-warn{background:rgba(224,160,32,.1);border-left:3px solid var(--yellow)}
+  .box-tip{background:rgba(92,184,92,.1);border-left:3px solid var(--green)}
+  .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:10px 0;overflow:hidden}
+  .cfg-card .ch{display:flex;align-items:center;gap:14px;padding:11px 18px;cursor:pointer;user-select:none}
+  .cfg-card .ch:hover{background:rgba(74,144,226,.05)}
+  .cfg-card .ck{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;color:#b8c0d8;min-width:230px}
+  .cfg-card .cd{font-size:12px;color:var(--yellow);min-width:80px}
+  .cfg-card .cq{font-size:13px;color:var(--text);flex:1}
+  .cfg-card .ct{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+  .cfg-card .cb{padding:0 18px 14px;border-top:1px solid var(--border);display:none}
+  .cfg-card .cb.open{display:block}
+  .cfg-card .cb p{margin-top:10px;font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+  .flow-s{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;font-size:12px;line-height:1.5}
+  .flow-a{font-size:18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">DGSS<br><span>Leaderboard</span><br><span style="font-size:9px;color:var(--muted)">v3.5</span></div>
+  <div class="grp">Overview</div>
+  <a href="#overview">How It Works</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#load-order">Load Order</a>
+  <div class="grp">Config</div>
+  <a href="#cfg-scoring">Scoring</a>
+  <a href="#cfg-zones">Supply &amp; Distribution</a>
+  <a href="#cfg-supply">Supply Unit Types</a>
+  <a href="#cfg-timing">Timing</a>
+  <div class="grp">Tracking</div>
+  <a href="#tracking-kills">Kills &amp; Deaths</a>
+  <a href="#tracking-csar">CSAR Rescues</a>
+  <a href="#tracking-logistics">Logistics</a>
+  <a href="#tracking-resupply">Aircraft Resupply</a>
+  <a href="#tracking-convoy">Convoy Ops</a>
+  <div class="grp">Usage</div>
+  <a href="#menu">F10 Radio Menu</a>
+  <a href="#persistence">File Persistence</a>
+  <div class="grp">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+<main>
+<h1>DGSS Leaderboard System</h1>
+<p class="sub"><b>DGSS-Leaderboard 3.5.lua</b> &nbsp;&middot;&nbsp; Player kill, CSAR, logistics &amp; convoy tracking with persistent scoring</p>
+
+<h2 id="overview">How It Works</h2>
+<p>The Leaderboard system tracks player activity across multiple categories and assigns a weighted point score. It uses DCS event handlers for kills and deaths, periodic polling for logistics and resupply, and public API functions that other DGSS scripts can call directly (e.g. <code>DGSS_LEADERBOARD.addCSARRescue()</code>).</p>
+
+<div class="flow">
+  <div class="flow-s">Kill / Death<br><small>event handler</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Score<br>updated</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 12 s<br><small>logistics tracker</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Crate / fuel /<br>warehouse check</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 15 min<br><small>auto-save</small></div>
+</div>
+
+<div class="box box-info"><strong>Global namespace:</strong> <code>DGSS_LEADERBOARD</code>. Other scripts hook into the leaderboard via public methods like <code>.addKill()</code>, <code>.addCSARRescue()</code>, <code>.addConvoyCompletion()</code>, etc.</div>
+
+<h2 id="requirements">Requirements</h2>
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td><code>lfs</code></td><td>Required for save-file path resolution. Must be un-sanitized in <code>MissionScripting.lua</code>.</td></tr>
+  <tr><td><code>io</code></td><td>Required for reading/writing the stats file. Must be un-sanitized.</td></tr>
+  <tr><td>MIST (optional)</td><td>Used for <code>mist.scheduleFunction</code> if available; falls back to <code>timer.scheduleFunction</code>.</td></tr>
+  <tr><td>DCS World 2.7+</td><td>Uses <code>coalition.getGroups</code>, <code>missionCommands</code>, <code>world.addEventHandler</code>, <code>Warehouse</code> API.</td></tr>
+</table>
+
+<h2 id="load-order">Load Order</h2>
+<pre>MISSION START trigger  &rarr;  DO SCRIPT FILE  &rarr;  mist_4_5_126.lua  (optional but recommended)
+                       &rarr;  DO SCRIPT FILE  &rarr;  DGSS-Leaderboard 3.5.lua</pre>
+<div class="box box-warn">Load <strong>after</strong> DGSS-CTLD-JTAC and DGSS-CSAR+Lives if you want those scripts to call the leaderboard API. The leaderboard auto-initialises on load.</div>
+
+<h2 id="cfg-scoring">Configuration &mdash; Scoring</h2>
+<p>Point values for each tracked action. Score can never go below 0.</p>
+<table>
+  <tr><th>Action</th><th>Points</th><th>Config Key</th></tr>
+  <tr><td>Kill</td><td><span class="badge g">+10</span></td><td><code>killPoints</code></td></tr>
+  <tr><td>Death</td><td><span class="badge r">&minus;15</span></td><td><code>deathPoints</code></td></tr>
+  <tr><td>CSAR Rescue</td><td><span class="badge g">+35</span></td><td><code>rescuePoints</code></td></tr>
+  <tr><td>Convoy Rescue</td><td><span class="badge g">+10</span></td><td><code>convoyRescuePoints</code></td></tr>
+  <tr><td>Crate Delivered</td><td><span class="badge g">+35</span></td><td><code>logisticsPoints</code></td></tr>
+  <tr><td>Convoy Success (full)</td><td><span class="badge g">+100</span></td><td><code>convoySuccessPoints</code></td></tr>
+  <tr><td>Convoy Partial</td><td><span class="badge y">+50</span></td><td><code>convoyPartialPoints</code></td></tr>
+</table>
+<div class="box box-tip">All scoring values are in <code>DGSS_LEADERBOARD.SCORING</code>. Adjust to taste &mdash; higher <code>rescuePoints</code> encourages CSAR gameplay, higher <code>logisticsPoints</code> encourages supply runs.</div>
+
+<h2 id="cfg-zones">Configuration &mdash; Supply &amp; Distribution Zones</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">SUPPLY_BASE</span><span class="cd">"KANDAHAR"</span><span class="cq">Main supply base trigger zone name.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>The primary zone where supply units originate. When a tracked supply unit returns to this zone, its delivery tracking is reset. Also used as a resupply origin for aircraft fuel tracking.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">SUPPLY_HELIPORT</span><span class="cd">{"KANDAHAR","FOB_URGOON"}</span><span class="cq">Additional supply pickup zones (heliports/FARPs).</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Array of trigger zone names that also count as supply origins. Supply units leaving these zones are tracked for delivery credit.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">DISTRIBUTION_BASES</span><span class="cd">10 zones</span><span class="cq">Delivery destinations where logistics score is awarded.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>Array of trigger zone names: KABUL, BAGRAM, JALALABAD, FOB_LONDON, FOB_DALLAS, FOB_PARIS, FOB_WARSAW, FOB_SALERNO, FOB_URGOON, TARINKOT. A crate or cargo unit arriving in one of these zones credits the nearest helicopter player.</p></div>
+</div>
+
+<h2 id="cfg-supply">Configuration &mdash; Supply Unit Types</h2>
+<p>The script recognises supply cargo via two methods:</p>
+<ol>
+  <li><strong>Exact type match</strong> &mdash; DCS unit type name appears as a key in <code>DGSS_LEADERBOARD.SUPPLY_UNIT_TYPES</code> (e.g. <code>"ammo_cargo"</code>, <code>"iso_container"</code>).</li>
+  <li><strong>Keyword match</strong> &mdash; case-insensitive <code>string.find</code> for: <code>cargo</code>, <code>crate</code>, <code>container</code>, <code>ammo</code>, <code>barrel</code>, <code>sling</code>, <code>fuel</code>, <code>iso</code>, <code>supply</code>.</li>
+</ol>
+<div class="box box-info">If you add custom cargo types, either add them to <code>SUPPLY_UNIT_TYPES</code> or ensure the type name contains one of the keywords above.</div>
+
+<h2 id="cfg-timing">Configuration &mdash; Timing</h2>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Logistics tracker</span><span class="cd">12 s</span><span class="cq">How often supply movement, warehouse changes, and aircraft resupply are polled.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p>The <code>logisticsTracker()</code> function runs every 12 seconds. It calls <code>trackSupplyMovement()</code> (iterates BLUE ground groups for cargo units), <code>trackWarehouseLogistics()</code> (checks warehouse inventory changes at distribution bases), and <code>trackAircraftResupply()</code> (checks fuel levels of player aircraft at distribution bases).</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Player scanner</span><span class="cd">60 s</span><span class="cq">How often new players are detected and initialised.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p><code>scanForNewPlayers()</code> iterates all BLUE airplane and helicopter groups every 60 seconds. New player names are initialised in <code>PLAYER_STATS</code> and a save is triggered immediately so joining players are persisted.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Menu poller</span><span class="cd">60 s</span><span class="cq">How often F10 Leaderboard menus are created for new player groups.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p><code>leaderboardMenuPoller()</code> checks all BLUE airplane and helicopter groups every 60 seconds. Existing menus are tracked in <code>UNIT_MENUS</code> and only created once per unit (v3.5 optimisation &mdash; interval increased from 10 s to 60 s).</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Cleanup loop</span><span class="cd">60 s</span><span class="cq">How often dead/stale tracking entries are purged.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p><code>cleanupTrackingTables()</code> runs every 60 seconds. It removes entries for destroyed units from <code>UNIT_TRACKING</code>, <code>AIRCRAFT_TRACKING</code>, and <code>UNIT_MENUS</code>. It also purges stale timestamps (&gt;10 min) from anti-duplicate tables and old landing/warehouse delivery records.</p></div>
+</div>
+<div class="cfg-card">
+  <div class="ch" onclick="tog(this)"><span class="ck">Auto-save</span><span class="cd">900 s (15 min)</span><span class="cq">How often player stats are written to disk.</span><span class="ct">&#x25BC; details</span></div>
+  <div class="cb"><p><code>autoSaveStats()</code> calls <code>DGSS_LEADERBOARD.saveStats()</code> every 15 minutes. Stats are also saved immediately when a new player joins. The save file is a plain Lua table that can be manually edited.</p></div>
+</div>
+
+<h2 id="tracking-kills">Tracking &mdash; Kills &amp; Deaths</h2>
+<p>Uses <code>world.addEventHandler</code> to catch:</p>
+<ul>
+  <li><code>S_EVENT_KILL</code> &mdash; credits <code>initiator:getPlayerName()</code> with a kill.</li>
+  <li><code>S_EVENT_PILOT_DEAD</code> / <code>S_EVENT_DEAD</code> &mdash; records a death for the player. Anti-duplicate guard: ignores duplicate events within 1 second of each other.</li>
+</ul>
+
+<h2 id="tracking-csar">Tracking &mdash; CSAR Rescues</h2>
+<p>The CSAR system calls <code>DGSS_LEADERBOARD.addCSARRescue(playerName)</code> directly when a pilot is rescued. No polling required &mdash; the leaderboard exposes this as a public function.</p>
+
+<h2 id="tracking-logistics">Tracking &mdash; Logistics (Crate/Cargo Delivery)</h2>
+<p>Every 12 seconds <code>trackSupplyMovement()</code> iterates BLUE ground groups looking for supply-type units. When a cargo unit enters a distribution base zone:</p>
+<ol>
+  <li>The nearest helicopter (&lt;200 m) with a player name is identified as the delivery pilot.</li>
+  <li>The unit is marked as <em>delivered</em> to prevent double-counting.</li>
+  <li>Tracking resets when the unit returns to a supply base.</li>
+</ol>
+<p>Additionally, <code>trackWarehouseLogistics()</code> monitors warehouse inventories at distribution bases. If a significant increase (&gt;100 units of any category) is detected within 2 minutes of a player landing, the player is credited.</p>
+
+<h2 id="tracking-resupply">Tracking &mdash; Aircraft Resupply</h2>
+<p><code>trackAircraftResupply()</code> monitors fuel levels of player aircraft at distribution bases. If a player's fuel increases above 70% while at a distribution base (not the supply base), they are credited with an aircraft resupply. Anti-duplicate: 5-second cooldown per unit.</p>
+
+<h2 id="tracking-convoy">Tracking &mdash; Convoy Operations</h2>
+<p>Other scripts call <code>DGSS_LEADERBOARD.addConvoyCompletion(playerName, successState)</code> where <code>successState</code> is <code>"full"</code>, <code>"partial"</code>, or <code>"failed"</code>. Similarly, <code>addConvoyRescue(playerName)</code> is called when a player rescues a convoy crew.</p>
+
+<h2 id="menu">F10 Radio Menu</h2>
+<p>Each BLUE player group gets a <strong>Leaderboard</strong> sub-menu with these commands:</p>
+<table>
+  <tr><th>Command</th><th>Display Time</th><th>Content</th></tr>
+  <tr><td>View Full Leaderboard</td><td>25 s</td><td>Top 5 in Score, Kills, Rescues, and Logistics categories.</td></tr>
+  <tr><td>View My Statistics</td><td>10 s</td><td>Personal breakdown: kills, deaths, rescues, crates, resupplies, convoy ops, total score.</td></tr>
+  <tr><td>Top Score</td><td>15 s</td><td>Top 10 by composite score.</td></tr>
+  <tr><td>Top Killers</td><td>15 s</td><td>Top 10 by kill count.</td></tr>
+  <tr><td>Top Rescuers (CSAR)</td><td>15 s</td><td>Top 10 by CSAR rescue count.</td></tr>
+  <tr><td>Top Logistics (Crates)</td><td>15 s</td><td>Top 10 by crate deliveries.</td></tr>
+  <tr><td>Top Resupply Operators</td><td>15 s</td><td>Top 10 by aircraft resupplied.</td></tr>
+  <tr><td>Most Deaths</td><td>15 s</td><td>Top 10 by death count (wall of shame).</td></tr>
+</table>
+
+<h2 id="persistence">File Persistence</h2>
+<table>
+  <tr><th>File</th><th>Path</th></tr>
+  <tr><td><code>leaderboard_stats.lua</code></td><td><code>Saved Games\DCS[.openbeta]\Mission Saves\leaderboard_stats.lua</code></td></tr>
+</table>
+<p>The save file is a plain Lua table (<code>LEADERBOARD_DATA</code>) assigning each player name to their stats. On load, the file is <code>loadstring</code>-executed to restore <code>PLAYER_STATS</code>. A fresh save is written immediately on init to ensure the file exists.</p>
+<div class="box box-tip">The file can be manually edited to seed scores, remove players, or reset the leaderboard. Delete the file to start fresh.</div>
+
+<h2 id="me-setup">Mission Editor Checklist</h2>
+<ol>
+  <li><strong>Un-sanitize <code>io</code> and <code>lfs</code></strong> in your server's <code>MissionScripting.lua</code>.</li>
+  <li><strong>MIST (optional)</strong> &mdash; load <code>mist.lua</code> first if using other DGSS scripts.</li>
+  <li><strong>Load script</strong> &mdash; MISSION START &rarr; DO SCRIPT FILE &rarr; <code>DGSS-Leaderboard 3.5.lua</code>.</li>
+  <li><strong>Trigger zones</strong> &mdash; ensure <code>SUPPLY_BASE</code>, all <code>SUPPLY_HELIPORT</code> entries, and all <code>DISTRIBUTION_BASES</code> entries exist as trigger zones in the ME.</li>
+  <li><strong>Cargo objects</strong> &mdash; if using slingload logistics, place cargo static objects with type names matching <code>SUPPLY_UNIT_TYPES</code> or containing a recognised keyword.</li>
+  <li><strong>Integration</strong> &mdash; DGSS-CSAR+Lives, DGSS-CTLD, and convoy scripts should be loaded <em>before</em> the leaderboard so their globals exist when events fire. The leaderboard exposes its API immediately on load.</li>
+</ol>
+
+<h2 id="troubleshoot">Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause &amp; Fix</th></tr>
+  <tr><td>No leaderboard menu appears</td><td>Menu poller runs every 60 s &mdash; wait up to a minute after spawning in. Check <code>dcs.log</code> for <code>[Leaderboard]</code> init messages.</td></tr>
+  <tr><td>Stats not saved to disk</td><td><code>io</code> or <code>lfs</code> sanitized. Look for <code>[Leaderboard] Failed to open file</code> in <code>dcs.log</code>.</td></tr>
+  <tr><td>Kill not counted</td><td>Only <code>S_EVENT_KILL</code> with a player <code>initiator</code> qualifies. Splash damage from a bomb may not credit a player if DCS doesn't set <code>initiator</code>.</td></tr>
+  <tr><td>Crate delivery not credited</td><td>Player helicopter must be within 200 m of the cargo unit when it enters a distribution zone. Check that the zone name matches exactly.</td></tr>
+  <tr><td>Scores reset on mission restart</td><td>Verify the save file exists at <code>Mission Saves\leaderboard_stats.lua</code>. If absent the first auto-save hasn't fired yet (wait 15 min or trigger a new player join).</td></tr>
+  <tr><td>Duplicate death events</td><td>Anti-duplicate guard ignores deaths &lt;1 s apart. If still happening, check for multiple event handlers.</td></tr>
+  <tr><td>Log prefix</td><td>All messages prefixed <code>[Leaderboard]</code> in <code>dcs.log</code>.</td></tr>
+</table>
+
+</main>
+<script>
+function tog(h){var b=h.nextElementSibling;var o=b.classList.toggle("open");var t=h.querySelector(".ct");if(t)t.textContent=o?"\u25B2 close":"\u25BC details";}
+const ss=document.querySelectorAll("h2[id]");const ls=document.querySelectorAll("nav a");ss.forEach(s=>new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){ls.forEach(l=>l.classList.remove("active"));const a=document.querySelector('nav a[href="#'+e.target.id+'"]');if(a)a.classList.add("active")}})},{rootMargin:"0px 0px -60% 0px"}).observe(s));
+</script>
+</body>
+</html>

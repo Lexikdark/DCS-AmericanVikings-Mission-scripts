@@ -259,7 +259,7 @@
         <td>None — the script will error if MIST is not loaded. MIST must be loaded first.</td>
       </tr>
       <tr>
-        <td>Trigger Zones <code>ConvoyZone1</code>–<code>ConvoyZone30</code></td>
+        <td>Trigger Zones <code>ConvoyZone1</code>–<code>ConvoyZone40</code></td>
         <td>Node network for spawn &amp; destination selection</td>
         <td>Missing zones are skipped with a warning; system uses whatever zones are found. If 0 zones load, spawning is blocked entirely.</td>
       </tr>
@@ -286,8 +286,8 @@
   <div class="cfg-grid">
     <div class="cfg-item">
       <div class="cfg-key">NUM_CONVOY_POINTS</div>
-      <div class="cfg-val">30</div>
-      <div class="cfg-desc">Number of <code>ConvoyZone</code> trigger zones to load (ConvoyZone1 … ConvoyZone30).</div>
+      <div class="cfg-val">40</div>
+      <div class="cfg-desc">Number of <code>ConvoyZone</code> trigger zones to load (ConvoyZone1 … ConvoyZone40).</div>
     </div>
     <div class="cfg-item">
       <div class="cfg-key">CONVOY_SPEED</div>
@@ -296,12 +296,12 @@
     </div>
     <div class="cfg-item">
       <div class="cfg-key">MAX_CONVOYS</div>
-      <div class="cfg-val">15</div>
+      <div class="cfg-val">20</div>
       <div class="cfg-desc">Hard cap on simultaneously active convoys in the <code>activeConvoys</code> table.</div>
     </div>
     <div class="cfg-item">
       <div class="cfg-key">INITIAL_CONVOYS</div>
-      <div class="cfg-val">3</div>
+      <div class="cfg-val">5</div>
       <div class="cfg-desc">Burst-spawned on first manager tick until this count is reached.</div>
     </div>
     <div class="cfg-item">
@@ -438,7 +438,7 @@
   <h2 id="zones">Convoy Zones</h2>
   <p>
     Zones are loaded from DCS trigger zones named <strong>ConvoyZone1</strong> through
-    <strong>ConvoyZone30</strong>. The script reads <code>zone.point.x</code> and <code>zone.point.z</code>
+    <strong>ConvoyZone40</strong>. The script reads <code>zone.point.x</code> and <code>zone.point.z</code>
     (stored internally as <code>y</code> in the 2D node table). Missing zones emit a warning and are skipped.
   </p>
   <div class="zone-grid">
@@ -449,7 +449,7 @@
     <span class="zone-pill">ConvoyZone9</span><span class="zone-pill">ConvoyZone10</span>
     <span class="zone-pill">ConvoyZone11</span><span class="zone-pill">ConvoyZone12</span>
     <span class="zone-pill">…</span>
-    <span class="zone-pill">ConvoyZone29</span><span class="zone-pill">ConvoyZone30</span>
+    <span class="zone-pill">ConvoyZone39</span><span class="zone-pill">ConvoyZone40</span>
   </div>
   <div class="info-box">
     Zone positions are used directly as spawn/waypoint coordinates. Zones should be placed <em>on or near roads</em>
@@ -463,7 +463,7 @@
       <div class="flow-num">1</div>
       <div class="flow-body">
         <strong>Manager tick (every 10 s)</strong>
-        <p>Counts active convoys. If below INITIAL_CONVOYS (3), spawns immediately in a burst. If below MAX_CONVOYS (15) and stagger delay has elapsed, spawns one convoy.</p>
+        <p>Counts active convoys. If below INITIAL_CONVOYS (5), spawns immediately in a burst. If below MAX_CONVOYS (20) and stagger delay has elapsed, spawns one convoy.</p>
       </div>
     </div>
     <div class="flow-step">
@@ -660,8 +660,8 @@
   │    └─ Arrival check      → re-route if within 75 m
   └─ convoyManager()   -- capacity management:
        ├─ Count active convoys
-       ├─ Burst-spawn if count < INITIAL_CONVOYS (3)
-       └─ Spawn 1 if count < MAX_CONVOYS (15) and stagger delay elapsed</pre>
+       ├─ Burst-spawn if count < INITIAL_CONVOYS (5)
+       └─ Spawn 1 if count < MAX_CONVOYS (20) and stagger delay elapsed</pre>
   <p style="color:var(--muted);font-size:12px;">
     The loop uses <code>return timer.getTime() + 10</code> to self-reschedule. All convoy management
     (stall, arrival, spawn) occurs within this single 10-second tick.
@@ -684,7 +684,7 @@ end</pre>
   <!-- ME CHECKLIST -->
   <h2 id="me-setup">Mission Editor Checklist</h2>
   <ul>
-    <li><strong>Trigger Zones</strong> — create 30 zones named exactly <code>ConvoyZone1</code> through <code>ConvoyZone30</code> (case-sensitive). Fewer zones work but reduce route variety.</li>
+    <li><strong>Trigger Zones</strong> — create 40 zones named exactly <code>ConvoyZone1</code> through <code>ConvoyZone40</code> (case-sensitive). Fewer zones work but reduce route variety.</li>
     <li><strong>Zone placement</strong> — place zones on or very close to road junctions/intersections. The very first waypoint is Off Road (zone centre); WP2 is the first On Road point 100 m ahead. If there is no road within DCS pathing range of the zone, the convoy will drive cross-country.</li>
     <li><strong>Zone spacing</strong> — at least some zones should be &gt; 35 nm apart. If all zones are within 35 nm of each other, every convoy uses the "farthest zone" fallback and logs a warning every spawn.</li>
     <li><strong>MIST</strong> — load before this script, no exceptions.</li>
@@ -700,7 +700,7 @@ end</pre>
     <tbody>
       <tr>
         <td>No convoys spawn, log shows "No convoy nodes loaded"</td>
-        <td>No trigger zones named <code>ConvoyZone1</code>–<code>ConvoyZone30</code> found in ME</td>
+        <td>No trigger zones named <code>ConvoyZone1</code>–<code>ConvoyZone40</code> found in ME</td>
         <td>Add the zones with exact names. Even 1 zone will allow the system to start (but spawning logic needs at least 2 zones).</td>
       </tr>
       <tr>

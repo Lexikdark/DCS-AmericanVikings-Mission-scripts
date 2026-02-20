@@ -398,7 +398,7 @@
   <!-- ══════════════════════════════════════ -->
   <section id="rateLimiting">
     <h2>Rate Limiting</h2>
-    <pre><code><span class="kw">local</span> <span class="var">MAX_SPAWNS_PER_CYCLE</span> = <span class="num">3</span>  <span class="cmt">-- max groups spawned per 5-minute check cycle</span></code></pre>
+    <pre><code><span class="kw">local</span> <span class="var">MAX_SPAWNS_PER_CYCLE</span> = <span class="num">18</span>  <span class="cmt">-- max groups spawned per 5-minute check cycle</span></code></pre>
     <p>
       This cap prevents the server from being hit with many simultaneous <code>mist.dynAdd</code> calls.
       If more zones need refilling than the cap allows, the remainder will be handled on the next cycle (5 minutes later).
@@ -771,7 +771,7 @@
     <h3>Too many groups / performance issues</h3>
     <ul>
       <li>Reduce <code>max</code> values in <code>zoneSettings</code> for high-activity zones (especially <code>ZONE10</code> which can hit 7 groups).</li>
-      <li>Reduce <code>MAX_SPAWNS_PER_CYCLE</code> (default 3) to spread spawns across more cycles.</li>
+      <li>Reduce <code>MAX_SPAWNS_PER_CYCLE</code> (default 18) to spread spawns across more cycles.</li>
     </ul>
 
     <h3>Markers not clearing after kill</h3>

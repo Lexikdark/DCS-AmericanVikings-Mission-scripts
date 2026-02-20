@@ -174,7 +174,7 @@
 </div>
 <div class="cfg-card">
   <div class="ch" onclick="tog(this)"><span class="ck">nearestSearchRadius</span><span class="cd">148,160 m (80 NM)</span><span class="cq">Maximum distance for the "Find Nearest Survivor" menu option.</span><span class="ct">▼ details</span></div>
-  <div class="cb"><p>Used in <code>DGSS_CSAR.findNearestSurvivor()</code>. The function iterates all entries in <code>DGSS_CSAR.SURVIVORS</code> and returns the closest one within this radius. 80 NM covers virtually the entire Afghanistan map.</p></div>
+  <div class="cb"><p>Used in <code>DGSS_CSAR.findNearestSurvivor()</code>. The function iterates all entries in <code>DGSS_CSAR.SURVIVORS</code> and returns the closest one within this radius. 80 NM covers virtually the entire Syria / Northern Israel theatre.</p></div>
 </div>
 <div class="cfg-card">
   <div class="ch" onclick="tog(this)"><span class="ck">despawnOnRescue</span><span class="cd">true</span><span class="cq">Destroy the survivor ground unit after successful drop-off.</span><span class="ct">▼ details</span></div>
@@ -197,18 +197,20 @@
 <p>Survivors must be delivered to one of the following zones. Zone names must exactly match trigger zone names placed in the Mission Editor.</p>
 <table>
   <tr><th>Zone Name</th><th>Type</th></tr>
-  <tr><td><code>KANDAHAR</code></td><td>Main airbase</td></tr>
-  <tr><td><code>KABUL</code></td><td>Airbase</td></tr>
-  <tr><td><code>BAGRAM</code></td><td>Airbase</td></tr>
-  <tr><td><code>JALALABAD</code></td><td>Airbase</td></tr>
-  <tr><td><code>TARINKOT</code></td><td>Airbase</td></tr>
-  <tr><td><code>CHAGHCHARAN</code></td><td>Airbase</td></tr>
-  <tr><td><code>FOB_LONDON</code></td><td>Forward Operating Base</td></tr>
-  <tr><td><code>FOB_DALLAS</code></td><td>Forward Operating Base</td></tr>
-  <tr><td><code>FOB_PARIS</code></td><td>Forward Operating Base</td></tr>
-  <tr><td><code>FOB_WARSAW</code></td><td>Forward Operating Base</td></tr>
-  <tr><td><code>FOB_SALERNO</code></td><td>Forward Operating Base</td></tr>
-  <tr><td><code>FOB_URGOON</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>RAMAT_DAVID</code></td><td>Airbase</td></tr>
+  <tr><td><code>ROSH_PINA</code></td><td>Airbase</td></tr>
+  <tr><td><code>KIRYAT_SHMONA</code></td><td>Airbase</td></tr>
+  <tr><td><code>MEGIDDO</code></td><td>Airbase</td></tr>
+  <tr><td><code>HAIFA</code></td><td>Airbase</td></tr>
+  <tr><td><code>FOB_BRAVO</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_DELTA</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_CHARLIE</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_ECHO</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_ALPHA</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_FOXTROT</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_HOTEL</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_GOLF</code></td><td>Forward Operating Base</td></tr>
+  <tr><td><code>FOB_INDIA</code></td><td>Forward Operating Base</td></tr>
   <tr><td><code>CARRIER_GROUP</code></td><td>Carrier CSAR recovery zone</td></tr>
 </table>
 <div class="box box-tip">To add a new drop-off zone, add a <code>{ zoneName = "YOUR_ZONE_NAME" }</code> entry to <code>DGSS_CSAR.CSAR.dropOffZones</code> and place a matching trigger zone (BLUE, any shape) in the ME.</div>
@@ -237,7 +239,7 @@
 <div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>CSAR crew locates the survivor</strong> — F10 → <em>CSAR</em> → <em>Nearest Pilot</em> or <em>Nearest Convoy Survivor</em>. A text callout provides MGRS, latitude/longitude (degrees + decimal minutes), distance, and bearing.</div></div>
 <div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Request smoke</strong> (optional) — F10 → <em>CSAR</em> → <em>Request Smoke on Survivor</em>. Blue smoke deploys at the survivor's position.</div></div>
 <div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Hover over the survivor</strong> — fly within 75 m horizontal, below 15.2 m AGL, and below 7.5 m/s. Then select F10 → <em>CSAR</em> → <em>Pick Up Survivor</em>. A countdown/confirmation message confirms loading.</div></div>
-<div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Fly to a drop-off zone</strong> — any of the 13 zones listed above. Enter the trigger zone boundary.</div></div>
+<div class="flow-step"><div class="flow-num">5</div><div class="flow-body"><strong>Fly to a drop-off zone</strong> — any of the 15 zones listed above. Enter the trigger zone boundary.</div></div>
 <div class="flow-step"><div class="flow-num">6</div><div class="flow-body"><strong>Land and drop off</strong> — hover below 15.2 m AGL at under 7.5 m/s inside the zone, then F10 → <em>CSAR</em> → <em>Drop Off Survivor</em>. Rescue completes: the survivor despawns, the downed pilot gains +1 life, the rescuing crew earn leaderboard points (if leaderboard script is loaded).</div></div>
 <div class="box box-warn"><strong>Carrying state is per-aircraft.</strong> If the rescue helicopter is destroyed while carrying a survivor, the survivor is lost and no rescue credit is given. There is currently no "survivor overboard" re-spawn on carrier destruction.</div>
 

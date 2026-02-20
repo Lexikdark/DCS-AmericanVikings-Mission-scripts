@@ -71,7 +71,7 @@ local INSURGENT_TEMPLATES = {
         name = "Ins_5",
         units = {
             { type="Grad-URAL",         dx=0.0,   dy=0.0,   heading=0.5 },
-            { type="ural_4230_civil_t", dx=0.0,   dy=0.0,   heading=0.5 },
+            { type="Ural-4320T",        dx=0.0,   dy=20.0,  heading=0.5 },
             { type="HL_ZU-23",          dx=20.0,  dy=26.0,  heading=1.0 },
             { type="HL_KORD",           dx=-26.0, dy=18.0,  heading=0.4 },
             { type="Infantry AK Ins",        dx=8.0,   dy=-28.0, heading=1.0 },
@@ -306,21 +306,21 @@ local zones = {"ZONE1","ZONE2","ZONE3","ZONE4","ZONE5","ZONE6","ZONE7","ZONE8","
 local zoneSettings = {
     ZONE1  = { min = 2, max = 3 },
     ZONE2  = { min = 2, max = 4 },
-    ZONE3  = { min = 0, max = 2 },
+    ZONE3  = { min = 1, max = 3 },
     ZONE4  = { min = 1, max = 3 },
     ZONE5  = { min = 1, max = 4 },
     ZONE6  = { min = 1, max = 5 },
     ZONE7  = { min = 2, max = 3 },
     ZONE8  = { min = 2, max = 4 },
     ZONE9  = { min = 1, max = 4 },
-    ZONE10 = { min = 2, max = 7 },
+    ZONE10 = { min = 2, max = 3 },
     ZONE11 = { min = 0, max = 2 },
     ZONE12 = { min = 1, max = 4 },
-    ZONE13 = { min = 0, max = 2 },
+    ZONE13 = { min = 0, max = 3 },
     ZONE14 = { min = 1, max = 5 },
     ZONE15 = { min = 2, max = 4 },
     ZONE16 = { min = 0, max = 4 },
-    ZONE17 = { min = 1, max = 5 },
+    ZONE17 = { min = 1, max = 3 },
     ZONE18 = { min = 0, max = 2 },
 }
 
@@ -588,13 +588,14 @@ spawnGroupInZone = function(zoneName)
     placeSmoke(finalPos2d)
 
     env.info("[DGSS] Spawned group " .. finalGroupName .. " in zone " .. zoneName)
+    return true
 end
 
 -------------------------------------------------------------
 -- Main Zone Check & Spawn Logic
 -------------------------------------------------------------
 
-local MAX_SPAWNS_PER_CYCLE = 3  -- Rate limiting: max 3 spawns per cycle
+local MAX_SPAWNS_PER_CYCLE = 18  -- One potential spawn per zone per cycle
 
 local function checkZones()
     cleanupGroups()
@@ -626,8 +627,10 @@ local function checkZones()
                     if spawnsThisCycle >= MAX_SPAWNS_PER_CYCLE then
                         break  -- Hit rate limit
                     end
-                    spawnGroupInZone(zoneName)
-                    spawnsThisCycle = spawnsThisCycle + 1
+                    local spawned = spawnGroupInZone(zoneName)
+                    if spawned then
+                        spawnsThisCycle = spawnsThisCycle + 1
+                    end
                 end
 
             -- If between min and max, spawn randomly up to max
@@ -638,8 +641,10 @@ local function checkZones()
                     if spawnsThisCycle >= MAX_SPAWNS_PER_CYCLE then
                         break  -- Hit rate limit
                     end
-                    spawnGroupInZone(zoneName)
-                    spawnsThisCycle = spawnsThisCycle + 1
+                    local spawned = spawnGroupInZone(zoneName)
+                    if spawned then
+                        spawnsThisCycle = spawnsThisCycle + 1
+                    end
                 end
             end
         end

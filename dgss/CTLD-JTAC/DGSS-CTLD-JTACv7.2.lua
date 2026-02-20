@@ -266,9 +266,8 @@ local function findAllNearbyEnemies(jtacUnit, cachedRedGroups)
                             
                             -- Check if JTAC can see the target (no terrain blocking)
                             if land and land.isVisible then
-                                hasLOS = pcall(function()
-                                    return land.isVisible(jtacEyePos, targetPos)
-                                end) and land.isVisible(jtacEyePos, targetPos) or false
+                                local losOk, losResult = pcall(land.isVisible, jtacEyePos, targetPos)
+                                hasLOS = (losOk and losResult) or false
                             else
                                 -- Fallback: assume visible if land.isVisible not available
                                 hasLOS = true
@@ -686,16 +685,16 @@ local function scheduleJtacLoop()
     jtacUpdateLoop()
     
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 8)
+        mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
     else
-        timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 8)
+        timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
     end
 end
 
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 8)
+    mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
 else
-    timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 8)
+    timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
 end
 
 ----------------------------------------------------------------
@@ -736,6 +735,9 @@ DGSS_CTLD.ZONES = {
     { name = "FOB_ECHO" },
     { name = "FOB_ALPHA" },
     { name = "FOB_FOXTROT" },
+    { name = "FOB_HOTEL" },
+    { name = "FOB_GOLF" },
+    { name = "FOB_INDIA" },
 }
 
 -- Transport capacity (by unit type) for troops
@@ -3411,18 +3413,18 @@ local function staticJtacMenuBuilder()
     
     -- Schedule next rebuild
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 5)
+        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
     else
-        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 5)
+        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
     end
 end
 
 -- Start static menu builder immediately (every 1 second)
 env.info("[JTAC] Starting static JTAC menu builder")
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 5)
+    mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
 else
-    timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 5)
+    timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
 end
 
 ----------------------------------------------------------------

@@ -44,6 +44,9 @@ DGSS_CSAR.CSAR = {
         { zoneName = "FOB_ECHO" },
         { zoneName = "FOB_ALPHA" },
         { zoneName = "FOB_FOXTROT" },
+        { zoneName = "FOB_HOTEL" },
+        { zoneName = "FOB_GOLF" },
+        { zoneName = "FOB_INDIA" },
 
         -- CARRIER_GROUP CSAR Zone
         { zoneName = "CARRIER_GROUP" },

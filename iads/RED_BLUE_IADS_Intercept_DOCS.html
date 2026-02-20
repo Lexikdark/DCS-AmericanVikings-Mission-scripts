@@ -91,6 +91,7 @@
   <div class="grp">Config — IADS</div>
   <a href="#cfg-detection">Detection</a>
   <a href="#cfg-sam">SAM Engagement</a>
+  <a href="#cfg-lowjet">Low-Jet Immunity</a>
   <a href="#cfg-arm">ARM Defence</a>
   <div class="grp">Config — Air</div>
   <a href="#cfg-intercept">Intercept</a>
@@ -141,7 +142,7 @@
 <div class="flow">
   <div class="flow-s">Mission start<br><small>buildNodeList()</small></div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">EWR/SAM<br>nodes indexed</div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Every 5 s<br>gatherContacts()</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 10 s<br>pruneDeadNodes() &rarr;<br>gatherContacts()</div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">Contacts shared<br>to SAMs in range</div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">Best SAM scores<br>and engages</div>
 </div>
@@ -182,11 +183,11 @@
 <p>Click any row to expand the detailed explanation.</p>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">UPDATE_INTERVAL</span><span class="cc-default">5 s</span><span class="cc-quick">Main IADS loop &mdash; contact gathering, SAM engagement decisions.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">UPDATE_INTERVAL</span><span class="cc-default">10 s</span><span class="cc-quick">Main IADS loop &mdash; contact gathering, SAM engagement decisions.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every <code>UPDATE_INTERVAL</code> seconds the script runs <code>gatherContacts()</code> for both coalitions, shares detections to SAM nodes, scores each SAM's engagement geometry, and fires the best shooter. This is the heartbeat of the entire IADS.</p>
-<p><strong>Lowering it</strong> (e.g. 2 s) makes SAMs react faster and feel more dangerous but increases CPU cost proportionally. <strong>Raising it</strong> (e.g. 10 s) suits large missions where performance matters; reaction time increases but the effect is barely noticeable to players at normal flight speeds.</p>
-<p><strong>Recommended range:</strong> 3&ndash;10 s. The default 5 s gives sub-second real reaction time once a contact is first detected on the previous tick.</p>
+<p>Every <code>UPDATE_INTERVAL</code> seconds the script runs <code>pruneDeadNodes()</code> to remove destroyed SAMs/EWRs, then <code>gatherContacts()</code> for both coalitions, shares detections to SAM nodes, scores each SAM's engagement geometry, and fires the best shooter. This is the heartbeat of the entire IADS.</p>
+<p><strong>Performance note (Feb 2026):</strong> Changed from 5 s to 10 s. The main loop no longer calls <code>buildNodeList()</code> (which triggered 6&times; <code>coalition.getGroups(GROUND)</code> per tick). Instead, a lightweight <code>pruneDeadNodes()</code> removes dead groups from the existing lists without any API calls. Full node-list rebuilds only happen on the 15-minute <code>nodeRefreshLoop</code>. Additionally, <code>gciInterceptLoop</code> now caches <code>coalition.getGroups(AIRPLANE)</code> once per coalition per tick instead of calling it 21&times; per squadron.</p>
+<p><strong>Recommended range:</strong> 5&ndash;15 s. The default 10 s gives responsive SAM engagement while keeping API overhead low.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -197,10 +198,10 @@
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">WEAPON_TRACK_INTERVAL</span><span class="cc-default">1 s</span><span class="cc-quick">How often in-flight weapons are scanned for ARM threats.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">WEAPON_TRACK_INTERVAL</span><span class="cc-default">2 s</span><span class="cc-quick">How often in-flight weapons are scanned for ARM threats.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every second the script iterates every weapon in <code>trackedWeapons[]</code>. It checks: is this weapon still alive? Is it an ARM type? Is it heading towards any of our radar groups? If yes, that radar shuts down for <code>ARM_SHUTDOWN_TIME</code> seconds.</p>
-<p>1 second is the fastest useful value &mdash; ARMs typically fly for 20&ndash;60 seconds so sub-second tracking has no benefit. Raising to 2&ndash;3 s is safe and halves the tracking cost during large engagements with many in-flight weapons.</p>
+<p>Every 2 seconds the script iterates every weapon in <code>trackedWeapons[]</code>. It checks: is this weapon still alive? Is it an ARM type? Is it heading towards any of our radar groups? If yes, that radar shuts down for <code>ARM_SHUTDOWN_TIME</code> seconds.</p>
+<p>2 seconds is responsive enough for ARM tracking &mdash; ARMs typically fly for 20&ndash;60 seconds so sub-second tracking has no benefit. The previous 1 s interval was halved to reduce the tracking cost during large engagements with many in-flight weapons while maintaining fully reactive ARM defence.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -213,8 +214,8 @@
 <div class="cfg-card">
 <div class="cc-head" onclick="tog(this)"><span class="cc-key">NODE_REFRESH_INTERVAL</span><span class="cc-default">900 s (15 min)</span><span class="cc-quick">How often the SAM and EWR node lists are fully rebuilt from scratch.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>On startup <code>buildNodeList()</code> scans all coalition ground groups and builds the SAM and EWR node lists from naming prefixes. As the mission progresses and SAM sites are destroyed, dead groups remain in the node list until the next refresh, at which point <code>buildNodeList()</code> runs again and silently drops any group where all units are dead.</p>
-<p><strong>Why not remove nodes immediately on death?</strong> DCS fires unit-dead events asynchronously. Hooking every death to immediately remove nodes is complex. The 15-minute periodic rebuild is simpler and the worst-case effect (a dead SAM staying in the list up to 15 min) is that the IADS wastes milliseconds trying to engage through it &mdash; no gameplay impact because the dead group's controller ignores fire commands.</p>
+<p>On startup <code>buildNodeList()</code> scans all coalition ground groups and builds the SAM and EWR node lists from naming prefixes. Every 15 minutes it runs again to pick up any dynamically spawned groups.</p>
+<p><strong>Dead-node handling:</strong> Between full rebuilds, the main IADS loop (every <code>UPDATE_INTERVAL</code>) calls <code>pruneDeadNodes()</code> which iterates the existing node lists and removes any group whose <code>:getSize()</code> returns 0 or whose <code>:isExist()</code> returns false. This is a lightweight check with no <code>coalition.getGroups()</code> API calls, keeping the lists current without waiting for the 15-minute rebuild.</p>
 <p>Reduce to 300 s for fast-paced missions with rapid SAM losses. Increase to 1800 s on low-spec servers.</p>
 </div></div>
 
@@ -272,6 +273,57 @@
 <p>The engagement scoring formula is: <code>score = PKill_BASE &times; altFactor &times; rangeFactor &times; healthFactor</code>. The SAM with the highest score engages. PKill_BASE is the baseline for a healthy SAM unit with the target perfectly on boresight at optimal range.</p>
 <p>Factors reduce the score: targets at very low altitude drop <code>altFactor</code>, targets near the edge of range drop <code>rangeFactor</code>, damaged SAMs drop <code>healthFactor</code>. The score is relative &mdash; it determines which SAM gets the shot, not whether the missile actually hits (that's DCS's own miss calculation).</p>
 <p>Changing PKill_BASE doesn't make SAMs more or less lethal in isolation; it shifts the scoring baseline and affects which SAM gets selected when multiple equally-positioned SAMs compete for the same target.</p>
+</div></div>
+
+<h2 id="cfg-lowjet">Configuration &mdash; Low-Altitude Jet Immunity</h2>
+<p>Simulates radar ground-clutter masking: fixed-wing aircraft (jets) flying very low are invisible to long-range RED SAMs but <strong>remain visible to SHORAD</strong> groups. This gives pilots a meaningful tactical choice &mdash; fly low to dodge SA-5/SA-10 but risk running into Pantsir / Shilka / Tor SHORAD sites that are specifically designed for low-altitude targets.</p>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_LOW_JET_IMMUNITY_AGL</span><span class="cc-default">75 m AGL</span><span class="cc-quick">Jets below this altitude are invisible to non-SHORAD RED SAMs.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>When the IADS gathers radar contacts, each detected unit is checked:</p>
+<ol>
+  <li>Is this a <strong>RED</strong> or <strong>LEBANON</strong> IADS network? (BLUE SAMs are unaffected.)</li>
+  <li>Is the contact a <strong>fixed-wing aircraft</strong> (<code>Unit.Category.AIRPLANE</code>)? Helicopters are always visible.</li>
+  <li>Is the contact&rsquo;s <strong>AGL altitude</strong> (terrain-aware: <code>pos.y &minus; land.getHeight(x,z)</code>) below this threshold?</li>
+</ol>
+<p>If all three conditions are true, the contact is tagged <code>isLowJet = true</code>. The contact <em>stays in the contact list</em> (so SHORAD can see it) but when the engagement loop assigns SAMs, any SAM whose group name does <strong>not</strong> contain <code>"SHORAD"</code> will skip the contact.</p>
+
+<h3>Decision flow</h3>
+<div class="flow">
+  <div class="flow-s">Contact detected<br><small>gatherContacts()</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Is AIRPLANE?<br><small>obj:getDesc().category</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">AGL < 75 m?<br><small>getAGL(pos)</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Tag isLowJet<br><small>stays in list</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">SAM loop<br><small>skip if non-SHORAD</small></div>
+</div>
+
+<h3>How the script identifies jets vs helicopters</h3>
+<p>DCS provides a unit descriptor via <code>obj:getDesc()</code> which includes a <code>category</code> field:</p>
+<table>
+  <tr><th>Category</th><th>Constant</th><th>Examples</th><th>Affected?</th></tr>
+  <tr><td>Fixed-wing</td><td><code>Unit.Category.AIRPLANE</code></td><td>F-16C, F/A-18C, A-10C, MiG-29, Su-25T</td><td><span class="badge r">YES &mdash; filtered</span></td></tr>
+  <tr><td>Rotary-wing</td><td><code>Unit.Category.HELICOPTER</code></td><td>UH-1H, Ka-50, Mi-24, AH-64</td><td><span class="badge g">NO &mdash; always visible</span></td></tr>
+</table>
+
+<h3>How SHORAD is detected</h3>
+<p>The script checks if the SAM group&rsquo;s name contains the string <code>"SHORAD"</code> (case-sensitive). This relies on your existing naming convention:</p>
+<pre>RED_SAM_SHORAD_Pantsir_01   &larr; contains "SHORAD" &rarr; EXEMPT (engages low jets)
+RED_SAM_S300_Battery_01     &larr; no "SHORAD"       &rarr; SKIPS low jets
+RED_SAM_SHORAD_Tor_02       &larr; contains "SHORAD" &rarr; EXEMPT
+RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
+<div class="box box-warn"><strong>Naming matters!</strong> If a SHORAD group is named <code>RED_SAM_Pantsir_01</code> (without &ldquo;SHORAD&rdquo; in the name), it will <em>not</em> be exempt and will ignore low-flying jets. Make sure all short-range air-defence groups include <code>SHORAD</code> in their ME group name.</div>
+
+<h3>Tuning</h3>
+<table>
+  <tr><th>Value</th><th>Effect</th></tr>
+  <tr><td><code>0</code></td><td>Feature disabled &mdash; all SAMs engage at any altitude (original behaviour).</td></tr>
+  <tr><td><code>50</code></td><td>Only extreme terrain-hugging is safe &mdash; hard to maintain without crashing.</td></tr>
+  <tr><td><code>75</code> (default)</td><td>Skilled low-level flying (~250 ft) evades long-range SAMs.</td></tr>
+  <tr><td><code>100</code></td><td>A wider safety band &mdash; most low-altitude ingress routes are protected.</td></tr>
+  <tr><td><code>150</code></td><td>Very forgiving &mdash; even moderate altitude flying is safe from big SAMs.</td></tr>
+</table>
+<div class="box box-tip"><strong>To edit:</strong> Open <code>RED_BLUE_IADS_Intercept.lua</code>, find <code>SAM_LOW_JET_IMMUNITY_AGL</code> in the <code>IADS_CFG</code> block (near the top), and change the number. No other edits needed.</div>
 </div></div>
 
 <h2 id="cfg-arm">Configuration &mdash; ARM Defence</h2>
