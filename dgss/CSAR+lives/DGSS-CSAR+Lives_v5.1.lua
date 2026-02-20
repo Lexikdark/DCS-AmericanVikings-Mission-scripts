@@ -38,12 +38,12 @@ DGSS_CSAR.CSAR = {
         { zoneName = "KIRYAT_SHMONA" },
         { zoneName = "MEGIDDO" },
         { zoneName = "HAIFA" },
-        { zoneName = "FOB_LONDON" },
-        { zoneName = "FOB_DALLAS" },
-        { zoneName = "FOB_PARIS" },
-        { zoneName = "FOB_WARSAW" },
-        { zoneName = "FOB_SALERNO" },
-        { zoneName = "FOB_URGOON" },
+        { zoneName = "FOB_BRAVO" },
+        { zoneName = "FOB_DELTA" },
+        { zoneName = "FOB_CHARLIE" },
+        { zoneName = "FOB_ECHO" },
+        { zoneName = "FOB_ALPHA" },
+        { zoneName = "FOB_FOXTROT" },
 
         -- CARRIER_GROUP CSAR Zone
         { zoneName = "CARRIER_GROUP" },

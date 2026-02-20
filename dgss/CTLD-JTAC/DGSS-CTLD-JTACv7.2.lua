@@ -730,12 +730,12 @@ DGSS_CTLD.ZONES = {
     { name = "KIRYAT_SHMONA" },
     { name = "MEGIDDO" },
     { name = "HAIFA" },
-    { name = "FOB_LONDON" },
-    { name = "FOB_DALLAS" },
-    { name = "FOB_PARIS" },
-    { name = "FOB_WARSAW" },
-    { name = "FOB_SALERNO" },
-    { name = "FOB_URGOON" },
+    { name = "FOB_BRAVO" },
+    { name = "FOB_DELTA" },
+    { name = "FOB_CHARLIE" },
+    { name = "FOB_ECHO" },
+    { name = "FOB_ALPHA" },
+    { name = "FOB_FOXTROT" },
 }
 
 -- Transport capacity (by unit type) for troops
