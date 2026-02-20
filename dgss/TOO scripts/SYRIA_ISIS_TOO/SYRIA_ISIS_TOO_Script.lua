@@ -821,6 +821,7 @@ local ZONE_PREFIX        = "TOOZONE_"   -- Prefix used for all TOO spawn zones i
 local ZONE_SCAN_MAX      = 20           -- Maximum zone number to scan for
 local MIN_SPAWNS_PER_ZONE = 1           -- Minimum templates to spawn in each zone
 local MAX_SPAWNS_PER_ZONE = 3           -- Maximum templates to spawn in each zone
+local MAX_TOTAL_GROUPS    = 30          -- Hard ceiling: no more than this many groups alive at once
 local TOO_ZONES          = {}           -- Populated at init by discoverTOOZones()
 
 local function discoverTOOZones()
@@ -1091,6 +1092,14 @@ local function spawnTargetOfOpportunity(forcedZone)
         return
     end
 
+    -- Global group cap: never exceed MAX_TOTAL_GROUPS regardless of per-zone settings
+    local totalActive = 0
+    for _ in pairs(activeTargets) do totalActive = totalActive + 1 end
+    if totalActive >= MAX_TOTAL_GROUPS then
+        env.info("[ISIS_TOO] Global cap reached (" .. totalActive .. "/" .. MAX_TOTAL_GROUPS .. ") – spawn suppressed")
+        return
+    end
+
     local zoneName
     if forcedZone then
         zoneName = forcedZone
@@ -1323,7 +1332,12 @@ local function updateDestroyedBuildings()
 end
 
 local function populateZones(isInitial)
+    -- Track running total so we stop the moment we hit the global cap
+    local totalActive = 0
+    for _ in pairs(activeTargets) do totalActive = totalActive + 1 end
+
     for _, zone in ipairs(TOO_ZONES) do
+        if totalActive >= MAX_TOTAL_GROUPS then break end
         local current = zoneSpawnCount[zone] or 0
         local target
         if isInitial then
@@ -1333,7 +1347,9 @@ local function populateZones(isInitial)
         end
         target = math.min(target, MAX_SPAWNS_PER_ZONE)
         for i = current + 1, target do
+            if totalActive >= MAX_TOTAL_GROUPS then break end
             pcall(function() spawnTargetOfOpportunity(zone) end)
+            totalActive = totalActive + 1
         end
     end
 end

@@ -518,6 +518,17 @@ local function pruneDeadNodes(coaName)
         if groupAlive(name) then alive[#alive + 1] = name end
     end
     state.ewrNodes = alive
+
+    -- Flush suppressedUntil entries whose timer has expired or whose SAM no longer
+    -- exists.  Without this the table accumulates one entry per ARM shot forever.
+    local now      = timer.getTime()
+    local aliveSet = {}
+    for _, name in ipairs(state.samNodes) do aliveSet[name] = true end
+    for samName, expiry in pairs(state.suppressedUntil) do
+        if not aliveSet[samName] or expiry < now then
+            state.suppressedUntil[samName] = nil
+        end
+    end
 end
 
 -- excludePrefix (optional): skip groups whose name starts with this string.
@@ -1089,10 +1100,13 @@ local function weaponTrackingLoop()
     for _, wt in ipairs(trackedWeapons) do
         local wpn = wt.weapon
 
-        -- Check if weapon still alive (getPoint returns nil when spent)
+        -- Check if weapon still alive (getPoint returns nil when spent).
+        -- Also drop entries older than 300 s: a small number of mod weapons or
+        -- DCS edge-cases (hot-reload, abort) never return nil, so without a TTL
+        -- those entries would live forever and accumulate on long SEAD sorties.
         local ok, wpnPos = pcall(function() return wpn:getPoint() end)
-        if not ok or not wpnPos then
-            -- Weapon has hit / expired – nothing to do
+        if not ok or not wpnPos or (now - wt.launchTime > 300) then
+            -- Weapon has hit / expired / TTL exceeded – drop entry
         else
             local vel = wpn:getVelocity()
 
@@ -1796,6 +1810,94 @@ local function flightMaintenanceLoop()
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
+--  SECTION 17 – PERIODIC MEMORY CLEANUP  (every 10 min)
+-- ─────────────────────────────────────────────────────────────────────────────
+--  A dedicated housekeeping pass that runs every MEM_CLEANUP_INTERVAL seconds.
+--  Designed for marathon sessions (10-15+ hours of SEAD/DEAD/CAS) where the
+--  normal per-tick pruning may not be enough to prevent table creep:
+--
+--    • gciState flights: dead/standby records from old scrambles never auto-
+--      delete — countAirborne() iterates this table every 10 s.
+--    • suppressedUntil: per-tick pruning covers live SAMs; this cleans any
+--      that slipped through between ticks.
+--    • trackedWeapons: belt-and-suspenders pass for TTL-missed entries.
+--    • IADS.contacts: stale Unit references for aircraft that died between
+--      gatherContacts() ticks.
+-- ─────────────────────────────────────────────────────────────────────────────
+local MEM_CLEANUP_INTERVAL = 600   -- seconds (10 min).  Raise to 900 on low-pop servers.
+
+local function memoryCleanupLoop()
+    local now = timer.getTime()
+    local purgedFlights, purgedSuppress, purgedWeapons, purgedContacts = 0, 0, 0, 0
+
+    -- 1. Flight record purge ─────────────────────────────────────────────────
+    -- Remove dead/standby entries accumulated from completed scramble cycles.
+    -- Keeps countAirborne() / getAvailableFlights() O(active) not O(all-time).
+    for _, coalName in ipairs({"RED", "BLUE"}) do
+        local gciSt = gciState[coalName]
+        for gName, fs in pairs(gciSt.flights) do
+            if fs.status == "dead" or fs.status == "standby" then
+                gciSt.flights[gName] = nil
+                purgedFlights = purgedFlights + 1
+            end
+        end
+    end
+
+    -- 2. Suppression timer purge ─────────────────────────────────────────────
+    -- Catch any suppressedUntil entries missed by the per-tick pruneDeadNodes
+    -- pass (e.g. entries added for SAMs destroyed between prune ticks).
+    for _, coalName in ipairs({"RED", "BLUE", "LEBANON"}) do
+        local state    = IADS[coalName]
+        local aliveSet = {}
+        for _, name in ipairs(state.samNodes) do aliveSet[name] = true end
+        for samName, expiry in pairs(state.suppressedUntil) do
+            if not aliveSet[samName] or expiry < now then
+                state.suppressedUntil[samName] = nil
+                purgedSuppress = purgedSuppress + 1
+            end
+        end
+    end
+
+    -- 3. Weapon entry hard-purge ─────────────────────────────────────────────
+    -- Belt-and-suspenders pass: the 120 s TTL in weaponTrackingLoop handles
+    -- normal cases; this catches anything that slipped through (e.g. DCS
+    -- paused the server mid-flight and getTime() didn't advance).
+    local cleanWeapons = {}
+    for _, wt in ipairs(trackedWeapons) do
+        local ok, live = pcall(function() return wt.weapon:getPoint() end)
+        if ok and live and (now - wt.launchTime <= 360) then
+            table.insert(cleanWeapons, wt)
+        else
+            purgedWeapons = purgedWeapons + 1
+        end
+    end
+    trackedWeapons = cleanWeapons
+
+    -- 4. Stale contact reference purge ───────────────────────────────────────
+    -- gatherContacts() replaces the whole list each tick, but if a Unit object
+    -- becomes invalid between ticks the reference lingers until the next poll.
+    -- This pass removes any contacts whose DCS unit no longer exists.
+    for _, coalName in ipairs({"RED", "BLUE", "LEBANON"}) do
+        local contacts = IADS[coalName].contacts
+        local clean    = {}
+        for _, c in ipairs(contacts) do
+            if c.unit and c.unit:isExist() and c.unit:getLife() > 1 then
+                table.insert(clean, c)
+            else
+                purgedContacts = purgedContacts + 1
+            end
+        end
+        IADS[coalName].contacts = clean
+    end
+
+    log(string.format(
+        "[MemClean] cycle complete — purged: %d flight records | %d suppress timers | %d weapon entries | %d stale contacts",
+        purgedFlights, purgedSuppress, purgedWeapons, purgedContacts))
+
+    return now + MEM_CLEANUP_INTERVAL
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
 --  SECTION 13 – INITIALISATION
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -1872,6 +1974,7 @@ local function init()
     timer.scheduleFunction(gciInterceptLoop,      {}, timer.getTime() + 15)
     timer.scheduleFunction(flightMaintenanceLoop, {}, timer.getTime() + 30)
     timer.scheduleFunction(awacsOrbitLoop,        {}, timer.getTime() + 20)
+    timer.scheduleFunction(memoryCleanupLoop,     {}, timer.getTime() + MEM_CLEANUP_INTERVAL)
 
     -- Periodic IADS node-list rebuild (drops destroyed SAM/EWR groups).
     -- Runs every NODE_REFRESH_INTERVAL seconds (default 900 = 15 min).

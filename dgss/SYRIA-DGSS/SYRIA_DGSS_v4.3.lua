@@ -303,25 +303,29 @@ local zones = {"ZONE1","ZONE2","ZONE3","ZONE4","ZONE5","ZONE6","ZONE7","ZONE8","
                "ZONE12","ZONE13","ZONE14","ZONE15","ZONE16","ZONE17","ZONE18"}
 
 -- Per-zone spawn settings
+-- Total max across all zones = 40 (hard ceiling per zone = 4).
+-- Distribution: min=2 zones → max 3 each (×6=18);
+--               min=1 zones → max 2 each (×8=16);
+--               min=0 zones → max 2/1 alternating (×4=6). Sum = 40.
 local zoneSettings = {
     ZONE1  = { min = 2, max = 3 },
-    ZONE2  = { min = 2, max = 4 },
-    ZONE3  = { min = 1, max = 3 },
-    ZONE4  = { min = 1, max = 3 },
-    ZONE5  = { min = 1, max = 4 },
-    ZONE6  = { min = 1, max = 5 },
+    ZONE2  = { min = 2, max = 3 },
+    ZONE3  = { min = 1, max = 2 },
+    ZONE4  = { min = 1, max = 2 },
+    ZONE5  = { min = 1, max = 2 },
+    ZONE6  = { min = 1, max = 2 },
     ZONE7  = { min = 2, max = 3 },
-    ZONE8  = { min = 2, max = 4 },
-    ZONE9  = { min = 1, max = 4 },
+    ZONE8  = { min = 2, max = 3 },
+    ZONE9  = { min = 1, max = 2 },
     ZONE10 = { min = 2, max = 3 },
     ZONE11 = { min = 0, max = 2 },
-    ZONE12 = { min = 1, max = 4 },
-    ZONE13 = { min = 0, max = 3 },
-    ZONE14 = { min = 1, max = 5 },
-    ZONE15 = { min = 2, max = 4 },
-    ZONE16 = { min = 0, max = 4 },
-    ZONE17 = { min = 1, max = 3 },
-    ZONE18 = { min = 0, max = 2 },
+    ZONE12 = { min = 1, max = 2 },
+    ZONE13 = { min = 0, max = 1 },
+    ZONE14 = { min = 1, max = 2 },
+    ZONE15 = { min = 2, max = 3 },
+    ZONE16 = { min = 0, max = 2 },
+    ZONE17 = { min = 1, max = 2 },
+    ZONE18 = { min = 0, max = 1 },
 }
 
 -------------------------------------------------------------
