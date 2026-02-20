@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYRIA_DGSS v4.3 — Documentation</title>
+  <style>
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --card:     #20242f;
+      --border:   #2e3347;
+      --accent:   #4f8ef7;
+      --accent2:  #e05c5c;
+      --accent3:  #50c878;
+      --accent4:  #f5a623;
+      --text:     #dde1f0;
+      --muted:    #7a819a;
+      --code-bg:  #141720;
+      --radius:   8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    nav {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    nav .nav-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 22px 14px;
+    }
+    nav a {
+      display: block;
+      padding: 7px 22px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    nav a:hover { color: var(--text); background: rgba(79,142,247,0.07); }
+    nav a.active { color: var(--accent); border-left-color: var(--accent); background: rgba(79,142,247,0.09); }
+    nav .section-head {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: #4a5170;
+      padding: 18px 22px 5px;
+    }
+
+    main {
+      flex: 1;
+      max-width: 980px;
+      padding: 48px 56px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #1c2138 0%, #151929 50%, #1a1025 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 44px;
+      margin-bottom: 48px;
+    }
+    .hero h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+    .hero .subtitle { color: var(--muted); margin-top: 6px; font-size: 14px; }
+    .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    .badge {
+      font-size: 12px; font-weight: 600; padding: 4px 11px;
+      border-radius: 20px; border: 1px solid;
+    }
+    .badge-blue  { color: var(--accent);  border-color: rgba(79,142,247,0.4);  background: rgba(79,142,247,0.08);  }
+    .badge-red   { color: var(--accent2); border-color: rgba(224,92,92,0.4);   background: rgba(224,92,92,0.08);   }
+    .badge-green { color: var(--accent3); border-color: rgba(80,200,120,0.4);  background: rgba(80,200,120,0.08);  }
+    .badge-gold  { color: var(--accent4); border-color: rgba(245,166,35,0.4);  background: rgba(245,166,35,0.08);  }
+
+    /* ── Sections ── */
+    section { margin-bottom: 52px; }
+    h2 {
+      font-size: 20px; font-weight: 700; color: #fff;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+      scroll-margin-top: 28px;
+    }
+    h3 {
+      font-size: 15px; font-weight: 700; color: var(--accent);
+      margin: 24px 0 10px;
+    }
+    p { margin-bottom: 12px; color: var(--text); }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 5px; color: var(--text); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card-title { font-weight: 700; color: #fff; margin-bottom: 6px; font-size: 14px; }
+
+    /* ── Code ── */
+    pre, code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #a8d8a8;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+      color: #c9d1e0;
+    }
+    .kw  { color: #7eb8f7; }
+    .str { color: #ce9178; }
+    .num { color: #b5cea8; }
+    .cmt { color: #5a6580; font-style: italic; }
+    .fn  { color: #dcdcaa; }
+    .var { color: #9cdcfe; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      background: var(--code-bg); color: var(--muted);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; text-align: left;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid rgba(46,51,71,0.6); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .tag-shorad { background: rgba(224,92,92,0.15); color: var(--accent2); border: 1px solid rgba(224,92,92,0.3); }
+    .tag-std    { background: rgba(79,142,247,0.12); color: var(--accent);  border: 1px solid rgba(79,142,247,0.25); }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: var(--radius); padding: 14px 18px;
+      margin-bottom: 18px; border-left: 4px solid;
+      font-size: 14px;
+    }
+    .callout-info    { background: rgba(79,142,247,0.07);  border-color: var(--accent);  }
+    .callout-warn    { background: rgba(245,166,35,0.07);  border-color: var(--accent4); }
+    .callout-danger  { background: rgba(224,92,92,0.07);   border-color: var(--accent2); }
+    .callout-success { background: rgba(80,200,120,0.07);  border-color: var(--accent3); }
+    .callout strong  { display: block; margin-bottom: 4px; }
+
+    /* ── Timers ── */
+    .timer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    .timer-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px; text-align: center;
+    }
+    .timer-card .timer-val { font-size: 26px; font-weight: 700; color: var(--accent); }
+    .timer-card .timer-unit { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .timer-card .timer-label { font-size: 13px; color: var(--text); margin-top: 4px; }
+
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav>
+  <div class="nav-title">SYRIA DGSS v4.3</div>
+
+  <div class="section-head">Overview</div>
+  <a href="#overview">What It Does</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#quickstart">Quick Start</a>
+
+  <div class="section-head">Configuration</div>
+  <a href="#zones">Zone Setup</a>
+  <a href="#zonesettings">Zone Settings</a>
+  <a href="#visual">Visual Options</a>
+  <a href="#rateLimiting">Rate Limiting</a>
+  <a href="#timers">Timers Reference</a>
+
+  <div class="section-head">Templates</div>
+  <a href="#templates-overview">Template Overview</a>
+  <a href="#template-ref">All 20 Templates</a>
+  <a href="#shorad">SHORAD Groups</a>
+  <a href="#editing-templates">Editing Templates</a>
+  <a href="#adding-templates">Adding Templates</a>
+
+  <div class="section-head">Internals</div>
+  <a href="#shuffle">Shuffle Bag</a>
+  <a href="#markers">Map Markers</a>
+  <a href="#cleanup">Cleanup System</a>
+  <a href="#spawn-logic">Spawn Logic</a>
+
+  <div class="section-head">Reference</div>
+  <a href="#unit-types">Unit Types Used</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <h1>SYRIA_DGSS v4.3</h1>
+    <div class="subtitle">Dynamic Ground-Forces Zone Spawner — Syria Theatre / Syrian Arab Army composition</div>
+    <div class="badge-row">
+      <span class="badge badge-blue">DCS World</span>
+      <span class="badge badge-red">Red Coalition</span>
+      <span class="badge badge-green">MIST Required</span>
+      <span class="badge badge-gold">18 Zones · 20 Templates</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="overview">
+    <h2>What It Does</h2>
+    <p>
+      <strong>DGSS</strong> (Dynamic Ground-Forces Spawner System) automatically populates up to 18 named trigger zones
+      with Syrian Arab Army ground-force groups. Groups are drawn from a pool of 20 pre-defined templates, shuffled
+      randomly using a Fisher-Yates bag so every template fires before any repeats. When a group is destroyed, the
+      zone repopulates on the next spawn cycle.
+    </p>
+    <ul>
+      <li>Groups spawn as <strong>Red / CJTF_RED</strong> coalition using <code>mist.dynAdd</code>.</li>
+      <li>Each spawned group receives an <strong>"Enemy Forces" map marker</strong> visible to all players — the marker auto-removes when the group is destroyed.</li>
+      <li>Five dedicated <strong>RED_SAM_SHORAD_</strong> templates add radar-guided and IR SHORAD threats to the pool, tagged so IADS scripts (e.g. Skynet) can detect and manage them.</li>
+      <li>A <strong>rate limiter</strong> caps spawns at 3 per check cycle to avoid server performance spikes.</li>
+      <li>A <strong>memory-cleanup</strong> routine runs every 20 minutes to purge dead group references.</li>
+    </ul>
+    <div class="callout callout-info">
+      <strong>Syria Theatre</strong>
+      All unit types in this file are Russian-origin vehicles operated by the Syrian Arab Army and are valid
+      for the DCS Syria map without any mod dependencies.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="requirements">
+    <h2>Requirements</h2>
+    <div class="card">
+      <div class="card-title">MIST (Mission Scripting Tools)</div>
+      <p style="margin:0">
+        DGSS uses <code>mist.dynAdd</code> and <code>mist.getRandPointInPolygon</code>.
+        MIST <strong>must be loaded before this script</strong> via a Mission Start trigger.
+        Download: <a href="https://github.com/mrSkortch/MissionScriptingTools" target="_blank">github.com/mrSkortch/MissionScriptingTools</a>
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">DCS World Trigger Zones</div>
+      <p style="margin:0">
+        Each zone listed in the <code>zones</code> table (<code>ZONE1</code>–<code>ZONE18</code>) must exist
+        as a named trigger zone in the Mission Editor. Both <strong>circular</strong> and
+        <strong>polygon</strong> zone types are supported.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="quickstart">
+    <h2>Quick Start</h2>
+    <h3>1 — Load MIST first</h3>
+    <p>In the Mission Editor, add a <strong>Mission Start</strong> trigger with a <em>Do Script File</em> action pointing to <code>mist_4_5_126.lua</code> (or your current MIST version).</p>
+
+    <h3>2 — Load DGSS</h3>
+    <p>Add a second <strong>Mission Start</strong> trigger (after MIST) with a <em>Do Script File</em> action pointing to <code>SYRIA_DGSS_v4.3.lua</code>.</p>
+
+    <h3>3 — Create your zones</h3>
+    <p>In the Mission Editor, create trigger zones named exactly <code>ZONE1</code>, <code>ZONE2</code> … <code>ZONE18</code>.
+    The script will log an error in DCS.log for any zone name it cannot find.</p>
+
+    <h3>4 — Done</h3>
+    <p>When the mission starts, DGSS logs <code>=== [DEBUG] Dynamic Insurgent Zone Spawner LOADED ===</code> and begins
+    populating zones immediately. No further player interaction is needed.</p>
+
+    <div class="callout callout-warn">
+      <strong>Load Order Matters</strong>
+      MIST must finish loading before DGSS. If both are on the same trigger, add a 1-second time delay condition
+      to the DGSS action, or use a second trigger set to <em>Once</em> at mission time &gt; 1 second.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="zones">
+    <h2>Zone Setup</h2>
+    <p>
+      The spawn zone list is defined near the top of the script:
+    </p>
+    <pre><code><span class="kw">local</span> <span class="var">zones</span> = {<span class="str">"ZONE1"</span>,<span class="str">"ZONE2"</span>, ... ,<span class="str">"ZONE18"</span>}</code></pre>
+
+    <h3>Adding a new zone</h3>
+    <ol>
+      <li>Create the trigger zone in the Mission Editor with your chosen name (e.g. <code>ZONE19</code>).</li>
+      <li>Add the name to the <code>zones</code> table.</li>
+      <li>Add a corresponding entry in <code>zoneSettings</code> (see below).</li>
+    </ol>
+
+    <h3>Removing a zone</h3>
+    <p>Delete its entry from both the <code>zones</code> table and the <code>zoneSettings</code> table.</p>
+
+    <div class="callout callout-danger">
+      <strong>Name must match exactly</strong>
+      Zone names are case-sensitive. <code>ZONE1</code> ≠ <code>Zone1</code>. If a zone name in the script
+      does not exist in the mission, DGSS will log an error and skip that zone gracefully — it won't crash.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="zonesettings">
+    <h2>Zone Settings — min / max Spawn Counts</h2>
+    <p>
+      Each zone has its own <code>min</code> and <code>max</code> group count. The spawner enforces these on every
+      check cycle (every 5 minutes):
+    </p>
+    <ul>
+      <li><strong>min</strong> — if live group count drops below this, spawn immediately to refill.</li>
+      <li><strong>max</strong> — hard cap; if count is between min and max, randomly spawn 1 to (max−count) groups.</li>
+      <li>Setting <code>min = 0</code> means the zone can be empty between cycles.</li>
+    </ul>
+
+    <pre><code><span class="kw">local</span> <span class="var">zoneSettings</span> = {
+    <span class="var">ZONE1</span>  = { <span class="var">min</span> = <span class="num">2</span>, <span class="var">max</span> = <span class="num">3</span> },
+    <span class="var">ZONE10</span> = { <span class="var">min</span> = <span class="num">2</span>, <span class="var">max</span> = <span class="num">7</span> },  <span class="cmt">-- busiest zone</span>
+    <span class="var">ZONE11</span> = { <span class="var">min</span> = <span class="num">0</span>, <span class="var">max</span> = <span class="num">2</span> },  <span class="cmt">-- optional zone, can be empty</span>
+}</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Zone</th><th>Min</th><th>Max</th><th>Zone</th><th>Min</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ZONE1</td><td>2</td><td>3</td><td>ZONE10</td><td>2</td><td>7</td></tr>
+          <tr><td>ZONE2</td><td>2</td><td>4</td><td>ZONE11</td><td>0</td><td>2</td></tr>
+          <tr><td>ZONE3</td><td>0</td><td>2</td><td>ZONE12</td><td>1</td><td>4</td></tr>
+          <tr><td>ZONE4</td><td>1</td><td>3</td><td>ZONE13</td><td>0</td><td>2</td></tr>
+          <tr><td>ZONE5</td><td>1</td><td>4</td><td>ZONE14</td><td>1</td><td>5</td></tr>
+          <tr><td>ZONE6</td><td>1</td><td>5</td><td>ZONE15</td><td>2</td><td>4</td></tr>
+          <tr><td>ZONE7</td><td>2</td><td>3</td><td>ZONE16</td><td>0</td><td>4</td></tr>
+          <tr><td>ZONE8</td><td>2</td><td>4</td><td>ZONE17</td><td>1</td><td>5</td></tr>
+          <tr><td>ZONE9</td><td>1</td><td>4</td><td>ZONE18</td><td>0</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="visual">
+    <h2>Visual Options</h2>
+    <pre><code><span class="kw">local</span> <span class="var">ENABLE_SMOKE</span> = <span class="kw">false</span>   <span class="cmt">-- set to true to drop a smoke marker at each spawn point</span>
+<span class="kw">local</span> <span class="var">SMOKE_COLOR</span>  = <span class="num">1</span>        <span class="cmt">-- 0=Green 1=Orange 2=Blue 3=Red 4=White</span></code></pre>
+    <p>
+      Smoke is disabled by default to avoid confusion with CSAR blue smoke signals. You can enable it for testing
+      to visually confirm that spawns are landing inside your zones. Orange (<code>1</code>) is recommended to avoid
+      conflict with the CSAR system.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="rateLimiting">
+    <h2>Rate Limiting</h2>
+    <pre><code><span class="kw">local</span> <span class="var">MAX_SPAWNS_PER_CYCLE</span> = <span class="num">3</span>  <span class="cmt">-- max groups spawned per 5-minute check cycle</span></code></pre>
+    <p>
+      This cap prevents the server from being hit with many simultaneous <code>mist.dynAdd</code> calls.
+      If more zones need refilling than the cap allows, the remainder will be handled on the next cycle (5 minutes later).
+      Increase this value on dedicated servers with spare CPU headroom; decrease it for MP sessions with many players.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="timers">
+    <h2>Timers Reference</h2>
+    <div class="timer-grid">
+      <div class="timer-card">
+        <div class="timer-val">300s</div>
+        <div class="timer-unit">5 minutes</div>
+        <div class="timer-label">Zone check &amp; spawn cycle</div>
+      </div>
+      <div class="timer-card">
+        <div class="timer-val">120s</div>
+        <div class="timer-unit">2 minutes</div>
+        <div class="timer-label">Cleanup loop (dead groups + markers)</div>
+      </div>
+      <div class="timer-card">
+        <div class="timer-val">1200s</div>
+        <div class="timer-unit">20 minutes</div>
+        <div class="timer-label">Full memory cleanup pass</div>
+      </div>
+      <div class="timer-card">
+        <div class="timer-val">3</div>
+        <div class="timer-unit">per cycle</div>
+        <div class="timer-label">Max spawns per 5-min window</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="templates-overview">
+    <h2>Template Overview</h2>
+    <p>
+      The <code>INSURGENT_TEMPLATES</code> table holds 20 group definitions. Each template defines a
+      <strong>name</strong> and a list of <strong>units</strong> with relative offsets (<code>dx</code>, <code>dy</code>
+      in metres from the spawn anchor) and an initial heading in radians.
+    </p>
+    <pre><code>{
+    <span class="var">name</span> = <span class="str">"Ins_1"</span>,
+    <span class="var">units</span> = {
+        { <span class="var">type</span>=<span class="str">"T-72B"</span>,  <span class="var">dx</span>=<span class="num">0.0</span>,  <span class="var">dy</span>=<span class="num">0.0</span>,   <span class="var">heading</span>=<span class="num">0.0</span> },
+        { <span class="var">type</span>=<span class="str">"BMP-2"</span>,  <span class="var">dx</span>=<span class="num">28.0</span>, <span class="var">dy</span>=<span class="num">-14.0</span>, <span class="var">heading</span>=<span class="num">0.3</span> },
+        <span class="cmt">-- ...</span>
+    }
+}</code></pre>
+    <ul>
+      <li><code>dx</code> / <code>dy</code> — offset in metres from the random spawn point. Positive <code>dy</code> = north, positive <code>dx</code> = east (approximately).</li>
+      <li><code>heading</code> — initial facing in <strong>radians</strong> (0 = North, π/2 ≈ 1.57 = East, π ≈ 3.14 = South).</li>
+      <li>All groups are spawned as <strong>Red / CJTF_RED</strong> with task <code>Ground Nothing</code> and skill <code>random</code>.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="template-ref">
+    <h2>All 20 Templates</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Template</th><th>Type</th><th>Key Units</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Ins_1</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-72B, BMP-2, BMP-1, Ural ZU-23, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>RED_SAM_SHORAD_Ins_2</code></td>
+            <td><span class="tag tag-shorad">SHORAD</span></td>
+            <td>HL_DSHK, BTR-80, HL_ZU-23, SA-18 MANPAD, <strong>Osa 9A33 ln</strong>, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_3</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>BMP-2, BMP-1, Ural-4320T, Soldier RPG, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_4</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-55, BTR-60, Soldier RPG ×2, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_5</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>Grad-URAL, Civil Ural, HL_ZU-23, HL_KORD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_6</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-72B, T-55, BRDM-2, ZSU-23-4 Shilka, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_7</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>Grad-URAL, T-55, HL_DSHK, tt_ZU-23, Soldier RPG ×2, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_8</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>BTR-80, Ural ZU-23, Soldier RPG, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_9</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>BRDM-2, HL_KORD, HL_DSHK, Soldier RPG, Infantry (recon element)</td>
+          </tr>
+          <tr>
+            <td><code>RED_SAM_SHORAD_Ins_10</code></td>
+            <td><span class="tag tag-shorad">SHORAD</span></td>
+            <td>ZSU-23-4 Shilka, SA-18 MANPAD ×2, Ural ZU-23, <strong>Osa 9A33 ln</strong>, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_11</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-55, BTR-60, ZSU-23-4 Shilka, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_12</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-72B, BMP-2, BTR-80, HL_ZU-23, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_13</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-72B, T-55, BMP-2, SA-18 MANPAD, Ural-4320T</td>
+          </tr>
+          <tr>
+            <td><code>RED_SAM_SHORAD_Ins_14</code></td>
+            <td><span class="tag tag-shorad">SHORAD</span></td>
+            <td><strong>Osa 9A33 ln</strong>, SA-18 MANPAD ×2, HL_ZU-23, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_15</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>BMP-2, T-55, HL_KORD, Ural ZU-23, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_16</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-62, BMP-1, BTR-80, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>RED_SAM_SHORAD_Ins_17</code></td>
+            <td><span class="tag tag-shorad">SHORAD</span></td>
+            <td>Grad-URAL, 2S1 Gvozdika, ZSU-23-4 Shilka, SA-18 MANPAD, <strong>Osa 9A33 ln</strong>, Ural-4320T, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_18</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>T-72B, BMP-2, BRDM-2, ZSU-23-4 Shilka, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>Ins_19</code></td>
+            <td><span class="tag tag-std">Standard</span></td>
+            <td>BTR-80, BMP-2, ZSU-23-4 Shilka, SA-18 MANPAD, Infantry</td>
+          </tr>
+          <tr>
+            <td><code>RED_SAM_SHORAD_Ins_20</code></td>
+            <td><span class="tag tag-shorad">SHORAD</span></td>
+            <td><strong>Osa 9A33 ln</strong>, Strela-10M3, SA-18 MANPAD ×2, Infantry (heavy SAM screen)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="shorad">
+    <h2>SHORAD Groups — Naming Convention</h2>
+    <p>
+      Any template with the <code>RED_SAM_SHORAD_</code> name prefix is a dedicated short-range air-defence group.
+      The prefix exists so that external IADS management scripts (such as <strong>Skynet-IADS</strong>) can identify
+      and activate these groups as part of the integrated air-defence network.
+    </p>
+    <div class="callout callout-info">
+      <strong>Skynet / IADS Integration</strong>
+      Skynet searches for groups by name prefix. Adding <code>RED_SAM_SHORAD_</code> dynamically-spawned groups to
+      Skynet requires Skynet's <em>late activation</em> or <em>dynamic add</em> API — check the Skynet docs for
+      <code>addSAMSite()</code> calls if you want these groups to be networked.
+    </div>
+
+    <p>The 5 SHORAD templates and their radar-guided unit:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Template</th><th>Radar-Guided Unit</th><th>IR/Optical Units</th></tr></thead>
+        <tbody>
+          <tr><td><code>RED_SAM_SHORAD_Ins_2</code></td><td>Osa 9A33 ln (SA-8 Gecko)</td><td>SA-18 Igla MANPAD</td></tr>
+          <tr><td><code>RED_SAM_SHORAD_Ins_10</code></td><td>Osa 9A33 ln, ZSU-23-4 Shilka (radar gun)</td><td>SA-18 Igla MANPAD ×2</td></tr>
+          <tr><td><code>RED_SAM_SHORAD_Ins_14</code></td><td>Osa 9A33 ln (SA-8 Gecko)</td><td>SA-18 Igla MANPAD ×2</td></tr>
+          <tr><td><code>RED_SAM_SHORAD_Ins_17</code></td><td>Osa 9A33 ln, ZSU-23-4 Shilka (radar gun)</td><td>SA-18 Igla MANPAD</td></tr>
+          <tr><td><code>RED_SAM_SHORAD_Ins_20</code></td><td>Osa 9A33 ln (SA-8 Gecko)</td><td>Strela-10M3 (IR), SA-18 MANPAD ×2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="editing-templates">
+    <h2>Editing Existing Templates</h2>
+    <h3>Change a unit type</h3>
+    <p>Find the template entry and update the <code>type</code> string to any valid DCS unit type name. Unit type names are case-sensitive and must match the DCS internal name exactly.</p>
+    <pre><code><span class="cmt">-- Replace a T-55 with a T-72B3:</span>
+{ <span class="var">type</span>=<span class="str">"T-72B3"</span>, <span class="var">dx</span>=<span class="num">0.0</span>, <span class="var">dy</span>=<span class="num">0.0</span>, <span class="var">heading</span>=<span class="num">0.0</span> },</code></pre>
+
+    <h3>Adjust unit spacing</h3>
+    <p>Increase <code>dx</code>/<code>dy</code> values to spread units further apart. Values are in metres.
+    Typical vehicle spacing: 20–40 m. Keep formations compact enough to fit within your smallest trigger zone.</p>
+
+    <h3>Change group skill</h3>
+    <p>All groups currently use <code>skill = "random"</code>. To set a fixed skill level, locate the spawn section
+    in <code>spawnGroupInZone</code> and change the <code>skill</code> field:</p>
+    <pre><code><span class="var">skill</span> = <span class="str">"random"</span>,   <span class="cmt">-- options: "Average", "Good", "High", "Excellent", "random"</span></code></pre>
+
+    <h3>Rename a template</h3>
+    <p>Change the <code>name</code> field. To add the SHORAD prefix, rename to <code>RED_SAM_SHORAD_Ins_X</code>.
+    The name affects the spawned group's DCS name (it becomes <code>name .. "_" .. timestamp</code>).</p>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="adding-templates">
+    <h2>Adding New Templates</h2>
+    <p>Add a new entry to the <code>INSURGENT_TEMPLATES</code> table, following the existing format. Place it before the closing <code>}</code> of the table. No other changes are needed — the shuffle bag auto-sizes to any number of templates.</p>
+    <pre><code><span class="cmt">-- Example: new T-80 heavy armour group</span>
+{
+    <span class="var">name</span> = <span class="str">"Ins_21"</span>,
+    <span class="var">units</span> = {
+        { <span class="var">type</span>=<span class="str">"T-80UD"</span>,            <span class="var">dx</span>=<span class="num">0.0</span>,   <span class="var">dy</span>=<span class="num">0.0</span>,   <span class="var">heading</span>=<span class="num">0.0</span> },
+        { <span class="var">type</span>=<span class="str">"T-80UD"</span>,            <span class="var">dx</span>=<span class="num">34.0</span>,  <span class="var">dy</span>=<span class="num">-20.0</span>, <span class="var">heading</span>=<span class="num">0.2</span> },
+        { <span class="var">type</span>=<span class="str">"BMP-2"</span>,             <span class="var">dx</span>=<span class="num">-28.0</span>, <span class="var">dy</span>=<span class="num">16.0</span>,  <span class="var">heading</span>=<span class="num">0.6</span> },
+        { <span class="var">type</span>=<span class="str">"Infantry AK Ins"</span>,   <span class="var">dx</span>=<span class="num">10.0</span>,  <span class="var">dy</span>=<span class="num">30.0</span>,  <span class="var">heading</span>=<span class="num">0.0</span> },
+    }
+},</code></pre>
+    <div class="callout callout-warn">
+      <strong>Comma after the closing brace</strong>
+      Every entry in the table except the very last must end with a comma after the <code>}</code>.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="shuffle">
+    <h2>Shuffle Bag System</h2>
+    <p>
+      Instead of pure random selection (which can repeat the same template many times in a row), DGSS uses a
+      <strong>Fisher-Yates shuffle bag</strong>:
+    </p>
+    <ol>
+      <li>All 20 templates are copied into a bag and shuffled randomly.</li>
+      <li>Each spawn draws from the bag (removing the entry).</li>
+      <li>When the bag is empty, it is refilled and reshuffled.</li>
+    </ol>
+    <p>
+      This guarantees that every template is used exactly once before any template repeats, giving players
+      varied and balanced encounters across a session.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="markers">
+    <h2>Map Markers</h2>
+    <p>
+      When a group spawns, a map marker labelled <strong>"Enemy Forces"</strong> is placed at the spawn point,
+      visible to all coalitions. The marker is automatically removed when the group is detected as dead by the
+      2-minute cleanup loop.
+    </p>
+    <div class="callout callout-info">
+      <strong>Marker IDs</strong>
+      Marker IDs are randomly generated (10000–99999). The marker manager stores them by group name and never
+      creates duplicates for the same group. All marker events are logged with the prefix <code>[DGSS][MARKER]</code>.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="cleanup">
+    <h2>Cleanup System</h2>
+    <p>Three separate cleanup passes keep memory tidy during long missions:</p>
+    <div class="card">
+      <div class="card-title">cleanupGroups() — every 2 minutes</div>
+      <p style="margin:0">Scans <code>activeGroups</code> table; removes entries for any group where all units are dead or the group no longer exists in DCS.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">markerManagerCleanup() — every 2 minutes</div>
+      <p style="margin:0">Removes map markers whose group has been cleaned up. Keeps the F10 map free of stale "Enemy Forces" icons.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">performMemoryCleanup() — every 20 minutes</div>
+      <p style="margin:0">Full deep-clean pass over <code>activeGroups</code>. Logs the number of dead references removed. Physical wreckage is left for DCS to handle naturally.</p>
+    </div>
+    <div class="callout callout-success">
+      <strong>Crash-safe design</strong>
+      All cleanup functions use nil-safe guards (<code>if g and g:isExist()</code>) so they cannot error if DCS
+      already garbage-collected a group object.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="spawn-logic">
+    <h2>Spawn Logic — spawnGroupInZone()</h2>
+    <p>The spawn sequence for a single group:</p>
+    <ol>
+      <li>Fetch the trigger zone via <code>trigger.misc.getZone()</code>. Log and abort if not found.</li>
+      <li>Generate a random point inside the zone — uses <code>mist.getRandPointInPolygon</code> for polygon zones, or radius math for circular zones.</li>
+      <li>Draw the next template from the shuffle bag.</li>
+      <li>Build a unit list by offsetting each unit entry from the random anchor point.</li>
+      <li>Call <code>mist.dynAdd()</code> with <code>country = CJTF_RED</code>. Up to 5 attempts if dynAdd fails.</li>
+      <li>Verify the created group has at least one live unit.</li>
+      <li>Register it in <code>activeGroups</code> and place an "Enemy Forces" marker.</li>
+    </ol>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="unit-types">
+    <h2>Unit Types Reference</h2>
+    <p>All unit type strings used in this script. These are the exact DCS internal identifiers.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>DCS Type</th><th>Description</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>T-72B</code></td><td>T-72B Main Battle Tank</td><td>Armour</td></tr>
+          <tr><td><code>T-72B3</code></td><td>T-72B3 MBT (modernised)</td><td>Armour</td></tr>
+          <tr><td><code>T-62</code></td><td>T-62 Medium Tank</td><td>Armour</td></tr>
+          <tr><td><code>T-55</code></td><td>T-55 Medium Tank</td><td>Armour</td></tr>
+          <tr><td><code>BMP-2</code></td><td>BMP-2 IFV</td><td>Mechanised</td></tr>
+          <tr><td><code>BMP-1</code></td><td>BMP-1 IFV</td><td>Mechanised</td></tr>
+          <tr><td><code>BTR-80</code></td><td>BTR-80 APC</td><td>Mechanised</td></tr>
+          <tr><td><code>BTR-60</code></td><td>BTR-60 APC</td><td>Mechanised</td></tr>
+          <tr><td><code>BRDM-2</code></td><td>BRDM-2 Scout Vehicle</td><td>Recon</td></tr>
+          <tr><td><code>Grad-URAL</code></td><td>BM-21 Grad MLRS on Ural</td><td>Artillery</td></tr>
+          <tr><td><code>2S1</code></td><td>2S1 Gvozdika 122mm SPH</td><td>Artillery</td></tr>
+          <tr><td><code>ZSU-23-4 Shilka</code></td><td>ZSU-23-4 Radar-directed AAA</td><td>SHORAD (radar gun)</td></tr>
+          <tr><td><code>Osa 9A33 ln</code></td><td>SA-8 Gecko radar-guided SAM</td><td>SHORAD (radar SAM)</td></tr>
+          <tr><td><code>Strela-10M3</code></td><td>SA-13 Gopher IR-guided SAM</td><td>SHORAD (IR SAM)</td></tr>
+          <tr><td><code>SA-18 Igla manpad</code></td><td>SA-18 Grouse IR MANPAD infantry</td><td>MANPAD</td></tr>
+          <tr><td><code>Ural-375 ZU-23</code></td><td>Ural truck with ZU-23 AA gun</td><td>Light AAA</td></tr>
+          <tr><td><code>HL_ZU-23</code></td><td>Hilux with ZU-23 AA gun</td><td>Light AAA</td></tr>
+          <tr><td><code>tt_ZU-23</code></td><td>Tractor-towed ZU-23 AA gun</td><td>Light AAA</td></tr>
+          <tr><td><code>HL_KORD</code></td><td>Hilux with 12.7mm KORD HMG</td><td>Light support</td></tr>
+          <tr><td><code>HL_DSHK</code></td><td>Hilux with DShK 12.7mm HMG</td><td>Light support</td></tr>
+          <tr><td><code>Ural-4320T</code></td><td>Ural-4320 military truck</td><td>Logistics</td></tr>
+          <tr><td><code>ural_4230_civil_t</code></td><td>Ural civilian-style truck</td><td>Logistics</td></tr>
+          <tr><td><code>Infantry AK Ins</code></td><td>Insurgent rifleman (AK)</td><td>Infantry</td></tr>
+          <tr><td><code>Soldier AK</code></td><td>Regular soldier (AK)</td><td>Infantry</td></tr>
+          <tr><td><code>Soldier RPG</code></td><td>RPG rifleman</td><td>Infantry AT</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <section id="troubleshooting">
+    <h2>Troubleshooting</h2>
+
+    <h3>Groups not spawning</h3>
+    <ul>
+      <li>Check <code>dcs.log</code> for <code>[DGSS][ERROR] Zone not found: ZONEX</code> — zone name mismatch between the script and the Mission Editor.</li>
+      <li>Ensure MIST is loaded <em>before</em> DGSS. Check load order in your triggers.</li>
+      <li>Verify the zone actually exists in the mission file — search for the zone name in the ME Trigger Zones panel.</li>
+    </ul>
+
+    <h3>dynAdd keeps failing (5 retries logged)</h3>
+    <ul>
+      <li>The random spawn point may be landing on impassable terrain (cliffs, water, buildings). Use a polygon zone that matches driveable terrain, or reduce the zone radius to avoid problem areas.</li>
+      <li>If this is a recurring zone, reduce <code>max</code> to lower the density.</li>
+    </ul>
+
+    <h3>Too many groups / performance issues</h3>
+    <ul>
+      <li>Reduce <code>max</code> values in <code>zoneSettings</code> for high-activity zones (especially <code>ZONE10</code> which can hit 7 groups).</li>
+      <li>Reduce <code>MAX_SPAWNS_PER_CYCLE</code> (default 3) to spread spawns across more cycles.</li>
+    </ul>
+
+    <h3>Markers not clearing after kill</h3>
+    <ul>
+      <li>The marker cleanup runs every 2 minutes. Wait for the next cycle. If markers persist longer, check that <code>isGroupDead()</code> can see the group — sometimes groups with zero units but still technically existing in DCS need the 20-minute memory cleanup to fully clear.</li>
+    </ul>
+
+    <h3>SHORAD groups not detected by Skynet</h3>
+    <ul>
+      <li>Skynet requires groups to be added to its network at spawn time. Use Skynet's <code>addSAMSite()</code> API call inside a <code>MIST:addEventHandler("birth", ...)</code> or schedule a check after each spawn cycle to register new <code>RED_SAM_SHORAD_</code> groups.</li>
+    </ul>
+
+    <h3>Reading the log</h3>
+    <p>All DGSS messages are prefixed with <code>[DGSS]</code>. Filter your DCS.log with that string to see only relevant output:</p>
+    <pre><code>[DGSS] Spawned group Ins_1_3845 in zone ZONE3
+[DGSS][MARKER] Placed marker ID 47291 for Ins_1_3845
+[DGSS] Cleaned up dead group Ins_1_3845
+[DGSS][MARKER] Auto-removed marker for dead group Ins_1_3845</code></pre>
+  </section>
+
+</main>
+</div>
+</body>
+</html>
