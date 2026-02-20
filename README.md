@@ -4,6 +4,56 @@ Simple Repo for the Scripts we at AmericanVikings DCS Multiplayer server make an
 
 ---
 
+## Repository Structure
+
+```
+DCS-AmericanVikings-Mission-scripts/
+├── README.md
+├── convoy-systems/
+│   ├── BLUE-ResupplyConvoySpawn/
+│   │   ├── BLUE-ResupplyConvoySpawn v5.7.0.lua
+│   │   └── BLUE-ResupplyConvoySpawn_DOCS.html
+│   └── RedAutomatedConvoySystem/
+│       ├── RedAutomatedConvoySystem(v4.0).lua
+│       └── RedAutomatedConvoySystem_DOCS.html
+├── dgss/
+│   ├── CSAR+lives/
+│   │   ├── DGSS-CSAR+Lives_v5.1.lua
+│   │   └── DGSS-CSAR+Lives_v5.1_DOCS.html
+│   ├── CTLD-JTAC/
+│   │   ├── DGSS-CTLD-JTACv7.2.lua
+│   │   └── DGSS-CTLD-JTAC_DOCS.html
+│   ├── DGSS/
+│   │   ├── DGSS_v4.3.lua
+│   │   └── DGSS_v4.3_DOCS.html
+│   ├── DGSS-Leaderboard 3.5.lua
+│   ├── DGSS-Leaderboard_3.5_DOCS.html
+│   ├── IED_System (Road-placement)/
+│   │   ├── DGSS-IED_System 6.2_RoadPlacement.lua
+│   │   └── DGSS-IED_System_6.2_DOCS.html
+│   ├── SYRIA-DGSS/
+│   │   ├── SYRIA_DGSS_v4.3.lua
+│   │   └── SYRIA_DGSS_v4.3_DOCS.html
+│   ├── TargetOfOportunity script/
+│   │   └── SYRIA_ISIS_TOO_Script_DOCS.html
+│   └── TOO scripts/
+│       ├── DGSS_TOO_System v5.9.lua
+│       ├── DGSS_TOO_System_v5.9_DOCS.html
+│       └── SYRIA_ISIS_TOO_Script.lua
+├── iads/
+│   ├── RED_BLUE_IADS_Intercept.lua
+│   └── RED_BLUE_IADS_Intercept_DOCS.html
+└── mission-systems/
+    ├── AirBaseCapture/
+    │   ├── SYRIA_AirbaseCapture.lua
+    │   └── SYRIA_AirbaseCapture_DOCS.html
+    └── MissionStatePersistence/
+        ├── MissionStatePersistence(v.4.0).lua
+        └── MissionStatePersistence_DOCS.html
+```
+
+---
+
 ## Table of Contents
 
 - [Convoy Systems](#convoy-systems)
