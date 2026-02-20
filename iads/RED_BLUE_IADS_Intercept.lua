@@ -68,6 +68,12 @@ local IADS_CFG = {
     -- Each SAM computes a score; highest scorer engages.
     -- Score = basePk * altFactor * rangeFactor * healthFactor
     PKill_BASE              = 0.92,      -- base Pk for a healthy SAM on boresight (raised for lethality)
+    SAM_MIN_ENGAGE_SCORE    = 0.35,      -- minimum Pk score required before a SAM will fire
+                                         --   0.05 = fire at almost anything (old default)
+                                         --   0.25 = skip very low-quality shots
+                                         --   0.35 = solid engagement solution required (recommended)
+                                         --   0.50 = disciplined — holds fire until near-optimal
+                                         --   0.60+= very conservative, only ideal geometry
 
     -- ── ARM / munition defence ──────────────────────────────────────────────
     ARM_SHUTDOWN_TIME             = 45,    -- seconds radar stays silent after ARM detect
@@ -749,7 +755,7 @@ local function optimizeEngagements(coaName)
                 end
             end
 
-            if bestSam2 and bestScore2 > 0.05 then
+            if bestSam2 and bestScore2 > (IADS_CFG.SAM_MIN_ENGAGE_SCORE or 0.05) then
                 usedSAMs[bestSam2] = true
                 assigned_count = assigned_count + 1
                 assigned[contact.name] = bestSam2  -- last writer wins for radar-mgmt reverse map

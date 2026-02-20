@@ -100,6 +100,7 @@
   <div class="grp">Systems Deep-Dive</div>
   <a href="#sys-detection">Detection Pipeline</a>
   <a href="#sys-sam">SAM Scoring</a>
+  <a href="#sys-pk">Pk Threshold Gate</a>
   <a href="#sys-arm">ARM Defence</a>
   <a href="#sys-intercept">Air Intercept</a>
   <a href="#sys-gci">GCI Picture</a>
@@ -273,6 +274,22 @@
 <p>The engagement scoring formula is: <code>score = PKill_BASE &times; altFactor &times; rangeFactor &times; healthFactor</code>. The SAM with the highest score engages. PKill_BASE is the baseline for a healthy SAM unit with the target perfectly on boresight at optimal range.</p>
 <p>Factors reduce the score: targets at very low altitude drop <code>altFactor</code>, targets near the edge of range drop <code>rangeFactor</code>, damaged SAMs drop <code>healthFactor</code>. The score is relative &mdash; it determines which SAM gets the shot, not whether the missile actually hits (that's DCS's own miss calculation).</p>
 <p>Changing PKill_BASE doesn't make SAMs more or less lethal in isolation; it shifts the scoring baseline and affects which SAM gets selected when multiple equally-positioned SAMs compete for the same target.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_SCORE</span><span class="cc-default">0.35</span><span class="cc-quick">Minimum Pk score a SAM needs before it will fire. Prevents wasted shots.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>After the scoring formula computes a value for every SAM&ndash;contact pair, the result is compared to this threshold. If the score is below it, the SAM <strong>holds fire</strong> regardless of whether it is the best available shooter. This prevents damaged SAMs at extreme range from wasting missiles on hopeless shots.</p>
+<p>At the default <strong>0.35</strong>, any target flying at normal bombing altitude (above ~500&nbsp;m / 1,600&nbsp;ft) will be engaged at essentially full range. The threshold only filters junk shots: crippled batteries, extreme distances, and very low altitude targets at long range.</p>
+<table>
+  <tr><th>Value</th><th>Behaviour</th></tr>
+  <tr><td><code>0.05</code></td><td>Fire at almost anything detected (old default). Wastes missiles.</td></tr>
+  <tr><td><code>0.25</code></td><td>Skip truly hopeless shots (extreme range + low alt + damaged).</td></tr>
+  <tr><td><code>0.35</code></td><td><strong>Recommended.</strong> Solid engagement solution required. No gaps against normal attack profiles.</td></tr>
+  <tr><td><code>0.50</code></td><td>Disciplined &mdash; holds until near-optimal geometry. Damaged SAMs become noticeably less effective.</td></tr>
+  <tr><td><code>0.60+</code></td><td>Very conservative. Only fires in ideal conditions. Players can exploit the gaps.</td></tr>
+</table>
+<p>See the <a href="#sys-pk">Pk Threshold Gate deep-dive</a> for full scoring tables with real DCS engagement scenarios.</p>
 </div></div>
 
 <h2 id="cfg-lowjet">Configuration &mdash; Low-Altitude Jet Immunity</h2>
@@ -451,6 +468,82 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
   <li>A random delay of <code>SAM_FIRE_DELAY_MIN</code> to <code>SAM_FIRE_DELAY_MAX</code> is applied before the controller fires.</li>
 </ol>
 <div class="box box-warn">The script assigns fire orders but DCS's AI SAM controller ultimately decides whether to launch. If the target leaves the SAM's engagement envelope before the delay expires, the fire order may be ignored. This is correct behaviour.</div>
+
+<h2 id="sys-pk">System Deep-Dive &mdash; Pk Threshold Gate</h2>
+<p>The <code>SAM_MIN_ENGAGE_SCORE</code> constant (default <strong>0.35</strong>) acts as a quality gate on every engagement. A SAM will only fire when its computed score exceeds this value. This section explains exactly how the scoring formula works and what each threshold level means for real DCS combat scenarios.</p>
+
+<h3>The Scoring Formula</h3>
+<pre>Score = PKill_BASE (0.92) &times; rangeFactor &times; altFactor &times; healthFactor</pre>
+<p>Each factor runs from 0.0 to 1.0. They <strong>multiply</strong> together, so one bad factor drags the whole score down.</p>
+
+<h3>rangeFactor</h3>
+<p>Peaks at 40% of <code>SAM_ENGAGE_SHARE_RANGE</code> (180&nbsp;km) = <strong>72&nbsp;km</strong> (the sweet spot). Falls off at both extremes.</p>
+<table>
+  <tr><th>Distance from SAM</th><th>rangeFactor</th></tr>
+  <tr><td>36 km (close)</td><td>0.80</td></tr>
+  <tr><td>54 km</td><td>0.90</td></tr>
+  <tr><td><strong>72 km (optimal)</strong></td><td><strong>1.00</strong></td></tr>
+  <tr><td>90 km</td><td>0.90</td></tr>
+  <tr><td>120 km</td><td>0.73</td></tr>
+  <tr><td>144 km</td><td>0.60</td></tr>
+  <tr><td>170 km</td><td>0.46</td></tr>
+  <tr><td>180 km (max range)</td><td>0.40</td></tr>
+</table>
+
+<h3>altFactor</h3>
+<p>Perfect (1.0) for any target between 500&nbsp;m and 12,000&nbsp;m (~1,600&nbsp;ft to ~39,000&nbsp;ft). Drops below and above that band.</p>
+<table>
+  <tr><th>Target Altitude</th><th>altFactor</th></tr>
+  <tr><td>100 m (328 ft)</td><td>0.20</td></tr>
+  <tr><td>200 m (656 ft)</td><td>0.40</td></tr>
+  <tr><td>300 m (984 ft)</td><td>0.60</td></tr>
+  <tr><td>500 m+ to 12,000 m</td><td><strong>1.00</strong></td></tr>
+  <tr><td>15,000 m (49,000 ft)</td><td>0.63</td></tr>
+  <tr><td>18,000 m (59,000 ft)</td><td>0.25</td></tr>
+</table>
+
+<h3>healthFactor</h3>
+<p>Proportion of surviving units in the SAM group. Examples: 4 of 4 alive = 1.00, 3 of 4 = 0.75, 2 of 4 = 0.50.</p>
+
+<h3>Real DCS Engagement Scenarios (Healthy SAM, healthFactor = 1.0)</h3>
+<p>These tables show what score a typical engagement produces, and whether it clears each threshold level.</p>
+
+<h3>Typical Bomb-Delivery Profiles</h3>
+<table>
+  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.35?</th><th>0.50?</th></tr>
+  <tr><td>JDAM run, 20,000 ft (6 km), 50 km out</td><td>6 km</td><td>50 km</td><td><strong>0.83</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>JDAM run, 20,000 ft, 120 km out</td><td>6 km</td><td>120 km</td><td><strong>0.67</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>LGB toss, 15,000 ft (4.5 km), 30 km</td><td>4.5 km</td><td>30 km</td><td><strong>0.74</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>Dumb bomb pop-up, 10,000 ft (3 km), 20 km</td><td>3 km</td><td>20 km</td><td><strong>0.64</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>JSOW/JASSM launch, 25,000 ft, 90 km</td><td>7.6 km</td><td>90 km</td><td><strong>0.83</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>Maverick run, 8,000 ft (2.4 km), 15 km</td><td>2.4 km</td><td>15 km</td><td><strong>0.57</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+</table>
+<div class="box box-info">Any normal bombing profile scores <strong>0.55+</strong>. The threshold won&rsquo;t prevent engagement against standard attack profiles &mdash; SAMs will fire well before weapon release range.</div>
+
+<h3>Where the Threshold Filters (Edge Cases)</h3>
+<table>
+  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.35?</th><th>0.50?</th></tr>
+  <tr><td>Low ingress, 300 m, 160 km out</td><td>300 m</td><td>160 km</td><td><strong>0.25</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Low ingress, 300 m, 100 km</td><td>300 m</td><td>100 km</td><td><strong>0.44</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Low ingress, 200 m, 130 km</td><td>200 m</td><td>130 km</td><td><strong>0.24</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Damaged SAM (50% health), 5 km alt, 140 km</td><td>5 km</td><td>140 km</td><td><strong>0.30</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Damaged SAM (50%), typical bomb run, 60 km</td><td>5 km</td><td>60 km</td><td><strong>0.42</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Damaged SAM (75%), 3 km alt, 150 km</td><td>3 km</td><td>150 km</td><td><strong>0.34</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+</table>
+
+<h3>Gameplay Effect by Threshold Level</h3>
+<table>
+  <tr><th>Threshold</th><th>What Fires</th><th>What Holds Fire</th></tr>
+  <tr><td><code>0.05</code> (old)</td><td>Literally everything. Half-dead SAM at 175&nbsp;km shoots at a 200&nbsp;m AGL target. Wastes missiles.</td><td>Almost nothing.</td></tr>
+  <tr><td><code>0.25</code></td><td>Most encounters. Damaged SAMs still take long-range speculative shots.</td><td>Only the most hopeless combos (extreme range + low alt + damaged).</td></tr>
+  <tr><td><code>0.35</code> <span class="badge g">current</span></td><td>Any standard-altitude approach gets engaged well before bomb range. Low-altitude targets only engaged once they close in to reasonable range. Damaged SAMs stop wasting missiles at max range.</td><td>Crippled SAMs at extreme range. Low flyers at long range (they&rsquo;ll still get shot at once they close in).</td></tr>
+  <tr><td><code>0.50</code></td><td>Clean engagements only &mdash; target is in the productive part of the envelope. SAMs feel disciplined and dangerous rather than trigger-happy.</td><td>Fringes of the envelope. Damaged SAMs become significantly less effective (realistic).</td></tr>
+  <tr><td><code>0.60</code></td><td>Only near-optimal geometry. SAM crews are extremely conservative &mdash; every shot counts.</td><td>Anything outside the sweet spot. Players notice SAMs are &ldquo;smarter&rdquo; but can exploit the gaps.</td></tr>
+</table>
+
+<div class="box box-tip"><strong>Bottom line:</strong> At <code>0.35</code>, a player flying at any normal bombing altitude (above ~1,600&nbsp;ft / 500&nbsp;m) will get engaged at effectively full range &mdash; the threshold doesn&rsquo;t protect them at all. What it <em>does</em> do is stop damaged SAMs from wasting missiles at hopeless targets, and makes low-altitude ingress actually rewarding (you get closer before they shoot, but they still shoot once you&rsquo;re in a reasonable envelope).</div>
+
+<div class="box box-info">The 75&nbsp;m AGL jet immunity (<code>SAM_LOW_JET_IMMUNITY_AGL</code>) is <strong>separate</strong> and still applies &mdash; that&rsquo;s the hard floor for terrain masking against non-SHORAD SAMs. The Pk threshold gate operates above that floor.</div>
 
 <h2 id="sys-arm">System Deep-Dive &mdash; ARM Defence</h2>
 <p>The 1-second weapon tracking loop iterates all in-flight weapons found via <code>world.searchObjects</code>. For each weapon:</p>
