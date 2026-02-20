@@ -566,13 +566,40 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 </ol>
 <p><strong>Pool exhaustion:</strong> when all numbered groups for a prefix are used (dead or activated), no more scrambles occur. This is intentional &mdash; the IADS has a finite aircraft per base. Add more ME late-activate groups to increase the total sortie count.</p>
 
-<h2 id="sys-gci">System Deep-Dive &mdash; GCI Picture Broadcast</h2>
-<p>Every <code>GCI_PICTURE_INTERVAL</code> seconds the script compiles a contact summary from <code>state.contacts</code> and broadcasts via <code>trigger.action.outTextForCoalition</code>. Example broadcast:</p>
-<pre>MAGIC, PICTURE. 3 contacts.
-  HOSTILE 1: BRG 275 / 180km / MEDIUM (4500m)
-  HOSTILE 2: BRG 310 / 95km  / HIGH   (8200m)
-  HOSTILE 3: BRG 090 / 220km / LOW    (800m)</pre>
-<p>Bearing and distance are computed from the coalition's primary AWACS orbit point. Altitude bands: LOW &lt;1,500 m &nbsp;|&nbsp; MEDIUM 1,500&ndash;5,000 m &nbsp;|&nbsp; HIGH &gt;5,000 m.</p>
+<h2 id="sys-gci">System Deep-Dive &mdash; GCI Picture Broadcast (Per-Pilot BRAA)</h2>
+<p>Every <code>GCI_PICTURE_INTERVAL</code> seconds the script compiles a contact summary from <code>state.contacts</code> and delivers a <strong>personalised BRAA (Bearing, Range, Altitude, Aspect)</strong> picture call to each individual Blue pilot. Bearings and ranges are computed from <strong>each pilot&rsquo;s own position</strong>, not from the AWACS.</p>
+
+<h3>How It Works</h3>
+<ol>
+  <li>Confirms at least one <code>BLUE_AWACS_*</code> group is alive &mdash; if not, no picture is broadcast (AWACS is the &ldquo;sender&rdquo; even though BRAA is pilot-relative).</li>
+  <li>Contacts are grouped by DCS flight group &mdash; each group&rsquo;s centroid position and highest altitude are pre-computed <strong>once</strong> (shared across all pilots).</li>
+  <li>Uses <code>coalition.getPlayers(BLUE)</code> to get every player-controlled Blue aircraft currently alive.</li>
+  <li>For each player, computes bearing and range <strong>from that pilot&rsquo;s current position</strong> to each contact group centroid.</li>
+  <li>Sends the message <strong>only to that pilot&rsquo;s group</strong> via <code>trigger.action.outTextForGroup()</code> &mdash; no other players see it.</li>
+</ol>
+
+<h3>Example Broadcasts</h3>
+<p>Two pilots in different locations see different BRAA for the same contacts:</p>
+<pre>[MAGIC]  Viper1-1, PICTURE &mdash; 2 group(s):
+  RED_CAP_DAMASCUS_01  BRAA 045&deg; / 62 nm  Angels 25
+  RED_CAP_HAMA_02 x2   BRAA 350&deg; / 41 nm  Angels 18</pre>
+<pre>[MAGIC]  Hornet2-1, PICTURE &mdash; 2 group(s):
+  RED_CAP_DAMASCUS_01  BRAA 090&deg; / 105 nm  Angels 25
+  RED_CAP_HAMA_02 x2   BRAA 030&deg; / 78 nm   Angels 18</pre>
+
+<div class="box box-info"><strong>Performance note:</strong> Contact grouping and altitude calculations are done once per tick. Only the bearing / range math is repeated per pilot. With 20 players and 10 contact groups the per-tick cost is ~200 trig calls &mdash; negligible.</div>
+
+<h3>Decision Flow</h3>
+<div class="flow">
+  <div class="flow-s">AWACS alive?<br><small>getAirGroupsByPrefix</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Contacts &gt; 0?<br><small>IADS[coa].contacts</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Group contacts<br><small>centroid + maxAlt</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">For each player<br><small>coalition.getPlayers</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">BRAA from pilot pos<br><small>bearingTo + dist2d</small></div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">outTextForGroup<br><small>individual message</small></div>
+</div>
+
+<div class="box box-tip"><strong>Key difference from previous version:</strong> The old implementation used <code>trigger.action.outTextForCoalition()</code> with bearing/range from the AWACS position (BULLSEYE-style). The new implementation uses <code>trigger.action.outTextForGroup()</code> with bearing/range from each pilot&rsquo;s own position (true BRAA). The <code>gciRefPoint()</code> function is retained for GCI scramble calls and DCS.log diagnostics but is no longer used for the picture broadcast.</div>
 
 <h2 id="sys-rtb">System Deep-Dive &mdash; RTB &amp; Fuel Check</h2>
 <p>Every <code>RTB_CHECK_INTERVAL</code> seconds, for each active (airborne) flight:</p>
@@ -1017,26 +1044,35 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <p class="returns">Returns: Vec3</p>
 </div></div>
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  FUNCTION REFERENCE — AWACS Picture Broadcast                 -->
+<!--  FUNCTION REFERENCE — Per-Pilot BRAA Picture Broadcast        -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<h2 id="fn-picture">Function Reference — AWACS Picture Broadcast</h2>
+<h2 id="fn-picture">Function Reference — Per-Pilot BRAA Picture Broadcast</h2>
 
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">broadcastPicture(coalName)</span><span class="rc-scope">internal — called from gciInterceptLoop</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Formats and broadcasts the AWACS picture call to all coalition players. Behaviour:</p>
+<p>Generates and delivers <strong>personalised BRAA picture calls</strong> to every online pilot in the coalition. Each pilot receives bearings and ranges computed from <em>their own aircraft position</em>, not a shared AWACS reference.</p>
+<h4>Execution Flow</h4>
 <ol>
-<li>Confirms at least one AWACS group (matching <code>AWACS_PREFIX</code>) is alive — if not, silently skips.</li>
-<li>Gets the reference point via <code>gciRefPoint()</code>.</li>
-<li>If contacts exist: calls <code>contactPicture()</code> and broadcasts a formatted string prefixed with <code>AWACS_CALLSIGN</code>.</li>
-<li>If no contacts: broadcasts a <code>"PICTURE CLEAR"</code> message.</li>
+<li>Confirms at least one AWACS group (matching <code>AWACS_PREFIX</code>) is alive — if not, silently skips the entire broadcast.</li>
+<li>Retrieves all online human players for the coalition via <code>coalition.getPlayers(coaEnum)</code>.</li>
+<li>For each player unit that is alive:
+  <ul>
+  <li>If contacts exist: calls <code>contactPicture(contacts, pilotPos)</code> using the pilot's own position as the reference point, then sends a personalised message via <code>trigger.action.outTextForGroup()</code>.</li>
+  <li>If no contacts: sends a <code>"PICTURE CLEAR"</code> message to that pilot's group.</li>
+  </ul>
+</li>
+<li>If fewer than <code>IADS_CFG.GCI_MIN_CONTACTS</code> contacts exist, the broadcast is suppressed entirely (same gate as before).</li>
 </ol>
-<p>Message displays for 16 seconds and is also written to dcs.log. Example broadcasts:</p>
-<pre>[OVERLORD]  PICTURE: 3 contact(s), 275° / 98 nm, 2 high, 1 medium.
-[MAGIC]     PICTURE CLEAR. No enemy contacts.</pre>
+<p>Messages display for 16 seconds. Example per-pilot broadcasts:</p>
+<pre>[OVERLORD → Viper1]  BRAA PICTURE: 3 contact(s), 045° / 32 nm, 2 high, 1 medium.
+[OVERLORD → Hawg3]   BRAA PICTURE: 3 contact(s), 310° / 67 nm, 2 high, 1 medium.
+[MAGIC   → Flanker1] BRAA PICTURE CLEAR. No enemy contacts.</pre>
+<h4>API Change from v2.0</h4>
+<p>Prior to the per-pilot upgrade, <code>broadcastPicture()</code> used <code>trigger.action.outTextForCoalition()</code> with a single AWACS-relative bearing. The new version iterates players and calls <code>trigger.action.outTextForGroup()</code> once per pilot, yielding unique bearings per airframe.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>coalName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
-<p class="returns">Returns: nothing</p>
+<p class="returns">Returns: nothing (side-effect: one HUD message per online pilot)</p>
 </div></div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->

@@ -1284,11 +1284,10 @@ local function broadcastPicture(coalName)
     -- Suppress picture-clear chatter — only call when threats are actually present
     if #contacts == 0 then return end
 
-    local refPt = gciRefPoint(coalName)
-
-    -- Group contacts by DCS flight group; compute centroid BRA and lead altitude per group.
-    local grpMap   = {}   -- key = group name, value = { count, sx, sz, maxAlt }
-    local grpOrder = {}   -- insertion-order list of keys (for deterministic output)
+    -- Pre-compute contact groups (once, shared for every pilot).
+    -- Each entry: { centroid = {x,z}, count, maxAlt }
+    local grpMap   = {}   -- key = group name
+    local grpOrder = {}   -- insertion-order for deterministic output
     for _, c in ipairs(contacts) do
         local gKey = (c.group and c.group:isExist() and c.group:getName()) or c.name
         if not grpMap[gKey] then
@@ -1301,24 +1300,52 @@ local function broadcastPicture(coalName)
         e.sz     = e.sz + c.pos.z
         if c.pos.y > e.maxAlt then e.maxAlt = c.pos.y end
     end
-
-    -- Build one line per group: "  GroupName ×N  BRG°/RNGnm  Angels A"
-    local lines = {}
+    -- Finalise centroids
     for _, gKey in ipairs(grpOrder) do
-        local e     = grpMap[gKey]
-        local cPos  = { x = e.sx / e.count, z = e.sz / e.count }
-        local brg   = math.floor(bearingTo(refPt, cPos) + 0.5)
-        local rng   = math.floor(dist2d(refPt, cPos) / 1852 + 0.5)          -- nm
-        local angls = math.floor(e.maxAlt * 3.28084 / 1000 + 0.5)            -- angels (kft)
-        local suffix = e.count > 1 and (" x" .. e.count) or ""
-        table.insert(lines, string.format("  %s%s  %03d° / %d nm  Angels %d",
-            gKey, suffix, brg, rng, angls))
+        local e = grpMap[gKey]
+        e.cx = e.sx / e.count
+        e.cz = e.sz / e.count
     end
 
-    local msg = string.format("[%s]  PICTURE — %d group(s):\n%s",
-        awacsCS, #grpOrder, table.concat(lines, "\n"))
-    trigger.action.outTextForCoalition(myCoaID, msg, 20, false)
-    env.info("[IADS] " .. coalName .. " " .. msg, false)
+    -- ── Per-pilot BRAA messages ──────────────────────────────────────────
+    -- Iterate all BLUE player-controlled aircraft and send each one a
+    -- personalised picture with bearing / range from THEIR position.
+    local players = coalition.getPlayers(myCoaID)
+    if not players or #players == 0 then return end
+
+    for _, playerUnit in ipairs(players) do
+        if playerUnit and playerUnit:isExist() and playerUnit:getLife() > 1 then
+            local pilotPos = playerUnit:getPoint()
+            if pilotPos then
+                local lines = {}
+                for _, gKey in ipairs(grpOrder) do
+                    local e     = grpMap[gKey]
+                    local cPos  = { x = e.cx, z = e.cz }
+                    local brg   = math.floor(bearingTo(pilotPos, cPos) + 0.5)
+                    local rng   = math.floor(dist2d(pilotPos, cPos) / 1852 + 0.5) -- nm
+                    local angls = math.floor(e.maxAlt * 3.28084 / 1000 + 0.5)     -- angels (kft)
+                    local suffix = e.count > 1 and (" x" .. e.count) or ""
+                    table.insert(lines, string.format("  %s%s  BRAA %03d° / %d nm  Angels %d",
+                        gKey, suffix, brg, rng, angls))
+                end
+
+                local pilotName = playerUnit:getPlayerName() or playerUnit:getName()
+                local msg = string.format("[%s]  %s, PICTURE — %d group(s):\n%s",
+                    awacsCS, pilotName, #grpOrder, table.concat(lines, "\n"))
+
+                -- Send to individual player group only
+                local grp = playerUnit:getGroup()
+                if grp then
+                    trigger.action.outTextForGroup(grp:getID(), msg, 20, false)
+                end
+            end
+        end
+    end
+
+    -- Log a summary to DCS.log using the AWACS reference point (for debugging)
+    local refPt = gciRefPoint(coalName)
+    env.info(string.format("[IADS] %s PICTURE broadcast to %d player(s), %d contact group(s)",
+        coalName, #players, #grpOrder), false)
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
