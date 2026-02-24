@@ -86,12 +86,7 @@ local TOO_TEMPLATES = {
         { type = "Infantry AK Ins", offset = { x = 70, y = 75 } },
         { type = "P20_drivable", offset = { x = -50, y = 75 } },
         { type = "HL_ZU-23", offset = { x = -60, y = 85 } },
-        { type = "Grad-URAL", offset = { x = -70, y = 70 } },
-        { type = "2B11 mortar", offset = { x = 55, y = -60 } },
-        { type = "2B11 mortar", offset = { x = 70, y = -70 } },
-        { type = "2B11 mortar", offset = { x = 60, y = -80 } },
-        { type = "tt_ZU-23", offset = { x = 75, y = -55 } },
-        { type = "Ural-4320T", offset = { x = -75, y = 70 } }
+        { type = "Grad-URAL", offset = { x = -70, y = 70 } }
     }
     },
     { name = "ISIS_Palmyra_Fighters",
@@ -108,9 +103,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier RPG", offset = { x = -55, y = 70 } },
         { type = "Soldier stinger", offset = { x = -65, y = 80 } },
         { type = "P20_drivable", offset = { x = 60, y = -65 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_B8M1", offset = { x = 70, y = -55 } },
-        { type = "Ural-4320T", offset = { x = -70, y = 65 } }
+        { type = "Grad-URAL", offset = { x = 75, y = -75 } }
     }
     },
     { name = "ISIS_Homs_Garrison",
@@ -129,13 +122,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier RPG", offset = { x = 60, y = 50 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -45, y = 65 } },
-        { type = "P20_drivable", offset = { x = 60, y = -60 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = 50, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -50 } },
-        { type = "Ural-4320T", offset = { x = -75, y = 60 } },
-        { type = "HL_B8M1", offset = { x = 55, y = -75 } }
+        { type = "Infantry AK Ins", offset = { x = -45, y = 65 } }
     }
     },
     { name = "ISIS_Aleppo_Ambush",
@@ -154,13 +141,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 65 } },
         { type = "Soldier AK", offset = { x = -65, y = 75 } },
-        { type = "Infantry AK Ins", offset = { x = -70, y = 60 } },
-        { type = "P20_drivable", offset = { x = 55, y = -70 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -65 } },
-        { type = "HL_DSHK", offset = { x = 65, y = -50 } },
-        { type = "tt_ZU-23", offset = { x = 80, y = -75 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -55 } },
-        { type = "HL_ZU-23", offset = { x = 60, y = -60 } }
+        { type = "Infantry AK Ins", offset = { x = -70, y = 60 } }
     }
     },
     { name = "ISIS_Hama_Defense",
@@ -179,16 +160,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 70, y = 55 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "Soldier AK", offset = { x = 75, y = -55 } },
-        { type = "Infantry AK Ins", offset = { x = -70, y = 55 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "LAZ Bus", offset = { x = -75, y = 55 } },
-        { type = "HL_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "Ural-375 ZU-23 Insurgent", offset = { x = -60, y = 75 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Tabqa_Cache",
@@ -206,15 +178,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier RPG", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "HQ-7_STR_SP", offset = { x = 55, y = -65 } },
-        { type = "Soldier stinger", offset = { x = 70, y = -75 } },
-        { type = "P20_drivable", offset = { x = 50, y = 50 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -60 } },
-        { type = "Grad-URAL", offset = { x = 80, y = -75 } },
-        { type = "HL_DSHK", offset = { x = -60, y = 75 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -60 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = -65 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Mayadin_Checkpoint",
@@ -235,15 +199,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = -60, y = 75 } },
-        { type = "HL_ZU-23", offset = { x = 70, y = -60 } },
-        { type = "tt_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "HL_B8M1", offset = { x = 60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Al_Bab_Force",
@@ -261,15 +217,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 55, y = -70 } },
-        { type = "Soldier stinger", offset = { x = 70, y = -75 } },
-        { type = "P20_drivable", offset = { x = 50, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = 80, y = -65 } },
-        { type = "HL_DSHK", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -55 } },
-        { type = "HL_ZU-23", offset = { x = -60, y = -75 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Kobane_Patrol",
@@ -287,14 +235,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = 80, y = -65 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Abu_Kamal_Trap",
@@ -313,12 +254,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 55, y = -70 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -75 } },
-        { type = "HL_DSHK", offset = { x = -75, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = 65, y = -60 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Maskanah_Village",
@@ -336,14 +272,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier stinger", offset = { x = 65, y = 75 } },
         { type = "Soldier RPG", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier stinger", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = -75, y = 60 } },
-        { type = "HL_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = -60, y = 75 } },
-        { type = "HQ-7_STR_SP", offset = { x = 60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Sukhnah_Desert_Pos",
@@ -362,12 +291,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier AK", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Infantry AK Ins", offset = { x = -70, y = 80 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "HL_DSHK", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -60, y = -70 } }
+        { type = "Soldier RPG", offset = { x = 50, y = -60 } }
     }
     },
     { name = "ISIS_Tel_Abyad_Command",
@@ -385,14 +309,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Ural-4320T", offset = { x = 70, y = -75 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -65 } },
-        { type = "HL_B8M1", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 65, y = -60 } },
-        { type = "HQ-7_LN_SP", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Shayrat_Stronghold",
@@ -412,11 +329,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Tiyas_Outpost",
@@ -435,14 +348,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier stinger", offset = { x = 65, y = 75 } },
         { type = "ZSU-23-4 Shilka", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier stinger", offset = { x = 50, y = -60 } },
-        { type = "Soldier RPG", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "HL_DSHK", offset = { x = 75, y = -75 } },
-        { type = "tt_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -60 } },
-        { type = "Ural-4320T", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Qaryatayn_Guard",
@@ -463,13 +369,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier AK", offset = { x = 65, y = 75 } },
         { type = "HQ-7_LN_SP", offset = { x = -55, y = 70 } },
         { type = "Infantry AK Ins", offset = { x = -70, y = 80 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -60, y = -70 } },
-        { type = "HQ-7_STR_SP", offset = { x = 60, y = 70 } }
+        { type = "Soldier RPG", offset = { x = 50, y = -60 } }
     }
     },
     { name = "ISIS_Al_Hawl_Squad",
@@ -487,13 +387,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -75 } },
-        { type = "HL_B8M1", offset = { x = 75, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -75, y = 60 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Jarabulus_Fighters",
@@ -512,14 +406,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "HQ-7_LN_SP", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_DSHK", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Manbij_Ambush",
@@ -539,13 +426,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier stinger", offset = { x = 65, y = 75 } },
         { type = "ZSU-23-4 Shilka", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier stinger", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = 75, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "HQ-7_STR_SP", offset = { x = 65, y = -60 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Ash_Shaddadi_Crew",
@@ -564,14 +445,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_B8M1", offset = { x = -75, y = 60 } },
-        { type = "Ural-4320T", offset = { x = 70, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Hasakah_Cache",
@@ -591,14 +465,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier stinger", offset = { x = 65, y = 75 } },
         { type = "ZSU-23-4 Shilka", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier stinger", offset = { x = 50, y = -60 } },
-        { type = "Soldier RPG", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -75 } },
-        { type = "HL_DSHK", offset = { x = 75, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Raqqa_North_Support",
@@ -616,14 +483,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "HQ-7_LN_SP", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "HQ-7_STR_SP", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Deir_Ez_Zor_Rear",
@@ -642,14 +502,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = -75, y = 60 } },
-        { type = "HL_B8M1", offset = { x = 70, y = -65 } },
-        { type = "HQ-7_LN_SP", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Palmyra_Sabotage",
@@ -667,14 +520,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_DSHK", offset = { x = -75, y = 60 } },
-        { type = "Ural-4320T", offset = { x = 70, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Albu_Kamal_Battle",
@@ -695,14 +541,7 @@ local TOO_TEMPLATES = {
         { type = "HQ-7_LN_SP", offset = { x = 65, y = 75 } },
         { type = "ZSU-23-4 Shilka", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier stinger", offset = { x = 50, y = -60 } },
-        { type = "P20_drivable", offset = { x = -60, y = 75 } },
-        { type = "Grad-URAL", offset = { x = 70, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = 75, y = -65 } },
-        { type = "Ural-4320T", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } },
-        { type = "HQ-7_STR_SP", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Raqqa_South_Fortress",
@@ -722,14 +561,7 @@ local TOO_TEMPLATES = {
         { type = "Soldier AK", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Infantry AK Ins", offset = { x = -70, y = 80 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier AK", offset = { x = -12, y = 6 } },
-        { type = "Soldier stinger", offset = { x = 8, y = 14 } },
-        { type = "P20_drivable", offset = { x = 14, y = 12 } },
-        { type = "Grad-URAL", offset = { x = 24, y = 10 } },
-        { type = "HL_B8M1", offset = { x = 18, y = -14 } },
-        { type = "Ural-4320T", offset = { x = 20, y = 14 } },
-        { type = "tt_ZU-23", offset = { x = -8, y = -14 } }
+        { type = "Soldier RPG", offset = { x = 50, y = -60 } }
     }
     },
     { name = "ISIS_Homs_Defense",
@@ -748,14 +580,7 @@ local TOO_TEMPLATES = {
         { type = "HQ-7_LN_SP", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Ural-4320T", offset = { x = 75, y = -75 } },
-        { type = "Grad-URAL", offset = { x = -75, y = 60 } },
-        { type = "HL_DSHK", offset = { x = 70, y = -65 } },
-        { type = "HQ-7_STR_SP", offset = { x = -60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     },
     { name = "ISIS_Bukamal_Garrison",
@@ -773,15 +598,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 70 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "Ural-4320T", offset = { x = 70, y = -65 } },
-        { type = "tt_ZU-23", offset = { x = -60, y = -70 } },
-        { type = "HQ-7_LN_SP", offset = { x = 60, y = -70 } }
+        { type = "Infantry AK Ins", offset = { x = -65, y = 60 } }
     }
     },
     { name = "ISIS_Hasakah_Operations",
@@ -799,13 +616,7 @@ local TOO_TEMPLATES = {
         { type = "ZSU-23-4 Shilka", offset = { x = 65, y = 75 } },
         { type = "Soldier stinger", offset = { x = -55, y = 75 } },
         { type = "Soldier AK", offset = { x = -70, y = 80 } },
-        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } },
-        { type = "Soldier RPG", offset = { x = 50, y = -60 } },
-        { type = "Soldier stinger", offset = { x = 65, y = -75 } },
-        { type = "P20_drivable", offset = { x = 55, y = 55 } },
-        { type = "Grad-URAL", offset = { x = 75, y = -75 } },
-        { type = "HL_ZU-23", offset = { x = -75, y = 60 } },
-        { type = "tt_ZU-23", offset = { x = 70, y = -65 } }
+        { type = "Infantry AK Ins", offset = { x = -60, y = 65 } }
     }
     }
 }
@@ -818,10 +629,10 @@ local TOO_TEMPLATES = {
 -- will find them automatically up to ZONE_SCAN_MAX.
 -- ============================================================================
 local ZONE_PREFIX        = "TOOZONE_"   -- Prefix used for all TOO spawn zones in ME
-local ZONE_SCAN_MAX      = 20           -- Maximum zone number to scan for
+local ZONE_SCAN_MAX      = 12           -- Maximum zone number to scan for
 local MIN_SPAWNS_PER_ZONE = 1           -- Minimum templates to spawn in each zone
 local MAX_SPAWNS_PER_ZONE = 3           -- Maximum templates to spawn in each zone
-local MAX_TOTAL_GROUPS    = 30          -- Hard ceiling: no more than this many groups alive at once
+local MAX_TOTAL_GROUPS    = 12          -- Hard ceiling: no more than this many groups alive at once
 local TOO_ZONES          = {}           -- Populated at init by discoverTOOZones()
 
 local function discoverTOOZones()
@@ -924,8 +735,6 @@ local function getRandomPositionInZone(zoneName)
         y = center2d.y + r * math.sin(angle),
     }
 
-    env.info("[ISIS_TOO DEBUG] Zone: " .. zoneName .. " | Radius: " .. radius .. "m | Spawn distance from center: " .. math.floor(r) .. "m")
-
     return pos2d
 end
 
@@ -998,7 +807,6 @@ local function placeMarker(groupName, markerText, pos2d)
         local oldMarkerId = markerManager.active[groupName]
         pcall(function()
             trigger.action.removeMark(oldMarkerId)
-            env.info("[ISIS_TOO] DEBUG: Removed old marker ID " .. oldMarkerId .. " for group " .. groupName)
         end)
     end
 
@@ -1016,13 +824,11 @@ local function placeMarker(groupName, markerText, pos2d)
     local fullMarkerText = "[ISIS] " .. markerText
 
     local success = pcall(function()
-        env.info("[ISIS_TOO] DEBUG: Placing marker ID " .. markerId .. " at x=" .. tostring(p3.x) .. " y=" .. tostring(p3.y) .. " z=" .. tostring(p3.z) .. groupInfo)
         trigger.action.markToAll(markerId, fullMarkerText, p3, false)
     end)
 
     if success then
         markerManager.active[groupName] = markerId
-        env.info("[ISIS_TOO] SUCCESS: Marker placed - ID:" .. markerId .. " Text:" .. fullMarkerText)
         return true
     else
         env.info("[ISIS_TOO] ERROR: Failed to place marker for " .. groupName)
@@ -1038,9 +844,6 @@ local function markerManagerCleanup()
             local success = pcall(function()
                 trigger.action.removeMark(markerId)
             end)
-            if success then
-                env.info("[ISIS_TOO] MARKER REMOVED: ID " .. markerId .. " for dead group " .. groupName)
-            end
             table.insert(toRemove, groupName)
         end
     end
@@ -1049,27 +852,14 @@ local function markerManagerCleanup()
         markerManager.active[groupName] = nil
     end
 
-    if #toRemove > 0 then
-        env.info("[ISIS_TOO] Marker cleanup: Removed " .. #toRemove .. " markers for dead groups")
-    end
 end
 
 local function cleanupPlayerMenus()
     local toRemove = {}
 
     for groupId, menuData in pairs(TOO_PLAYER_MENUS) do
-        local groupExists = false
-        local coalitionBlue = coalition.getGroups(coalition.side.BLUE)
-        if coalitionBlue then
-            for _, group in ipairs(coalitionBlue) do
-                if group and group:isExist() and group:getID() == groupId then
-                    groupExists = true
-                    break
-                end
-            end
-        end
-
-        if not groupExists then
+        local group = menuData.group
+        if not group or not group:isExist() or group:getSize() == 0 then
             table.insert(toRemove, groupId)
         end
     end
@@ -1078,9 +868,6 @@ local function cleanupPlayerMenus()
         TOO_PLAYER_MENUS[groupId] = nil
     end
 
-    if #toRemove > 0 then
-        env.info("[ISIS_TOO] Menu cleanup: Cleared tracking for " .. #toRemove .. " disconnected players")
-    end
 end
 
 -- ============================================================================
@@ -1155,8 +942,6 @@ local function spawnTargetOfOpportunity(forcedZone)
                     local staticZ = zonePos.y + building.offset.y
                     local staticName = template.name .. "_static_" .. idx .. "_" .. attempt
 
-                    env.info("[ISIS_TOO] DEBUG: Attempting to spawn static " .. building.type .. " at x=" .. math.floor(staticX) .. " z=" .. math.floor(staticZ))
-
                     local success, result = pcall(function()
                         local alt = land.getHeight({x = staticX, y = staticZ}) or 0
                         alt = math.max(0, alt)
@@ -1175,7 +960,6 @@ local function spawnTargetOfOpportunity(forcedZone)
                             local addResult = mist.dynAddStatic(staticData)
 
                             if addResult and addResult.name then
-                                env.info("[ISIS_TOO] SUCCESS: Static " .. building.type .. " added via MIST")
                                 return addResult.name
                             else
                                 env.info("[ISIS_TOO] WARNING: mist.dynAddStatic returned nil for " .. building.type)
@@ -1255,7 +1039,6 @@ local function spawnTargetOfOpportunity(forcedZone)
                                         placeMarker(finalGroupName, template.name, markerPos2d)
                                     end
                                 end
-                                env.info("[ISIS_TOO] SUCCESS: Spawned " .. template.name .. " in " .. zoneName)
                                 break
                             end
                         end
@@ -1291,7 +1074,6 @@ local function cleanupDeadTargets()
             local z = targetData.zone
             zoneSpawnCount[z] = math.max(0, (zoneSpawnCount[z] or 0) - 1)
             if zoneSpawnCount[z] == 0 then zoneSpawnCount[z] = nil end
-            env.info("[ISIS_TOO DEBUG] Zone decremented: " .. z .. " (now " .. tostring(zoneSpawnCount[z] or 0) .. " active)")
         end
 
         if staticObjectIds[groupName] then
@@ -1312,7 +1094,6 @@ local function cleanupDeadTargets()
                 break
             end
         end
-        env.info("[ISIS_TOO] Cleaned up dead target: " .. groupName)
     end
 end
 
@@ -1341,9 +1122,20 @@ local function populateZones(isInitial)
         local current = zoneSpawnCount[zone] or 0
         local target
         if isInitial then
-            target = math.random(MIN_SPAWNS_PER_ZONE, MAX_SPAWNS_PER_ZONE)
+            -- Stagger: spawn exactly MIN (1) per zone at startup.
+            -- Maintenance cycles will grow each zone toward MAX over time,
+            -- mirroring the DGSS ramp-up pattern.
+            target = MIN_SPAWNS_PER_ZONE
         else
-            target = math.max(current, MIN_SPAWNS_PER_ZONE)
+            -- Maintenance: guarantee minimum coverage, then grow by 1 per
+            -- cycle toward MAX so population builds up gradually.
+            if current < MIN_SPAWNS_PER_ZONE then
+                target = MIN_SPAWNS_PER_ZONE      -- restore zone minimum guarantee
+            elseif current < MAX_SPAWNS_PER_ZONE then
+                target = current + 1              -- grow one spawn per cycle
+            else
+                target = current                  -- already at max, no change
+            end
         end
         target = math.min(target, MAX_SPAWNS_PER_ZONE)
         for i = current + 1, target do
@@ -1424,8 +1216,6 @@ local function createNineLine(groupName)
 
     local mgrs = convertToMGRS(targetPos)
     local nedm = convertToNEDM(targetPos)
-
-    env.info("[ISIS_TOO] createNineLine: MGRS=" .. mgrs)
 
     if string.len(mgrs) < 13 then
         env.info("[ISIS_TOO] createNineLine: MGRS string too short: " .. mgrs)
@@ -1513,7 +1303,7 @@ local function getLivingTargetBySlot(slotNum)
     return nil
 end
 
-local function createTOOMenuForGroup(groupId)
+local function createTOOMenuForGroup(groupId, groupObj)
     if not missionCommands or not groupId then return end
 
     if TOO_PLAYER_MENUS[groupId] then return end
@@ -1526,10 +1316,9 @@ local function createTOOMenuForGroup(groupId)
     end
 
     TOO_PLAYER_MENUS[groupId] = {
-        mainMenu = tooRoot
+        mainMenu = tooRoot,
+        group = groupObj,
     }
-
-    env.info("[ISIS_TOO] Main menu created for group " .. groupId)
 
     missionCommands.addCommandForGroup(groupId, "List Active Targets", tooRoot, function()
         local living = getLivingTargets()
@@ -1566,7 +1355,6 @@ local function createTOOMenuForGroup(groupId)
                 local nineLine = createNineLine(target.groupName)
                 if nineLine then
                     trigger.action.outText("9-LINE CAS BRIEF (Target " .. slotNum .. "):\n" .. nineLine, 30, false)
-                    env.info("[ISIS_TOO] 9-Line displayed for slot " .. slotNum .. " (" .. target.groupName .. ")")
                 else
                     trigger.action.outText("Unable to generate 9-line for Target " .. slotNum, 5, false)
                 end
@@ -1624,13 +1412,12 @@ local function createTOOMenuForGroup(groupId)
         end)
     end
 
-    env.info("[ISIS_TOO] Menu for group " .. groupId .. " created with 8 dynamic target slots")
 end
 
 local function updateTOOMenusForAllPlayers()
     if not missionCommands then return end
 
-    local coalitionBlue = coalition.getGroups(coalition.side.BLUE)
+    local coalitionBlue = coalition.getGroups(coalition.side.BLUE, Group.Category.AIRPLANE)
     if not coalitionBlue then return end
 
     for _, group in ipairs(coalitionBlue) do
@@ -1643,7 +1430,7 @@ local function updateTOOMenusForAllPlayers()
                     if unit and unit:isExist() then
                         local playerName = unit:getPlayerName()
                         if playerName and playerName ~= "" then
-                            createTOOMenuForGroup(groupId)
+                            createTOOMenuForGroup(groupId, group)
                             break
                         end
                     end
@@ -1659,7 +1446,6 @@ local function initTOORadioMenuSystem()
         return false
     end
 
-    env.info("[ISIS_TOO] Radio menu system initialized")
     return true
 end
 
@@ -1668,7 +1454,6 @@ end
 -- ============================================================================
 
 local function TOO_Init()
-    env.info("[ISIS_TOO DEBUG] === TOO_Init called ===")
     if not TOO_CONFIG.enabled then
         env.info("[ISIS_TOO] System: DISABLED")
         return
@@ -1679,35 +1464,22 @@ local function TOO_Init()
         return
     end
 
-    env.info("[ISIS_TOO] All dependencies verified")
-    env.info("[ISIS_TOO] System INITIALIZED - Syria ISIS Theatre")
-    env.info("[ISIS_TOO] Templates: " .. #TOO_TEMPLATES)
-
     -- Discover zones dynamically by prefix
     discoverTOOZones()
 
-    env.info("[ISIS_TOO] Zones found: " .. #TOO_ZONES)
-    env.info("[ISIS_TOO] Config: minTargetsOnMap=" .. TOO_CONFIG.minTargetsOnMap)
-
     if missionCommands then
-        env.info("[ISIS_TOO] missionCommands available - initializing radio menu system")
         initTOORadioMenuSystem()
     else
-        env.info("[ISIS_TOO] missionCommands not yet available - scheduling init in 5 seconds")
         timer.scheduleFunction(function()
             if missionCommands then
-                env.info("[ISIS_TOO] missionCommands now available - initializing")
                 initTOORadioMenuSystem()
             else
-                env.info("[ISIS_TOO] missionCommands still not available - retrying")
                 return timer.getTime() + 5
             end
         end, nil, timer.getTime() + 5)
     end
 
-    env.info("[ISIS_TOO DEBUG] === Populating all zones (" .. MIN_SPAWNS_PER_ZONE .. "-" .. MAX_SPAWNS_PER_ZONE .. " targets per zone) ===")
     pcall(function() populateZones(true) end)
-    env.info("[ISIS_TOO] Initial zone population complete")
 
     timer.scheduleFunction(function()
         if TOO_CONFIG.enabled and missionCommands then
@@ -1715,7 +1487,7 @@ local function TOO_Init()
                 updateTOOMenusForAllPlayers()
             end)
         end
-        return timer.getTime() + 10
+        return timer.getTime() + 60  -- was 10s – slowed to reduce coalition.getGroups(AIRPLANE) call frequency
     end, nil, timer.getTime() + 3)
 
     timer.scheduleFunction(function()
@@ -1734,12 +1506,9 @@ end
 
 local function delayedInit()
     local init_success, init_error = pcall(function()
-        env.info("[ISIS_TOO] Delayed init starting...")
         if missionCommands then
-            env.info("[ISIS_TOO] missionCommands available - proceeding with init")
             TOO_Init()
         else
-            env.info("[ISIS_TOO] missionCommands not available yet - scheduling retry in 2 seconds")
             timer.scheduleFunction(function()
                 delayedInit()
             end, nil, timer.getTime() + 2)
@@ -1768,5 +1537,3 @@ trigger.action.outText(
     "[ISIS_TOO] Syria ISIS Target of Opportunity System Loaded",
     12
 )
-
-env.info("[ISIS_TOO] Syria ISIS TOO System initialization complete.")

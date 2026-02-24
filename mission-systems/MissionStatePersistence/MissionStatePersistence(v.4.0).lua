@@ -9,7 +9,7 @@ MISSIONPERSIST = {}
 MISSIONPERSIST.saveDir = lfs.writedir() .. "Mission Saves\\"
 MISSIONPERSIST.groupFile = MISSIONPERSIST.saveDir .. "MissionGroups.lua"
 MISSIONPERSIST.warehouseFile = MISSIONPERSIST.saveDir .. "MissionWarehouses.lua"
-MISSIONPERSIST.saveInterval = 600  -- 10 minutes
+MISSIONPERSIST.saveInterval = 900  -- 15 minutes
 MISSIONPERSIST.lastSavedState = {}  -- Track last saved state for change detection
 
 local version = "3.0 - Jan 2025"
@@ -114,9 +114,6 @@ end
 
 function MISSIONPERSIST.captureGroups()
     MISSIONPERSIST.SavedGroups = {}
-    local saved = 0
-    local unchanged = 0
-    local cleaned = 0
     
     -- Iterate ground groups (ME-placed + dynamically spawned).
     -- Include CJTF-BLUE and DGSS_CTLD spawn country (if DGSS_CTLD present)
@@ -125,91 +122,65 @@ function MISSIONPERSIST.captureGroups()
             local group = Group.getByName(groupName)
             
             if group and group:isExist() then
-                local units = group:getUnits()
-                if units and #units > 0 then
-                    local unitTable = {}
-                    local hasAlive = false
-                    
-                    -- Capture each living unit
-                    for _, unit in ipairs(units) do
-                        if unit and unit:isExist() and unit:getLife() > 0 then
-                            hasAlive = true
-                            local pos = unit:getPoint()
-                            
-                            -- Capture unit state
-                            local fuel = 1.0
-                            pcall(function() fuel = unit:getFuel() end)
-                            
-                            table.insert(unitTable, {
-                                type = unit:getTypeName(),
-                                name = unit:getName(),
-                                x = pos.x,
-                                y = pos.z,
-                                heading = mist.getHeading(unit),
-                                skill = "Average",
-                                fuel = fuel,
-                                life = unit:getLife()
-                            })
+                -- Quick check BEFORE any per-unit work:
+                -- group:getSize() returns alive unit count with no loop needed
+                local aliveCount = group:getSize()
+                if aliveCount > 0 then
+                    local groupPos = group:getPoint()
+                    local currentHash = string.format("%.0f_%.0f_%d", groupPos.x, groupPos.z, aliveCount)
+                    local lastEntry = MISSIONPERSIST.lastSavedState[groupName]
+
+                    if lastEntry and lastEntry.hash == currentHash then
+                        -- Unchanged: reuse cached data, skip all per-unit API calls
+                        MISSIONPERSIST.SavedGroups[groupName] = lastEntry.data
+                    else
+                        -- Changed or new: do full unit capture
+                        local unitTable = {}
+                        for _, unit in ipairs(group:getUnits()) do
+                            if unit and unit:isExist() and unit:getLife() > 0 then
+                                local pos = unit:getPoint()
+                                local fuel = 1.0
+                                pcall(function() fuel = unit:getFuel() end)
+                                table.insert(unitTable, {
+                                    type    = unit:getTypeName(),
+                                    name    = unit:getName(),
+                                    x       = pos.x,
+                                    y       = pos.z,
+                                    heading = mist.getHeading(unit),
+                                    skill   = "Average",
+                                    fuel    = fuel,
+                                    life    = unit:getLife()
+                                })
+                            end
                         end
-                    end
-                    
-                    -- Save group if it has living units
-                    if hasAlive then
-                        local groupPos = group:getPoint()
-                        
-                        -- Check if group state changed since last save (optimization)
-                        local currentHash = string.format("%.0f_%.0f_%d", groupPos.x, groupPos.z, #unitTable)
-                        local lastHash = MISSIONPERSIST.lastSavedState[groupName]
-                        
-                        if currentHash ~= lastHash then
-                            -- State changed - save it
-                            MISSIONPERSIST.SavedGroups[groupName] = {
-                                name = groupName,
-                                country = groupData.country,
-                                category = groupData.category,
-                                coalition = groupData.coalition,
-                                task = "Ground Nothing",
-                                x = groupPos.x,
-                                y = groupPos.z,
-                                units = unitTable
-                            }
-                            MISSIONPERSIST.lastSavedState[groupName] = currentHash
-                            saved = saved + 1
-                        else
-                            -- No change - still need to save (SavedGroups was cleared at start)
-                            MISSIONPERSIST.SavedGroups[groupName] = {
-                                name = groupName,
-                                country = groupData.country,
-                                category = groupData.category,
-                                task = "Ground Nothing",
-                                x = groupPos.x,
-                                y = groupPos.z,
-                                units = unitTable
-                            }
-                            unchanged = unchanged + 1
-                        end
+
+                        local groupEntry = {
+                            name      = groupName,
+                            country   = groupData.country,
+                            category  = groupData.category,
+                            coalition = groupData.coalition,
+                            task      = "Ground Nothing",
+                            x         = groupPos.x,
+                            y         = groupPos.z,
+                            units     = unitTable
+                        }
+
+                        MISSIONPERSIST.SavedGroups[groupName] = groupEntry
+                        MISSIONPERSIST.lastSavedState[groupName] = { hash = currentHash, data = groupEntry }
                     end
                 end
             else
                 -- Group is dead - clean up tracking
-                if MISSIONPERSIST.lastSavedState[groupName] then
-                    MISSIONPERSIST.lastSavedState[groupName] = nil
-                    cleaned = cleaned + 1
-                end
+                MISSIONPERSIST.lastSavedState[groupName] = nil
             end
         end
     end
-    
-    env.info(string.format("[PERSISTENCE] Captured: %d groups (%d changed, %d unchanged, %d cleaned)", 
-        saved + unchanged, saved, unchanged, cleaned))
 end
 
 function MISSIONPERSIST.saveGroups()
     MISSIONPERSIST.captureGroups()
     local serialized = MISSIONPERSIST.serializeWithCycles("MISSIONPERSIST.SavedGroups", MISSIONPERSIST.SavedGroups)
-    if MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.groupFile) then
-        env.info("[PERSISTENCE] Groups saved to file")
-    end
+    MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.groupFile)
 end
 
 function MISSIONPERSIST.loadGroups()
@@ -347,16 +318,12 @@ function MISSIONPERSIST.captureWarehouses()
             end
         end
     end
-    
-    env.info("[PERSISTENCE] Captured " .. count .. " warehouse(s)")
 end
 
 function MISSIONPERSIST.saveWarehouses()
     MISSIONPERSIST.captureWarehouses()
     local serialized = MISSIONPERSIST.serializeWithCycles("MISSIONPERSIST.SavedWarehouses", MISSIONPERSIST.SavedWarehouses)
-    if MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.warehouseFile) then
-        env.info("[PERSISTENCE] Warehouses saved to file")
-    end
+    MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.warehouseFile)
 end
 
 function MISSIONPERSIST.loadWarehouses()
@@ -470,7 +437,6 @@ end
 -- ============================================================
 
 function MISSIONPERSIST.periodicSave()
-    env.info("[PERSISTENCE] Saving state...")
     MISSIONPERSIST.saveGroups()
     MISSIONPERSIST.saveWarehouses()
     return timer.getTime() + MISSIONPERSIST.saveInterval

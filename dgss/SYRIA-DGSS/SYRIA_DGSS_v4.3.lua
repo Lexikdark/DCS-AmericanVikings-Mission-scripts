@@ -4,8 +4,6 @@
 -- With marker tracking and proper cleanup
 -- =========================================================
 
-env.info("=== [DEBUG] Dynamic Insurgent Zone Spawner LOADED ===")
-
 -------------------------------------------------------------
 -- Forward declarations
 -------------------------------------------------------------
@@ -303,28 +301,29 @@ local zones = {"ZONE1","ZONE2","ZONE3","ZONE4","ZONE5","ZONE6","ZONE7","ZONE8","
                "ZONE12","ZONE13","ZONE14","ZONE15","ZONE16","ZONE17","ZONE18"}
 
 -- Per-zone spawn settings
--- Total max across all zones = 40 (hard ceiling per zone = 4).
--- Distribution: min=2 zones → max 3 each (×6=18);
---               min=1 zones → max 2 each (×8=16);
---               min=0 zones → max 2/1 alternating (×4=6). Sum = 40.
+-- GLOBAL_MAX_GROUPS = 25 is the hard ceiling for total alive groups across all zones.
+-- Per-zone maxes can theoretically sum to 28, but the global cap prevents exceeding 25.
+-- ZONE1–5: min=2, max=3 (core high-density zones, always populated).
+-- ZONE6–18: min=0, max=1 (opportunistic – only spawn when a global slot is free).
+local GLOBAL_MAX_GROUPS = 25
 local zoneSettings = {
-    ZONE1  = { min = 2, max = 3 },
+    ZONE1  = { min = 2, max = 4 },
     ZONE2  = { min = 2, max = 3 },
-    ZONE3  = { min = 1, max = 2 },
-    ZONE4  = { min = 1, max = 2 },
-    ZONE5  = { min = 1, max = 2 },
-    ZONE6  = { min = 1, max = 2 },
-    ZONE7  = { min = 2, max = 3 },
-    ZONE8  = { min = 2, max = 3 },
-    ZONE9  = { min = 1, max = 2 },
-    ZONE10 = { min = 2, max = 3 },
+    ZONE3  = { min = 1, max = 4 },
+    ZONE4  = { min = 2, max = 3 },
+    ZONE5  = { min = 1, max = 3 },
+    ZONE6  = { min = 0, max = 2 },
+    ZONE7  = { min = 0, max = 1 },
+    ZONE8  = { min = 0, max = 2 },
+    ZONE9  = { min = 0, max = 1 },
+    ZONE10 = { min = 0, max = 1 },
     ZONE11 = { min = 0, max = 2 },
-    ZONE12 = { min = 1, max = 2 },
+    ZONE12 = { min = 0, max = 1 },
     ZONE13 = { min = 0, max = 1 },
-    ZONE14 = { min = 1, max = 2 },
-    ZONE15 = { min = 2, max = 3 },
-    ZONE16 = { min = 0, max = 2 },
-    ZONE17 = { min = 1, max = 2 },
+    ZONE14 = { min = 0, max = 2 },
+    ZONE15 = { min = 0, max = 1 },
+    ZONE16 = { min = 0, max = 1 },
+    ZONE17 = { min = 0, max = 2 },
     ZONE18 = { min = 0, max = 1 },
 }
 
@@ -406,7 +405,6 @@ local function placeMarker(groupName, pos2d)
     trigger.action.markToAll(markerId, "Enemy Forces", p3, false)
     
     markerManager.active[groupName] = markerId
-    env.info("[DGSS][MARKER] Placed marker ID " .. markerId .. " for " .. groupName)
 end
 
 local function markerManagerCleanup()
@@ -416,7 +414,6 @@ local function markerManagerCleanup()
         -- Check if group is dead
         if isGroupDead(groupName) then
             trigger.action.removeMark(markerId)
-            env.info("[DGSS][MARKER] Auto-removed marker for dead group " .. groupName)
             table.insert(toRemove, groupName)
         end
     end
@@ -432,7 +429,6 @@ local function cleanupGroups()
     for groupName, data in pairs(activeGroups) do
         if isGroupDead(groupName) then
             table.insert(toRemove, groupName)
-            env.info("[DGSS] Cleaned up dead group " .. groupName)
         end
     end
     
@@ -447,8 +443,6 @@ end
 -------------------------------------------------------------
 
 local function performMemoryCleanup()
-    env.info("[DGSS] Starting memory cleanup - removing dead group references")
-    
     local cleaned = 0
     
     -- Clean up dead groups from activeGroups table
@@ -464,12 +458,6 @@ local function performMemoryCleanup()
         cleaned = cleaned + 1
     end
     
-    if cleaned > 0 then
-        env.info(string.format("[DGSS] Memory cleanup complete - removed %d dead references", cleaned))
-    else
-        env.info("[DGSS] Memory cleanup complete - no dead references found")
-    end
-    
     -- Note: Physical wreckage is left for DCS to handle naturally
     -- This prevents memory leaks without causing script errors
 end
@@ -479,8 +467,6 @@ end
 -------------------------------------------------------------
 
 spawnGroupInZone = function(zoneName)
-    env.info("[DGSS] Attempting spawn in " .. zoneName)
-
     -- Get zone
     local z = trigger.misc.getZone(zoneName)
     if not z then
@@ -591,24 +577,63 @@ spawnGroupInZone = function(zoneName)
     placeMarker(finalGroupName, finalPos2d)
     placeSmoke(finalPos2d)
 
-    env.info("[DGSS] Spawned group " .. finalGroupName .. " in zone " .. zoneName)
     return true
+end
+
+-------------------------------------------------------------
+-- Outer Zone Randomisation
+-------------------------------------------------------------
+
+local OUTER_ZONES = {
+    "ZONE6","ZONE7","ZONE8","ZONE9","ZONE10","ZONE11",
+    "ZONE12","ZONE13","ZONE14","ZONE15","ZONE16","ZONE17","ZONE18"
+}
+local OUTER_BONUS_SLOTS = 5  -- how many outer zones get max=2 per cycle
+
+local function reshuffleOuterZones()
+    -- Reset all outer zones to max=1
+    for _, z in ipairs(OUTER_ZONES) do
+        if zoneSettings[z] then
+            zoneSettings[z].max = 1
+        end
+    end
+    -- Fisher-Yates partial shuffle: pick OUTER_BONUS_SLOTS random winners for max=2
+    local pool = {}
+    for i, z in ipairs(OUTER_ZONES) do pool[i] = z end
+    local n = #pool
+    for i = 1, math.min(OUTER_BONUS_SLOTS, n) do
+        local j = math.random(i, n)
+        pool[i], pool[j] = pool[j], pool[i]
+        zoneSettings[pool[i]].max = 2
+    end
 end
 
 -------------------------------------------------------------
 -- Main Zone Check & Spawn Logic
 -------------------------------------------------------------
 
-local MAX_SPAWNS_PER_CYCLE = 18  -- One potential spawn per zone per cycle
+local MAX_SPAWNS_PER_CYCLE = 18  -- Max new spawns allowed in a single cycle (rate limiter)
 
 local function checkZones()
     cleanupGroups()
+    reshuffleOuterZones()  -- randomise which outer zones get the bonus max=2 slots this cycle
+
+    -- Count total currently alive groups across all zones
+    local totalAlive = 0
+    for _, data in pairs(activeGroups) do
+        if data.group and data.group:isExist() then
+            totalAlive = totalAlive + 1
+        end
+    end
 
     local spawnsThisCycle = 0
 
     for _, zoneName in ipairs(zones) do
         if spawnsThisCycle >= MAX_SPAWNS_PER_CYCLE then
             break  -- Hit rate limit, remaining spawns will happen in next cycle
+        end
+        if totalAlive >= GLOBAL_MAX_GROUPS then
+            break  -- Global cap reached, no more spawns this cycle
         end
 
         local settings = zoneSettings[zoneName]
@@ -631,9 +656,11 @@ local function checkZones()
                     if spawnsThisCycle >= MAX_SPAWNS_PER_CYCLE then
                         break  -- Hit rate limit
                     end
+                    if totalAlive >= GLOBAL_MAX_GROUPS then break end
                     local spawned = spawnGroupInZone(zoneName)
                     if spawned then
                         spawnsThisCycle = spawnsThisCycle + 1
+                        totalAlive = totalAlive + 1
                     end
                 end
 
@@ -645,20 +672,18 @@ local function checkZones()
                     if spawnsThisCycle >= MAX_SPAWNS_PER_CYCLE then
                         break  -- Hit rate limit
                     end
+                    if totalAlive >= GLOBAL_MAX_GROUPS then break end
                     local spawned = spawnGroupInZone(zoneName)
                     if spawned then
                         spawnsThisCycle = spawnsThisCycle + 1
+                        totalAlive = totalAlive + 1
                     end
                 end
             end
         end
     end
 
-    if spawnsThisCycle > 0 then
-        env.info("[DGSS] Spawned " .. spawnsThisCycle .. " groups this cycle")
-    end
-
-    timer.scheduleFunction(checkZones, {}, timer.getTime() + 300)  -- Check every 300 seconds (5 minutes)
+    timer.scheduleFunction(checkZones, {}, timer.getTime() + 900)  -- Check every 900 seconds (15 minutes)
 end
 
 -------------------------------------------------------------
@@ -676,7 +701,6 @@ end
 -- Start System
 -------------------------------------------------------------
 
-env.info("[DEBUG] Dynamic Insurgent Zone Spawner Initialized")
 checkZones()
 timer.scheduleFunction(cleanupLoop, {}, timer.getTime() + 10)
 mist.scheduleFunction(performMemoryCleanup, {}, timer.getTime() + 1200, 1200)  -- Run every 20 minutes

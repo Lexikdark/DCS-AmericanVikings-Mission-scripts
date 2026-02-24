@@ -88,6 +88,7 @@
   <a href="#requirements">Requirements</a>
   <a href="#load-order">Load Order</a>
   <a href="#states">Ownership States</a>
+  <a href="#helipad-ownership">Helipad Ownership</a>
   <div class="grp">Config Reference</div>
   <a href="#cfg-timing">Timing</a>
   <a href="#cfg-scan">Scanning</a>
@@ -114,9 +115,9 @@
 <h2 id="overview">How It Works</h2>
 <p>Three things happen, in this order:</p>
 <ol>
-  <li><strong>Script loads</strong> &#x2014; reads <code>ABC.REGISTRY</code> and <code>ABC.DESTROY_REGISTRY</code>, runs a quick unit scan to correct any bases that start without defenders, then draws a coloured circle on the F10 map for every entry using the matching <code>CAPTURE_ZONE_*</code> / <code>DESTROY_ZONE_*</code> trigger zone in the ME for exact position and radius.</li>
+  <li><strong>Script loads</strong> &#x2014; reads <code>ABC.REGISTRY</code> and <code>ABC.DESTROY_REGISTRY</code>, runs a quick unit scan to correct any bases that start without defenders, then draws a coloured circle on the F10 map for every entry using the matching <code>CAPTURE_ZONE_*</code> / <code>DESTROY_ZONE_*</code> trigger zone in the ME for exact position and radius. For FARP/FOB entries, helipads and invisible FARPs inside each zone are discovered and their DCS coalition is set to match the FOB&#x2019;s starting state.</li>
   <li><strong>Every 180 seconds</strong> &#x2014; counts ground units of each coalition inside each zone. Capture bases: accumulate ticks when one side has units and the other doesn't, flip after 3 consecutive ticks. Destroy zones: permanently flip to black when RED unit count reaches zero.</li>
-  <li><strong>On flip</strong> &#x2014; recolours the circle, announces to all players, fires the optional <code>ABC.onCapture</code> callback (capture zones only).</li>
+  <li><strong>On flip</strong> &#x2014; recolours the circle, announces to all players, fires the optional <code>ABC.onCapture</code> callback (capture zones only). For FOBs, all helipads inside the zone are also flipped to the new coalition so players can land and rearm immediately.</li>
 </ol>
 <div class="box box-info"><strong>You provide:</strong> Trigger zones in the ME — one <code>CAPTURE_ZONE_*</code> per base and one <code>DESTROY_ZONE_*</code> per target set. <strong>The script provides:</strong> everything else — circles, scanning, state tracking, announcements. No MIST required.</div>
 
@@ -152,6 +153,21 @@
   <tr><td><span class="badge d">DESTROYED</span></td><td>Out of action. Terminal state — cannot be recaptured by any coalition.</td><td>Black</td><td>Black, α 0.15</td><td>Base name + "Destroyed" (yellow text)</td></tr>
 </table>
 <p>Bases with <code>capturable = false</code> in the registry are permanently locked to their starting coalition regardless of ground activity. Destroy zone entries are always RED at start and can only transition to DESTROYED — never capturable.</p>
+
+<h2 id="helipad-ownership">Helipad Ownership Management</h2>
+<p>FOB/FARP entries (<code>type = "FARP"</code>) get automatic helipad ownership tracking. During <code>init()</code> and <code>registerFARP()</code>, the script discovers all helipad and FARP objects inside each FOB&#x2019;s trigger zone and stores references to them.</p>
+<h3>How Discovery Works</h3>
+<ul>
+  <li><strong>Airbase objects</strong> &#x2014; all non-airdrome entries returned by <code>coalition.getAirbases()</code> that fall inside the zone radius. Covers regular FARPs and DCS helipad airbases. Coalition is changed via <code>ab:setCoalition(id)</code>.</li>
+  <li><strong>Static objects</strong> &#x2014; all statics returned by <code>coalition.getStaticObjects()</code> whose <code>typeName</code> contains <code>"FARP"</code>, <code>"Helipad"</code>, or <code>"Invis"</code>. Covers Invisible FARPs placed as statics in the ME. Since statics have no <code>setCoalition()</code>, the script destroys them and respawns them under the correct country via <code>coalition.addStaticObject()</code>.</li>
+</ul>
+<h3>When Helipads Flip</h3>
+<ul>
+  <li><strong>Mission start</strong> &#x2014; all FOB helipads are set to match the FOB&#x2019;s starting coalition (typically NEUTRAL).</li>
+  <li><strong>On capture</strong> &#x2014; whenever a FOB changes ownership (via ticks, <code>setOwner()</code>, <code>forceCoalition()</code>, or DCS engine event sync), all stored helipads inside that FOB are flipped to the new coalition immediately.</li>
+</ul>
+<div class="box box-info"><strong>Country mapping:</strong> NEUTRAL &#x2192; UN Peacekeepers (country 85), RED &#x2192; Russia (0), BLUE &#x2192; USA (2). Change <code>COAL_TO_COUNTRY</code> in the script if your mission uses different countries.</div>
+<div class="box box-warn"><strong>Auto-capture disabled:</strong> The script calls <code>ab:autoCapture(false)</code> on <em>all</em> registry entries (airbases and FARPs) at init to prevent DCS from firing its own capture events that would conflict with the script&#x2019;s state machine. If you need DCS engine capture events, comment out that <code>pcall</code> block in <code>init()</code>.</div>
 
 <!-- ═══════════ CONFIG ═══════════ -->
 <h2 id="cfg-timing">Configuration &#x2014; Timing</h2>
@@ -203,6 +219,19 @@
     <p>The capturing side must have at least this many live ground units inside the trigger zone when the scan fires. If their count is below the threshold, no tick is awarded even if the enemy is absent.</p>
     <p><strong>Default of 1</strong> means a single infantry unit is enough to contest a base. Raise to <code>3</code> or <code>5</code> to require a meaningful force rather than a lone scout.</p>
     <p><strong>Note:</strong> This threshold applies independently to each side. If RED has 5 and BLUE has 0, RED accumulates. If BLUE has 1 and RED has 5, the base is contested &#x2014; neither ticks up.</p>
+  </div>
+</div>
+
+<div class="cfg-card">
+  <div class="cc-head" onclick="tog(this)">
+    <span class="cc-key">MSG_DURATION</span>
+    <span class="cc-default">12 s</span>
+    <span class="cc-quick">How long capture/destroy announcements stay on screen.</span>
+    <span class="cc-toggle">&#x25BC; details</span>
+  </div>
+  <div class="cc-body">
+    <p>Controls the display time (in seconds) of in-game text messages broadcast via <code>trigger.action.outText()</code>. Applies to <code>[AIRBASE CAPTURE]</code>, <code>[AIRBASE DESTROYED]</code>, and <code>[TARGET DESTROYED]</code> announcements.</p>
+    <p>Raise to <code>20</code>&#x2013;<code>30</code> on large missions where players may be in combat and miss short messages. Lower to <code>5</code>&#x2013;<code>8</code> if screen text feels spammy.</p>
   </div>
 </div>
 
@@ -392,7 +421,7 @@ ABC.setDestroyed("Shayrat")</pre>
     <div class="rc-toggle">&#x25BC; details</div>
   </div>
   <div class="rc-body">
-    <p>Use for FARPs that don't have a DCS Airbase object and whose position isn't known at script load time. Adds the FARP as a new registry entry, allocates mark IDs, draws it on the F10 map immediately, and includes it in all future scans.</p>
+    <p>Use for FARPs that don't have a DCS Airbase object and whose position isn't known at script load time. Adds the FARP as a new registry entry, allocates mark IDs, discovers helipads inside the zone, draws it on the F10 map immediately, and includes it in all future scans.</p>
     <table>
       <tr><th>Param</th><th>Type</th><th>Description</th></tr>
       <tr><td><code>farpName</code></td><td>string</td><td>Unique name — also the key used for all API calls</td></tr>
@@ -421,7 +450,7 @@ ABC.registerFARP(
   <div class="rc-body">
     <p>Iterates every entry in <code>ABC.REGISTRY</code>, removes all existing marks, and redraws fresh circles in the current coalition colour. Useful if marks have been accidentally deleted (e.g. another script with conflicting mark IDs) or after a batch of ownership changes.</p>
     <p><strong>Note:</strong> Does not redraw destroy zone entries in <code>ABC.DESTROY_REGISTRY</code>. Those use a separate state table and are redrawn automatically by the scan loop when they change state.</p>
-    <p><strong>Cost:</strong> ~2 DCS API calls per registered base. On a typical Syria setup with 22 entries this is ~44 calls — fine as a one-off call, but do not call it in a tight loop.</p>
+    <p><strong>Cost:</strong> ~2 DCS API calls per registered base. On a typical Syria setup with 25 entries this is ~50 calls — fine as a one-off call, but do not call it in a tight loop.</p>
   </div>
 </div>
 
@@ -484,8 +513,8 @@ end</pre>
     </table>
   </div>
   <div>
-    <h3><span class="badge n">NEUTRAL</span> FOB Placeholders (6)</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Replace name/zone strings once FOBs are placed in the ME. Start NEUTRAL, capturable by either side.</p>
+    <h3><span class="badge n">NEUTRAL</span> FOB / FARP Entries (9)</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Start NEUTRAL, capturable by either side. Helipads inside each zone are auto-discovered and flipped with the FOB.</p>
     <table>
       <tr><th>name</th><th>zone</th></tr>
       <tr><td>FOB_Alpha</td><td><code>CAPTURE_ZONE_FOB_Alpha</code></td></tr>
@@ -494,6 +523,9 @@ end</pre>
       <tr><td>FOB_Delta</td><td><code>CAPTURE_ZONE_FOB_Delta</code></td></tr>
       <tr><td>FOB_Echo</td><td><code>CAPTURE_ZONE_FOB_Echo</code></td></tr>
       <tr><td>FOB_Foxtrot</td><td><code>CAPTURE_ZONE_FOB_Foxtrot</code></td></tr>
+      <tr><td>FOB_Hotel</td><td><code>CAPTURE_ZONE_FOB_Hotel</code></td></tr>
+      <tr><td>FOB_Golf</td><td><code>CAPTURE_ZONE_FOB_Golf</code></td></tr>
+      <tr><td>FOB_India</td><td><code>CAPTURE_ZONE_FOB_India</code></td></tr>
     </table>
     <h3>Registry Entry Fields</h3>
     <table>
@@ -519,7 +551,7 @@ end</pre>
       <li>When the count reaches <strong>zero</strong> the circle permanently turns <strong>black</strong>, the label gains a yellow "Destroyed" sub-line, and a <code>[TARGET DESTROYED]</code> message is broadcast to all players.</li>
       <li>A zone that already has no RED units at mission start immediately draws as DESTROYED.</li>
     </ul>
-    <h3>Current Entries (9)</h3>
+    <h3>Current Entries (12)</h3>
     <table>
       <tr><th>name</th><th>zone</th></tr>
       <tr><td>SAM Site Alpha</td><td><code>DESTROY_ZONE_SAM_ALPHA</code></td></tr>
@@ -531,6 +563,9 @@ end</pre>
       <tr><td>SAM Site Golf</td><td><code>DESTROY_ZONE_SAM_GOLF</code></td></tr>
       <tr><td>SAM Site Hotel</td><td><code>DESTROY_ZONE_SAM_HOTEL</code></td></tr>
       <tr><td>SAM Site India</td><td><code>DESTROY_ZONE_SAM_INDIA</code></td></tr>
+      <tr><td>SAM Site Juliet</td><td><code>DESTROY_ZONE_SAM_JULIET</code></td></tr>
+      <tr><td>Wagner-Missile-Site</td><td><code>DESTROY_ZONE_Wagner-Missile-Site</code></td></tr>
+      <tr><td>Tiyas</td><td><code>DESTROY_ZONE_TIYAS</code></td></tr>
     </table>
   </div>
   <div>
@@ -560,12 +595,13 @@ end</pre>
 <ol>
   <li><strong>Load script</strong> &#x2014; MISSION START trigger &rarr; DO SCRIPT FILE: <code>SYRIA_AirbaseCapture.lua</code>. No MIST required.</li>
   <li><strong>Capture zones</strong> &#x2014; place one trigger zone per capturable base, named exactly as the <code>zone</code> field in the registry (e.g. <code>CAPTURE_ZONE_PALMYRA</code>). Zone radius in ME sets the drawn circle size and the unit-scan area — recommended 6–10 km for airbases, 2–4 km for FARPs.</li>
+  <li><strong>FOB helipads</strong> &#x2014; place FARPs and Invisible FARPs <em>inside</em> the FOB&#x2019;s <code>CAPTURE_ZONE_FOB_*</code> trigger zone. The script discovers them automatically at init and flips their coalition whenever the FOB changes hands. No additional triggers or configuration needed.</li>
   <li><strong>Destroy zones</strong> &#x2014; place one trigger zone per RED target set, named <code>DESTROY_ZONE_&lt;Name&gt;</code>. Add a matching entry to <code>ABC.DESTROY_REGISTRY</code>. Zone radius should cover all units in the group.</li>
   <li><strong>FARPs</strong> &#x2014; add a delayed DO SCRIPT trigger (T+5 s) calling <code>ABC.registerFARP(...)</code> for any FARP placed in the ME at runtime.</li>
   <li><strong>Callback</strong> &#x2014; if using <code>ABC.onCapture</code>, assign it in a separate DO SCRIPT trigger at T+1 s (not in the same trigger as DO SCRIPT FILE).</li>
   <li><strong>Ownership overrides</strong> &#x2014; use DO SCRIPT triggers calling <code>ABC.setOwner(name, coal)</code> to pre-set any ownership state before or during the mission.</li>
 </ol>
-<div class="box box-tip">Quick test: load the mission and open the F10 map. You should see coloured circles immediately on mission start — red for RED airbases, white/grey for NEUTRAL FOBs, and red for destroy zones. Circles match the position and size of your ME trigger zones exactly.</div>
+<div class="box box-tip">Quick test: load the mission and open the F10 map. You should see coloured circles immediately on mission start — red for RED airbases, white/grey for NEUTRAL FOBs, and red for destroy zones. Circles match the position and size of your ME trigger zones exactly. Check <code>dcs.log</code> for <code>[ABC] helipad</code> lines to verify FOB helipad discovery.</div>
 
 <!-- ═══════════ TROUBLESHOOT ═══════════ -->
 <h2 id="troubleshoot">Troubleshooting</h2>
@@ -579,6 +615,8 @@ end</pre>
   <tr><td>onCapture doesn't fire</td><td>Assign <code>ABC.onCapture</code> in a separate DO SCRIPT trigger at T+1 s, not in the same trigger block as the DO SCRIPT FILE action.</td></tr>
   <tr><td>Another script's marks disappearing</td><td>Mark ID conflict. Change <code>BASE_MARK_OFFSET</code> and/or <code>DESTROY_MARK_OFFSET</code> to ranges the other script doesn't use.</td></tr>
   <tr><td>Script log output</td><td>All output is prefixed <code>[ABC]</code> in dcs.log. Search this tag to trace init, warnings, zone misses, and capture/destroy events.</td></tr>
+  <tr><td>FOB helipad not turning BLUE/NEUTRAL</td><td>Check dcs.log for <code>[ABC] helipad (airbase):</code> and <code>[ABC] helipad (static):</code> discovery lines. If a helipad is not listed, it may be outside the zone radius or its type name doesn&#x2019;t contain &#x201c;FARP&#x201d;, &#x201c;Helipad&#x201d;, or &#x201c;Invis&#x201d;.</td></tr>
+  <tr><td>FOB flip-flopping between NEUTRAL and BLUE</td><td>DCS auto-capture overriding the script. The script now calls <code>ab:autoCapture(false)</code> on all entries at init. If the problem persists, verify the FARP has a matching Airbase object found by <code>Airbase.getByName()</code>.</td></tr>
 </table>
 
 </main>

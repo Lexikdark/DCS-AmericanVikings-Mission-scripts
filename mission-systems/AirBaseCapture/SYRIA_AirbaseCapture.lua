@@ -66,7 +66,7 @@ ABC.CFG = {
 
     -- ── Timing ────────────────────────────────────────────────────────
     CHECK_INTERVAL    = 180,    -- seconds between full zone scans
-    CAPTURE_TICKS     = 3,      -- consecutive scans needed to flip a base
+    CAPTURE_TICKS     = 1,      -- single-tick capture: flip immediately on scan
     MIN_CAPTURE_UNITS = 1,      -- minimum ground units required to start capture
 
     -- ── Scanning ──────────────────────────────────────────────────────
@@ -74,7 +74,10 @@ ABC.CFG = {
                                 -- false = ground units only (realistic default)
 
     -- ── Map Drawing ───────────────────────────────────────────────────
-    CIRCLE_RADIUS     = 6500,   -- metres – adjust if circles feel too big/small
+    -- Circle size is controlled by the radius of the Trigger Zone in the ME.
+    -- CIRCLE_RADIUS is ONLY a last-resort fallback if a zone is missing.
+    -- Do NOT use this value to size your circles — size them in the ME.
+    CIRCLE_RADIUS     = 1000,   -- emergency fallback only; set zone radii in ME
     LINE_TYPE         = 1,      -- 1=Solid 2=Dashed 3=Dotted 4=Dot-Dash
     LABEL_FONT_SIZE   = 14,
 
@@ -91,14 +94,20 @@ ABC.CFG = {
     FILL_DESTROYED    = {0.00, 0.00, 0.00, 0.15},  -- black
 
     -- ── Mark ID Allocation ────────────────────────────────────────────
-    -- Each base reserves MARKS_PER_BASE IDs starting from BASE_MARK_OFFSET.
+    -- BASE_MARK_OFFSET seeds the auto-incrementing mark ID counter.
+    -- drawBase() always generates fresh IDs via newMarkId() — IDs are
+    -- never reused, which avoids the DCS "same-frame ID reuse" silent drop.
     -- Change BASE_MARK_OFFSET if it conflicts with other scripts' mark IDs.
     BASE_MARK_OFFSET    = 6000,
-    MARKS_PER_BASE      = 3,      -- slot 0=circleToAll fill, 1=textToAll label, 2=spare
-    DESTROY_MARK_OFFSET = 7000,   -- separate ID block for DESTROY_ZONE_* entries (max 333 destroy zones)
 
     -- ── Messages ──────────────────────────────────────────────────────
     MSG_DURATION      = 12,     -- seconds the capture announcement shows
+
+    -- ── Diagnostics ───────────────────────────────────────────────────
+    -- Set true to write verbose per-base-per-scan logs to dcs.log.
+    -- Useful for diagnosing draw / capture / helipad coalition failures.
+    -- Set false in production to reduce log noise and Lua overhead.
+    DEBUG_MODE        = false,
 }
 
 ------------------------------------------------------------------------
@@ -111,8 +120,9 @@ ABC.CFG = {
 --   type        : "AIRBASE" | "FARP"
 --   capturable  : false = locked coalition (e.g. sovereign neutral territory)
 --
--- TIP: Zone radius in ME should cover the base perimeter + approach roads.
---      Recommended ~6–10 km for airbases, ~2–4 km for FARPs.
+-- TIP: The Trigger Zone radius in the ME controls BOTH the capture detection
+--      area AND the visual circle drawn on the F10 map. One zone does both.
+--      Set it to whatever you want the player to see on the map.
 ------------------------------------------------------------------------
 ABC.REGISTRY = {
 
@@ -125,29 +135,18 @@ ABC.REGISTRY = {
     -- Damascus sector
     { name = "Mezzeh",          zone = "CAPTURE_ZONE_MEZZEH",           coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Damascus",        zone = "CAPTURE_ZONE_DAMASCUS",         coalition = "RED", type = "AIRBASE", capturable = true },
-
-    -- Southern Syria / Jordan border
-    { name = "Marj Ruhayyil",   zone = "CAPTURE_ZONE_MARJ_RUHAYYIL",   coalition = "RED", type = "AIRBASE", capturable = true },
+    { name = "Marj Ruhayyil",   zone = "CAPTURE_ZONE_MARJ_RUHAYYIL",    coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "An Nasiriyah",    zone = "CAPTURE_ZONE_AN_NASIRIYAH",     coalition = "RED", type = "AIRBASE", capturable = true },
-
     { name = "Khalkhalah",      zone = "CAPTURE_ZONE_KHALKHALAH",       coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "At Tanf",         zone = "CAPTURE_ZONE_AT_TANF",          coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Sayqal",          zone = "CAPTURE_ZONE_SAYQAL",           coalition = "RED", type = "AIRBASE", capturable = true },
-
-    -- Central Syria
     { name = "Tha'lah",         zone = "CAPTURE_ZONE_THALAH",           coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Palmyra",         zone = "CAPTURE_ZONE_PALMYRA",          coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Shayrat",         zone = "CAPTURE_ZONE_SHAYRAT",          coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Tabqa",           zone = "CAPTURE_ZONE_TABQA",            coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Hama",            zone = "CAPTURE_ZONE_HAMA",             coalition = "RED", type = "AIRBASE", capturable = true },
-
-    -- Eastern Syria
     { name = "Deir ez-Zor",     zone = "CAPTURE_ZONE_DEIR_EZ-ZOR",      coalition = "RED", type = "AIRBASE", capturable = true },
-
-    -- Northern Syria
     { name = "Aleppo",          zone = "CAPTURE_ZONE_ALEPPO",           coalition = "RED", type = "AIRBASE", capturable = true },
-
-    -- Coastal / Latakia sector
     { name = "Al Qusayr",       zone = "CAPTURE_ZONE_AL_QUSAYR",        coalition = "RED", type = "AIRBASE", capturable = true },
     { name = "Bassel Al-Assad", zone = "CAPTURE_ZONE_BASSEL_AL_ASSAD",  coalition = "RED", type = "AIRBASE", capturable = true },
 
@@ -157,16 +156,21 @@ ABC.REGISTRY = {
     -- Call ABC.registerFARP(name, zone, "NEUTRAL", pos) at runtime,
     -- or simply add them here and let init() handle them via AIRBASE lookup
     -- if they have a proper DCS Airbase/FARP object.
+    --
+    -- activateGroup (optional) — set to the exact ME group name of a
+    -- Late-Activated BLUE unit group.  When Blue captures the FOB, the
+    -- script calls Group:activate() on that group automatically.
+    -- Leave as nil if you do not need a garrison group for that FOB.
     -- ═══════════════════════════════════════════════════════════════════
-    { name = "FOB_Alpha",   zone = "CAPTURE_ZONE_FOB_Alpha",   coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Bravo",   zone = "CAPTURE_ZONE_FOB_Bravo",   coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Charlie", zone = "CAPTURE_ZONE_FOB_Charlie", coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Hotel",   zone = "CAPTURE_ZONE_FOB_Hotel",   coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_Golf",    zone = "CAPTURE_ZONE_FOB_Golf",    coalition = "NEUTRAL", type = "FARP", capturable = true },
-    { name = "FOB_India",   zone = "CAPTURE_ZONE_FOB_India",   coalition = "NEUTRAL", type = "FARP", capturable = true },
+    { name = "FOB_Alpha",   zone = "CAPTURE_ZONE_FOB_Alpha",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Alpha"
+    { name = "FOB_Bravo",   zone = "CAPTURE_ZONE_FOB_Bravo",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Bravo"
+    { name = "FOB_Charlie", zone = "CAPTURE_ZONE_FOB_Charlie", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Charlie"
+    { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Delta"
+    { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Echo"
+    { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Foxtrot"
+    { name = "FOB_Hotel",   zone = "CAPTURE_ZONE_FOB_Hotel",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Hotel"
+    { name = "FOB_Golf",    zone = "CAPTURE_ZONE_FOB_Golf",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Golf"
+    { name = "FOB_India",   zone = "CAPTURE_ZONE_FOB_India",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_India"
 
     -- ═══════════════════════════════════════════════════════════════════
     -- FARP SLOTS  — leave blank here; use ABC.registerFARP() at runtime
@@ -214,6 +218,8 @@ ABC.DESTROY_REGISTRY = {
     { name = "SAM Site Golf",     zone = "DESTROY_ZONE_SAM_GOLF"     },
     { name = "SAM Site Hotel",    zone = "DESTROY_ZONE_SAM_HOTEL"    },
     { name = "SAM Site India",    zone = "DESTROY_ZONE_SAM_INDIA"    },
+    { name = "SAM Site Juliet",   zone = "DESTROY_ZONE_SAM_JULIET"   },
+    { name = "Wagner-Missile-Site",  zone = "DESTROY_ZONE_Wagner-Missile-Site"   },
     { name = "Tiyas",             zone = "DESTROY_ZONE_TIYAS" },
 }
 
@@ -224,42 +230,135 @@ ABC._state        = {}   -- [baseName] = state table
 ABC._destroyState = {}   -- [name]     = destroy-zone state table
 ABC._eventHandler = {}   -- DCS world event handler object
 ABC._initialized  = false
+ABC._dcsNameMap   = {}   -- [DCS airbase name] → registry entry.name
+                         -- Handles cases where the ME FARP name differs
+                         -- from the name in ABC.REGISTRY (caps, suffix, etc.)
+local _scanCount  = 0    -- incremented each scan cycle for logging
+
+-- Auto-incrementing mark ID counter.
+-- DCS mark IDs must NEVER be reused in the same or adjacent Lua frames.
+-- trigger.action.removeMark() is queued (not immediate) — the old mark
+-- is not gone until the next engine frame.  If you re-use the same ID
+-- in the same call chain, circleToAll/textToAll silently fails (no draw).
+local _nextMarkId = ABC.CFG.BASE_MARK_OFFSET + 10000  -- start well above the base offset
+local function newMarkId()
+    _nextMarkId = _nextMarkId + 1
+    return _nextMarkId
+end
 
 ------------------------------------------------------------------------
 -- SECTION 4 : INTERNAL UTILITIES
 ------------------------------------------------------------------------
 
--- Safely retrieve a mission trigger zone; logs a warning if missing
+-- Zone cache — trigger zones never move, so cache them on first lookup.
+-- Cuts repeated trigger.misc.getZone() calls during scans and redraws to zero.
+local _zoneCache = {}
+
+------------------------------------------------------------------------
+-- Debug helper: writes a verbose trace line only when DEBUG_MODE is
+-- enabled.  All hot-path per-base calls should use dbg() instead of
+-- bare env.info so production performance is unaffected.
+------------------------------------------------------------------------
+local function dbg(msg)
+    if ABC.CFG.DEBUG_MODE then
+        env.info("[ABC][DBG] " .. tostring(msg), false)
+    end
+end
+
+-- Safely retrieve a mission trigger zone by name.
+-- Results are cached permanently — trigger.misc.getZone() is only ever
+-- called ONCE per unique zone name for the lifetime of the mission.
+-- LOGS a one-time WARNING if the zone is missing from the ME.
 local function getZone(name)
     if not name or name == "" then return nil end
+    if _zoneCache[name] then return _zoneCache[name] end
     local z = trigger.misc.getZone(name)
-    if not z then
+    if z then
+        _zoneCache[name] = z
+        dbg(string.format("getZone: cached '%s' r=%.0f pos=(%.0f,%.0f)",
+            name, z.radius or 0,
+            z.point and z.point.x or 0, z.point and z.point.z or 0))
+    else
         env.info("[ABC] WARNING: Trigger zone '" .. name .. "' not found. "
                  .. "Create it in the Mission Editor.", false)
     end
     return z
 end
 
--- Coalition group cache – populated once per scanAll() cycle to avoid
--- hundreds of redundant coalition.getGroups() calls each tick.
-local _groupCache = nil
+-- ── Unit-position snapshot ────────────────────────────────────────
+-- Built once at the start of each scanAll() cycle so that every zone
+-- check is pure Lua arithmetic — no additional DCS API calls.  This
+-- mirrors the MOOSE "collect once, query many" pattern and cuts
+-- per-cycle API calls from ~37 000 to ~600 for a typical mission.
+local _unitSnapshot = nil   -- array of { coal=1|2, x=N, z=N }
 
--- Count live units of coalition coalId inside a circular zone
--- coalId : coalition.side.RED (1) or coalition.side.BLUE (2)
+-- Build a flat array snapshot of all live unit positions for this scan cycle.
+-- Called ONCE at the start of scanAll() — every subsequent zone-presence
+-- check is pure Lua arithmetic against this table, so the DCS API is
+-- only queried twice per coalition per scan (coalition.getGroups calls).
+-- RETURNS: snap (array of {coal,x,z}), total unit count (for logging).
+local function buildUnitSnapshot()
+    local snap = {}
+    local n    = 0
+    local cats = { Group.Category.GROUND }
+    if ABC.CFG.SCAN_AIR then
+        cats[#cats + 1] = Group.Category.AIRPLANE
+        cats[#cats + 1] = Group.Category.HELICOPTER
+    end
+    for _, coalId in ipairs({ coalition.side.RED, coalition.side.BLUE }) do
+        for _, cat in ipairs(cats) do
+            local groups = coalition.getGroups(coalId, cat) or {}
+            for _, g in ipairs(groups) do
+                if g:isExist() then
+                    for _, u in ipairs(g:getUnits()) do
+                        if u:isExist() and u:isActive() and u:getLife() > 0 then
+                            local p = u:getPoint()
+                            n = n + 1
+                            snap[n] = { coal = coalId, x = p.x, z = p.z }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return snap, n
+end
+
+-- Count live units of a given coalition inside a circular zone.
+-- FAST PATH (scanAll):  iterates _unitSnapshot — zero additional DCS calls.
+-- SLOW PATH (init):     falls back to live coalition.getGroups() queries.
+--                       Runs only a handful of times at mission load.
+-- Both paths do pure radius math: sqrt-free (dx²+dz² ≤ r²).
 local function countUnitsInZone(zone, coalId)
     if not zone then return 0 end
-    local count   = 0
-    local rsq     = zone.radius * zone.radius
-    local zx, zy  = zone.point.x, zone.point.z
-    local cats    = { Group.Category.GROUND }
+    local count  = 0
+    local rsq    = zone.radius * zone.radius
+    local zx     = zone.point.x
+    local zy     = zone.point.z
+
+    -- ── Fast path: snapshot available (normal scan cycle) ─────────
+    if _unitSnapshot then
+        for i = 1, #_unitSnapshot do
+            local u = _unitSnapshot[i]
+            if u.coal == coalId then
+                local dx = u.x - zx
+                local dz = u.z - zy
+                if (dx * dx + dz * dz) <= rsq then
+                    count = count + 1
+                end
+            end
+        end
+        return count
+    end
+
+    -- ── Slow path: direct API (init only — called a handful of times) ─
+    local cats = { Group.Category.GROUND }
     if ABC.CFG.SCAN_AIR then
         cats[#cats + 1] = Group.Category.AIRPLANE
         cats[#cats + 1] = Group.Category.HELICOPTER
     end
     for _, cat in ipairs(cats) do
-        -- Use cached groups when available (scanAll pre-populates), else fetch live
-        local cacheKey = tostring(coalId) .. "_" .. tostring(cat)
-        local groups = (_groupCache and _groupCache[cacheKey]) or coalition.getGroups(coalId, cat)
+        local groups = coalition.getGroups(coalId, cat) or {}
         for _, g in ipairs(groups) do
             if g:isExist() then
                 for _, u in ipairs(g:getUnits()) do
@@ -278,44 +377,152 @@ local function countUnitsInZone(zone, coalId)
     return count
 end
 
--- Get (and cache) the world position of a base.
--- Priority: cached pos → DCS Airbase object → trigger zone centre.
-local function getBasePos(entry, st)
-    if st.pos then return st.pos end
-    -- 1. Try DCS airbase object (works for all named Syria airbases)
-    if entry.type == "AIRBASE" then
-        local ab = Airbase.getByName(entry.name)
-        if ab then
-            st.pos = ab:getPoint()
-            return st.pos
+-- ── Helipad snapshot ──────────────────────────────────────────────
+-- Built ONCE at mission start by snapshotHelipadObjects().
+-- Each entry: { name=string, obj=Airbase, x=N, z=N }
+-- findHelipadsInZone() then does pure Lua distance checks against
+-- this cached list — zero DCS API calls per FOB zone.
+local _helipadSnapshot = nil   -- populated by snapshotHelipadObjects()
+
+-- Build a one-time snapshot of every helipad / FARP Airbase object in
+-- the mission EXCEPT the named airdromes already in ABC.REGISTRY.
+-- Stores each object's reference + position so findHelipadsInZone() can
+-- do pure Lua radius checks without any per-scan DCS API calls.
+-- Called ONCE at ABC.init() time by the helipad-snapshot block.
+local function snapshotHelipadObjects()
+    -- Build airdrome exclusion set
+    local airdromes = {}
+    for _, e in ipairs(ABC.REGISTRY) do
+        if e.type == "AIRBASE" then airdromes[e.name] = true end
+    end
+
+    local snap = {}
+    local seen = {}
+    for _, coa in ipairs({ 0, 1, 2 }) do   -- NEUTRAL, RED, BLUE
+        local bases = coalition.getAirbases(coa) or {}
+        for _, ab in ipairs(bases) do
+            if ab:isExist() then
+                local abName = ab:getName()
+                if not airdromes[abName] and not seen[abName] then
+                    local p = ab:getPoint()
+                    snap[#snap + 1] = {
+                        name = abName,
+                        obj  = ab,
+                        x    = p.x,
+                        z    = p.z,
+                    }
+                    seen[abName] = true
+                end
+            end
         end
     end
-    -- 2. Fallback: use the centre of the trigger zone for drawing
-    --    (covers FARPs and any airbase whose DCS name didn't resolve)
-    if entry.zone and entry.zone ~= "" then
-        local z = trigger.misc.getZone(entry.zone)
-        if z and z.point then
-            st.pos = { x = z.point.x, y = z.point.y or 0, z = z.point.z }
-            return st.pos
+
+    env.info(string.format(
+        "[ABC] Helipad snapshot: %d helipad/FARP objects cached.", #snap), false)
+    return snap
+end
+
+-- Return all helipad/FARP objects whose centre falls within the named
+-- trigger zone, using the pre-built _helipadSnapshot for O(n) pure-Lua
+-- radius checks.  Called at init for every FARP entry and again if
+-- ABC.registerFARP() is used at runtime.
+-- LOGS the result always (including 0 found) for diagnosability.
+local function findHelipadsInZone(zoneName)
+    local zone = getZone(zoneName)  -- uses cache
+    if not zone then
+        env.info("[ABC] findHelipadsInZone: zone '" .. tostring(zoneName) .. "' not found.", false)
+        return {}
+    end
+    if not _helipadSnapshot then
+        env.info("[ABC] findHelipadsInZone: snapshot not built yet!", false)
+        return {}
+    end
+
+    local zx, zy = zone.point.x, zone.point.z
+    local rsq    = zone.radius * zone.radius
+    local pads   = {}
+
+    for _, hp in ipairs(_helipadSnapshot) do
+        local dx = hp.x - zx
+        local dz = hp.z - zy
+        if (dx * dx + dz * dz) <= rsq then
+            pads[#pads + 1] = { obj = hp.obj, kind = "airbase" }
         end
     end
-    return nil
+
+    -- Always log result so zero-found cases are visible in dcs.log.
+    env.info(string.format(
+        "[ABC] findHelipadsInZone('%s'): %d helipad(s) in zone (r=%.0f).",
+        zoneName, #pads, zone.radius or 0), false)
+    return pads
+end
+
+-- Map our string coalitions to DCS numeric coalition IDs.
+local COAL_STR_TO_ID = { NEUTRAL = 0, RED = 1, BLUE = 2, DESTROYED = 0 }
+
+-- Change the DCS Airbase coalition for every helipad / FARP object in
+-- the list.  This is what makes the helipad ring colour flip on the F10
+-- map and what controls which pilots can spawn at / use the FARP.
+-- coalStr must be "RED", "BLUE", "NEUTRAL" (or "DESTROYED" → neutral).
+-- LOGS every pad processed (success AND failure) so the log is the
+-- first place to look when helipad coalition is not changing in-game.
+local function setHelipadsCoalition(helipads, coalStr)
+    local id = COAL_STR_TO_ID[coalStr]
+    if id == nil then
+        env.info("[ABC] setHelipadsCoalition: unknown coalStr '" .. tostring(coalStr) .. "'", false)
+        return
+    end
+
+    if not helipads or #helipads == 0 then
+        env.info("[ABC] setHelipadsCoalition: list is EMPTY — no pads to update (target=" .. coalStr .. ")", false)
+        return
+    end
+
+    for _, pad in ipairs(helipads) do
+        local obj = pad.obj
+        if obj and obj:isExist() then
+            local padName = tostring(obj:getName())
+            local ok, err = pcall(function() obj:setCoalition(id) end)
+            if ok then
+                -- Read back the coalition DCS actually stored to confirm it stuck.
+                -- If DCS reverts the call, readId will differ from id.
+                local readId = -1
+                pcall(function() readId = obj:getCoalition() end)
+                if readId == id then
+                    env.info(string.format(
+                        "[ABC] setHelipadsCoalition: '%s' → %s (id=%d) OK — verified readback=%d",
+                        padName, coalStr, id, readId), false)
+                else
+                    env.info(string.format(
+                        "[ABC] setHelipadsCoalition: '%s' SET to %s (id=%d) but DCS readback=%d — DCS REVERTED the change!",
+                        padName, coalStr, id, readId), false)
+                end
+            else
+                env.info(string.format(
+                    "[ABC] setHelipadsCoalition: '%s' FAILED → %s: %s",
+                    padName, coalStr, tostring(err)), false)
+            end
+        else
+            env.info("[ABC] setHelipadsCoalition: pad obj nil or destroyed — skipped", false)
+        end
+    end
 end
 
 ------------------------------------------------------------------------
 -- SECTION 5 : DRAWING SYSTEM
 ------------------------------------------------------------------------
--- Previous attempts failed because colour tables used NAMED keys
--- {r=..., g=..., b=..., a=...} — DCS requires POSITIONAL arrays
--- {r, g, b, a} (indices 1,2,3,4).  CFG colours are now positional.
+-- Colour tables use POSITIONAL arrays {r, g, b, a} (indices 1,2,3,4).
+-- DCS rejects named-key tables {r=..., g=..., b=..., a=...} silently.
 --
--- Mark ID layout per base  (MARKS_PER_BASE = 3):
---   baseMarkId + 0  = circleToAll  (filled circle, solid outline)
---   baseMarkId + 1  = textToAll    (name + coalition label)
---   baseMarkId + 2  = spare
+-- Mark IDs are auto-incremented via newMarkId() on every drawBase call.
+-- IDs are never reused — removeMark() is deferred by the DCS engine, so
+-- reusing the same ID in the same frame silently drops the new draw call.
 ------------------------------------------------------------------------
 
 -- Colour/fill table per logical status (built lazily after CFG loads)
+-- Lazily initialise the STATUS_COLORS lookup on first use (after CFG loads).
+-- Returns {line=…, fill=…} colour-array pair for the given coalition string.
+-- Defaults to NEUTRAL colours if an unrecognised status string is passed.
 local STATUS_COLORS = nil
 local function getColors(status)
     if not STATUS_COLORS then
@@ -330,57 +537,72 @@ local function getColors(status)
     return STATUS_COLORS[status] or STATUS_COLORS["NEUTRAL"]
 end
 
--- Remove every F10 mark belonging to a base state entry
+-- Remove every F10 map mark owned by this base's state entry.
+-- Uses pcall so a stale / already-removed ID never propagates an error.
+-- After this call st.markIds is always a fresh empty table ready for
+-- the next drawBase() to populate.
 local function clearMarks(st)
     if st.markIds then
         for _, mid in ipairs(st.markIds) do
-            pcall(trigger.action.removeMark, mid)
+            local ok, err = pcall(trigger.action.removeMark, mid)
+            if not ok then
+                dbg("clearMarks: removeMark(" .. tostring(mid) .. ") error: " .. tostring(err))
+            end
         end
     end
     st.markIds = {}
 end
 
--- Draw (or redraw) the filled circle + label for one base entry.
--- Position and radius come from the CAPTURE_ZONE trigger zone in the ME,
--- so the drawn circle exactly matches what is placed in the mission.
+-- Draw (or redraw) the F10 map filled circle + name label for one base.
+-- Called: at init, on every coalition change, and on capture-tick progress.
+-- Position AND radius come exclusively from the ME trigger zone — the same
+-- zone used for capture detection. Every coalition uses this identical path.
+-- All DCS trigger.action calls are wrapped in pcall so failures are logged.
 local function drawBase(entry, st)
-    -- Primary: use the trigger zone's own centre and radius.
-    local drawPos    = nil
-    local drawRadius = ABC.CFG.CIRCLE_RADIUS  -- fallback if zone not found
-
-    if entry.zone and entry.zone ~= "" then
-        local z = trigger.misc.getZone(entry.zone)
-        if z and z.point then
-            drawPos    = { x = z.point.x, y = z.point.y or 0, z = z.point.z }
-            drawRadius = z.radius or ABC.CFG.CIRCLE_RADIUS
-        end
-    end
-
-    -- Fallback: DCS airbase object / previously cached position
-    if not drawPos then
-        drawPos = getBasePos(entry, st)
-    end
-
-    if not drawPos then
-        env.info("[ABC] drawBase: no position for " .. entry.name .. " — skipping.", false)
+    local zone = getZone(entry.zone)
+    if not zone then
+        env.info("[ABC] drawBase: zone '" .. tostring(entry.zone)
+                 .. "' missing for " .. entry.name .. " — cannot draw.", false)
         return
     end
+
+    -- y=0: F10 map marks ignore elevation entirely; the terrain height stored
+    -- in zone.point.y can confuse circleToAll depth calculations on some Syria
+    -- map versions — always pass flat 0.
+    local drawPos    = { x = zone.point.x, y = 0, z = zone.point.z }
+    local drawRadius = zone.radius or ABC.CFG.CIRCLE_RADIUS  -- zone radius always; CFG is last resort only
 
     clearMarks(st)
 
     local cols   = getColors(st.coalition)
-    local fillId = st.baseMarkId       -- slot 0: circleToAll
-    local textId = st.baseMarkId + 1   -- slot 1: textToAll
+    -- Always allocate FRESH mark IDs — never reuse IDs that were just removed.
+    -- DCS queues removeMark() for the next engine frame, so re-using the same
+    -- ID in the same Lua call silently drops the circleToAll call.
+    local fillId = newMarkId()   -- brand-new ID for the filled circle
+    local textId = newMarkId()   -- brand-new ID for the text label
 
-    -- Filled circle — radius matches the ME trigger zone exactly
-    trigger.action.circleToAll(
-        -1, fillId, drawPos,
-        drawRadius,
-        cols.line, cols.fill,
-        ABC.CFG.LINE_TYPE, true)
+    -- ── Log before draw so any silent API failure is diagnosable ─────
+    env.info(string.format(
+        "[ABC] drawBase: %s coal=%s markId=%d pos=(%.0f,%.0f) r=%.0f ticks=%d",
+        entry.name, st.coalition, fillId,
+        drawPos.x, drawPos.z, drawRadius, st.captureTicks or 0), false)
 
-    -- Text label — black text, offset slightly right of centre.
-    -- Destroyed bases get a yellow "Destroyed" sub-line instead of a status tag.
+    -- ── Filled circle — radius matches the ME trigger zone exactly ───
+    local circleOk, circleErr = pcall(function()
+        trigger.action.circleToAll(
+            -1, fillId, drawPos,
+            drawRadius,
+            cols.line, cols.fill,
+            ABC.CFG.LINE_TYPE, true)
+    end)
+    if not circleOk then
+        env.info("[ABC] drawBase: circleToAll FAILED for " .. entry.name
+                 .. ": " .. tostring(circleErr), false)
+    end
+
+    -- ── Text label ───────────────────────────────────────────────────
+    -- Black text normally; yellow for DESTROYED bases.
+    -- Shows "Capturing… N%" during multi-tick captures.
     local TEXT_BLACK  = {0.00, 0.00, 0.00, 1.00}
     local TEXT_YELLOW = {1.00, 0.95, 0.00, 1.00}
     local textColor   = (st.coalition == "DESTROYED") and TEXT_YELLOW or TEXT_BLACK
@@ -393,20 +615,31 @@ local function drawBase(entry, st)
         labelText = entry.name .. "\nCapturing... " .. pct .. "%"
     end
 
-    -- Offset: nudge right (+x) and slightly north (-z) of centre
+    -- Offset label slightly right (+x) and north (-z) of the zone centre
     local offset = math.max(drawRadius * 0.12, 400)
     local textPos = { x = drawPos.x + offset, y = drawPos.y, z = drawPos.z - offset * 0.5 }
-    trigger.action.textToAll(
-        -1, textId, textPos,
-        textColor, {0, 0, 0, 0},
-        ABC.CFG.LABEL_FONT_SIZE, true, labelText)
+    local textOk, textErr = pcall(function()
+        trigger.action.textToAll(
+            -1, textId, textPos,
+            textColor, {0, 0, 0, 0},
+            ABC.CFG.LABEL_FONT_SIZE, true, labelText)
+    end)
+    if not textOk then
+        env.info("[ABC] drawBase: textToAll FAILED for " .. entry.name
+                 .. ": " .. tostring(textErr), false)
+    end
 
     st.markIds = { fillId, textId }
+
+    dbg(string.format("drawBase OK: %s coal=%s markIds=%d/%d label='%s' circleOk=%s textOk=%s",
+        entry.name, st.coalition, fillId, textId, labelText,
+        tostring(circleOk), tostring(textOk)))
 end
 
--- Fast initial coalition check — called once during init() for each entry
--- BEFORE the first draw, so the opening map shows the true mission state.
--- RED/BLUE bases that have no defending units show immediately as NEUTRAL.
+-- Run a single coalition sanity-check just before the first drawBase().
+-- If a RED/BLUE base has no units defending it at mission load, we flip
+-- it to NEUTRAL immediately so the F10 map shows accurate state from T=0.
+-- Only called once per entry during ABC.init().
 local function initCoalitionCheck(entry, st)
     if not entry.capturable then return end
     local zone = getZone(entry.zone)
@@ -422,7 +655,14 @@ end
 -- SECTION 6 : COALITION STATE MACHINE
 ------------------------------------------------------------------------
 
--- Apply a new coalition to a base, redraw and announce
+-- Apply a coalition change to a base entry and handle all side-effects:
+--   1. Update logical state (st.coalition, captureTicks reset to 0).
+--   2. Redraw the F10 map circle in the new coalition colour.
+--   3. Send an in-game announcement if announce=true.
+--   4. Fire the ABC.onCapture callback if set by the mission designer.
+--   5. Update the DCS Airbase engine coalition (ATC, spawn slots, parking).
+--   6. Update every helipad/FARP Airbase object inside the zone.
+-- LOGS: helipad count at step 6 so we can diagnose missing pad flips.
 local function applyCoalition(entry, st, newCoal, announce)
     local prev     = st.coalition
     st.coalition   = newCoal
@@ -442,20 +682,90 @@ local function applyCoalition(entry, st, newCoal, announce)
     if ABC.onCapture then
         pcall(ABC.onCapture, entry.name, prev, newCoal)
     end
+
+    -- ── Activate late-activated garrison group on Blue capture ───────
+    -- If the registry entry has an activateGroup field and Blue just
+    -- captured this base, wake up the pre-placed Late-Activated group.
+    -- The group must be placed in the ME as Late Activation = ON so it
+    -- sits dormant until this call.  Safe to call on every coalition
+    -- change — only fires when newCoal is "BLUE".
+    if newCoal == "BLUE" and entry.activateGroup then
+        local grp = Group.getByName(entry.activateGroup)
+        if grp and grp:isExist() then
+            grp:activate()
+            env.info(string.format(
+                "[ABC] Activated garrison group '%s' for %s → BLUE.",
+                entry.activateGroup, entry.name), false)
+        else
+            env.info(string.format(
+                "[ABC] activateGroup: group '%s' not found for %s — check the ME group name.",
+                entry.activateGroup, entry.name), false)
+        end
+    end
+
+    -- ── Set DCS airbase coalition ────────────────────────────────────
+    -- This makes the engine recognise the new owner: ATC, spawn slots,
+    -- parking, and warehouse all switch to the capturing side.
+    local newCoalId = COAL_STR_TO_ID[newCoal] or 0
+    local ab = Airbase.getByName(entry.name)
+    if ab and ab:isExist() then
+        pcall(function() ab:setCoalition(newCoalId) end)
+        env.info(string.format(
+            "[ABC] DCS airbase '%s' coalition → %s (%d)",
+            entry.name, newCoal, newCoalId), false)
+    end
+
+    -- ── Flip helipad ownership to match the new coalition ────────────
+    -- Always log the helipad count BEFORE calling so we can diagnose
+    -- nil/empty pad tables (= helipad not found at init time).
+    local padCount = (st.helipads and #st.helipads) or 0
+    env.info(string.format(
+        "[ABC] applyCoalition: %s → %s — helipad table has %d entry/entries.",
+        entry.name, newCoal, padCount), false)
+    if padCount > 0 then
+        -- Defer by 0.1 s so this runs AFTER the current DCS engine frame.
+        -- Calling setCoalition() during the same frame as a scan/event can be
+        -- silently reverted by the engine's own ownership resolution pass.
+        -- A short timer ensures we write AFTER the engine has settled.
+        local helipads_ref = st.helipads
+        local coal_ref     = newCoal
+        timer.scheduleFunction(function()
+            setHelipadsCoalition(helipads_ref, coal_ref)
+        end, nil, timer.getTime() + 0.1)
+    else
+        env.info("[ABC] applyCoalition: NO helipads in state for " .. entry.name
+                 .. " — DCS FARP ring colour will NOT change.", false)
+    end
 end
 
--- Run one capture tick for a single base entry
+-- Evaluate one base entry for one scan cycle (called from scanAll via pcall).
+-- Reads the pre-built _unitSnapshot for zero-DCS-call unit counts, then
+-- advances the capture state machine:
+--   RED     → (all red dead)       → NEUTRAL
+--   NEUTRAL → (blue moves in)      → captureTicks++ → (≥CAPTURE_TICKS) → BLUE
+--   NEUTRAL → (red recaptures)     → captureTicks++ → (≥CAPTURE_TICKS) → RED
+--   BLUE    → (all blue leave)     → NEUTRAL
+-- All coalition flips are handled by applyCoalition().
 local function tickBase(entry, st)
     -- Skip non-capturable and destroyed bases
     if not entry.capturable  then return end
     if st.coalition == "DESTROYED" then return end
 
     local zone = getZone(entry.zone)
-    if not zone then return end
+    if not zone then
+        env.info("[ABC] tickBase: zone '" .. tostring(entry.zone)
+                 .. "' not found for " .. entry.name .. " — skipping.", false)
+        return
+    end
 
     local redCount  = countUnitsInZone(zone, coalition.side.RED)
     local blueCount = countUnitsInZone(zone, coalition.side.BLUE)
     local minU      = ABC.CFG.MIN_CAPTURE_UNITS
+
+    -- Log unit counts for every base every scan so we can confirm the
+    -- snapshot sees our troops and verify the game-state logic is correct.
+    dbg(string.format("tickBase: %s [%s] red=%d blue=%d minU=%d ticks=%d",
+        entry.name, st.coalition, redCount, blueCount, minU, st.captureTicks or 0))
 
     local current = st.coalition
 
@@ -471,17 +781,24 @@ local function tickBase(entry, st)
         if blueCount >= minU and redCount == 0 then
             -- Blue forces moving in unchallenged
             st.captureTicks = (st.captureTicks or 0) + 1
-            drawBase(entry, st)     -- update capturing % label
             if st.captureTicks >= ABC.CFG.CAPTURE_TICKS then
+                -- Flip immediately — applyCoalition handles the redraw internally.
+                -- Do NOT call drawBase here; calling it before applyCoalition would
+                -- remove then re-add the same mark IDs in a single DCS frame, causing
+                -- the second circleToAll to fail silently (DCS ID reuse bug).
                 applyCoalition(entry, st, "BLUE", true)
+            else
+                -- Multi-tick capture in progress — show % label update only.
+                drawBase(entry, st)
             end
 
         elseif redCount >= minU and blueCount == 0 then
             -- Red forces reclaiming the neutral base
             st.captureTicks = (st.captureTicks or 0) + 1
-            drawBase(entry, st)
             if st.captureTicks >= ABC.CFG.CAPTURE_TICKS then
                 applyCoalition(entry, st, "RED", true)
+            else
+                drawBase(entry, st)
             end
 
         else
@@ -505,19 +822,13 @@ end
 -- SECTION 7 : MAIN SCAN LOOP
 ------------------------------------------------------------------------
 
+-- Main scan loop — scheduled by timer.scheduleFunction every CHECK_INTERVAL.
+-- Builds one unit-position snapshot (2 × coalition.getGroups calls) then
+-- iterates every registered base and destroy zone for pure-Lua checks.
+-- Returns the next scheduled time so the DCS scheduler keeps calling us.
 local function scanAll(_, time)
-    -- ── Build coalition group cache (fetches each combo ONCE) ─────────
-    _groupCache = {}
-    local _cacheCats = { Group.Category.GROUND }
-    if ABC.CFG.SCAN_AIR then
-        _cacheCats[#_cacheCats + 1] = Group.Category.AIRPLANE
-        _cacheCats[#_cacheCats + 1] = Group.Category.HELICOPTER
-    end
-    for _, _coa in ipairs({ coalition.side.RED, coalition.side.BLUE }) do
-        for _, _cat in ipairs(_cacheCats) do
-            _groupCache[tostring(_coa) .. "_" .. tostring(_cat)] = coalition.getGroups(_coa, _cat) or {}
-        end
-    end
+    -- ── Build unit-position snapshot (one DCS pass → pure-Lua zone checks)
+    _unitSnapshot = buildUnitSnapshot()
 
     -- ── Airbase / FARP capture scan ──────────────────────────────────
     for _, entry in ipairs(ABC.REGISTRY) do
@@ -536,7 +847,7 @@ local function scanAll(_, time)
         local dst = ABC._destroyState[entry.name]
         if dst and dst.active then
             local ok, err = pcall(function()
-                local zone = trigger.misc.getZone(entry.zone)
+                local zone = getZone(entry.zone)  -- uses cache; no DCS API call after first scan
                 if not zone then return end
                 local redCount = countUnitsInZone(zone, coalition.side.RED)
                 if redCount == 0 then
@@ -555,7 +866,10 @@ local function scanAll(_, time)
         end
     end
 
-    _groupCache = nil  -- release cache until next cycle
+    _unitSnapshot = nil  -- release snapshot until next cycle
+
+    _scanCount = _scanCount + 1
+    env.info(string.format("[ABC] Scan #%d complete.", _scanCount), false)
     return time + ABC.CFG.CHECK_INTERVAL
 end
 
@@ -567,12 +881,16 @@ end
 
 function ABC._eventHandler:onEvent(event)
     if event.id ~= world.event.S_EVENT_BASE_CAPTURED then return end
+    local _ok, _err = pcall(function()
 
     local ab = event.place
     if not ab then return end
 
-    local abName = ab:getName()
-    local st     = ABC._state[abName]
+    -- Resolve DCS airbase name → registry entry name.
+    -- FARP names in DCS often differ from registry names (caps, suffix).
+    local abName      = ab:getName()
+    local registryName = ABC._dcsNameMap[abName] or abName
+    local st           = ABC._state[registryName]
     if not st then return end
 
     -- Map DCS coalition ID to our string
@@ -582,18 +900,36 @@ function ABC._eventHandler:onEvent(event)
     elseif dcsCoal == coalition.side.BLUE then coalStr = "BLUE"
     end
 
-    -- Sync only if DCS and our state disagree
-    if st.coalition ~= coalStr then
-        for _, e in ipairs(ABC.REGISTRY) do
-            if e.name == abName then
-                env.info(string.format(
-                    "[ABC] DCS engine capture event: %s → %s (syncing script state)",
-                    abName, coalStr), false)
-                applyCoalition(e, st, coalStr, false)   -- no double-announce
-                break
-            end
-        end
+    -- Find the matching registry entry
+    local entry = nil
+    for _, e in ipairs(ABC.REGISTRY) do
+        if e.name == registryName then entry = e; break end
     end
+    if not entry then return end
+
+    -- For FARP entries, REJECT DCS engine captures that disagree with
+    -- our script state.  The script is the sole authority for FARP
+    -- ownership — DCS auto-capture would fight this otherwise.
+    if entry.type == "FARP" then
+        local desiredId = COAL_STR_TO_ID[st.coalition] or 0
+        if dcsCoal ~= desiredId then
+            pcall(function() ab:setCoalition(desiredId) end)
+            env.info(string.format(
+                "[ABC] Rejected DCS auto-capture: %s (DCS=%s, ours=%s) — forced back.",
+                registryName, coalStr, st.coalition), false)
+        end
+        return   -- never sync FARP state from DCS; script controls FARPs
+    end
+
+    -- For AIRBASE entries, sync: DCS engine is authority for airbases
+    if st.coalition ~= coalStr then
+        env.info(string.format(
+            "[ABC] DCS engine capture event: %s \226\134\146 %s (syncing script state)",
+            registryName, coalStr), false)
+        applyCoalition(entry, st, coalStr, false)   -- no double-announce
+    end
+    end) -- close pcall
+    if not _ok then env.warning("[ABC] onEvent error: " .. tostring(_err)) end
 end
 
 ------------------------------------------------------------------------
@@ -633,18 +969,24 @@ function ABC.registerFARP(farpName, zoneName, startCoal, pos)
     }
     ABC.REGISTRY[#ABC.REGISTRY + 1] = entry
 
-    -- Allocate mark IDs
-    local markId = ABC.CFG.BASE_MARK_OFFSET
-                   + (#ABC.REGISTRY * ABC.CFG.MARKS_PER_BASE)
-
     local st = {
         coalition    = entry.coalition,
         captureTicks  = 0,
-        baseMarkId   = markId,
         markIds      = {},
         pos          = pos,
     }
     ABC._state[farpName] = st
+
+    -- Discover helipads inside the FARP's zone
+    local pads = findHelipadsInZone(zoneName)
+    st.helipads = pads
+    if #pads > 0 then
+        setHelipadsCoalition(pads, entry.coalition)
+        env.info(string.format(
+            "[ABC] %s: %d helipad(s) found in zone — set to %s.",
+            farpName, #pads, entry.coalition), false)
+    end
+
     drawBase(entry, st)
 
     env.info(string.format("[ABC] FARP registered: %s (%s)", farpName, entry.coalition), false)
@@ -764,21 +1106,31 @@ function ABC.init()
     -- Reset colour cache so CFG changes take effect
     STATUS_COLORS = nil
 
-    -- Build initial state for every registry entry
-    for i, entry in ipairs(ABC.REGISTRY) do
-        -- Unique mark ID block for this base
-        local markId = ABC.CFG.BASE_MARK_OFFSET + (i * ABC.CFG.MARKS_PER_BASE)
+    -- ── Orphaned-mark cleanup ────────────────────────────────────────
+    -- The old auto-incrementing mark ID system (IDs 10000+) was replaced
+    -- with fixed-ID slots (BASE_MARK_OFFSET / DESTROY_MARK_OFFSET blocks).
+    -- Orphan marks from the old system were cleared in earlier sessions and
+    -- no longer exist, so the 501-call sweep is skipped to avoid wasting
+    -- DCS API budget on every mission start.
+    env.info("[ABC] Mark ID system: fixed slots (orphan sweep not needed).", false)
 
-        -- For AIRBASEs: disable DCS engine auto-capture so this script has
-        -- full control. Comment out the pcall below if you want DCS engine
-        -- capture to run in PARALLEL (state syncs via S_EVENT_BASE_CAPTURED).
-        if entry.type == "AIRBASE" then
-            local ab = Airbase.getByName(entry.name)
-            if ab then
-                if ab.autoCapture then
-                    pcall(function() ab:autoCapture(false) end)
-                end
-            else
+    -- ── Helipad snapshot ─────────────────────────────────────────────
+    -- One DCS API pass to cache every helipad/FARP Airbase object in the
+    -- mission.  All subsequent findHelipadsInZone() calls are pure Lua.
+    _helipadSnapshot = snapshotHelipadObjects()
+
+    -- Build initial state for every registry entry
+    for _, entry in ipairs(ABC.REGISTRY) do
+        -- Disable DCS engine auto-capture so this script has full control.
+        -- Applies to both AIRBASEs and FARPs (prevents DCS from overriding
+        -- our NEUTRAL state with its own capture events).
+        local ab = Airbase.getByName(entry.name)
+        if ab then
+            if ab.autoCapture then
+                pcall(function() ab:autoCapture(false) end)
+            end
+        else
+            if entry.type == "AIRBASE" then
                 env.info("[ABC] WARNING: '" .. entry.name
                          .. "' not found as a DCS airbase object. "
                          .. "Will fall back to zone centre for drawing.", false)
@@ -788,9 +1140,8 @@ function ABC.init()
         ABC._state[entry.name] = {
             coalition    = entry.coalition,
             captureTicks  = 0,
-            baseMarkId   = markId,
             markIds      = {},
-            pos          = nil,   -- resolved lazily by getBasePos()
+            pos          = nil,
         }
 
         -- Fast init scan: correct coalition BEFORE drawing so the first
@@ -802,15 +1153,44 @@ function ABC.init()
         if not ok then
             env.info("[ABC] Draw error for " .. entry.name .. ": " .. tostring(err), false)
         end
+
+        -- For FARP / FOB entries, discover helipads inside the zone and
+        -- set their DCS coalition to match the FOB's current ownership.
+        if entry.type == "FARP" then
+            local pads = findHelipadsInZone(entry.zone)
+            ABC._state[entry.name].helipads = pads
+            if #pads > 0 then
+                setHelipadsCoalition(pads, ABC._state[entry.name].coalition)
+                env.info(string.format(
+                    "[ABC] %s: %d helipad(s) found in zone — set to %s.",
+                    entry.name, #pads, ABC._state[entry.name].coalition), false)
+            end
+
+            -- Build the DCS-name → registry-name map and set autoCapture(false)
+            -- on the actual DCS airbase object (whose name may differ from
+            -- the registry name due to caps / suffix differences in ME).
+            for _, pad in ipairs(pads) do
+                if pad.kind == "airbase" then
+                    local dcsName = pad.obj:getName()
+                    if dcsName ~= entry.name then
+                        -- Silently record name remapping; reduces init log spam
+                        ABC._dcsNameMap[dcsName] = entry.name
+                    end
+                    -- Disable auto-capture on whichever DCS name the FARP has
+                    if pad.obj.autoCapture then
+                        pcall(function() pad.obj:autoCapture(false) end)
+                    end
+                end
+            end
+        end
     end
 
     -- ── Destroy zone initialisation ──────────────────────────────────
-    for i, entry in ipairs(ABC.DESTROY_REGISTRY) do
-        local markId = ABC.CFG.DESTROY_MARK_OFFSET + (i * ABC.CFG.MARKS_PER_BASE)
+    for _, entry in ipairs(ABC.DESTROY_REGISTRY) do
         -- Check current unit count so a zone that starts empty is already DESTROYED
         local startCoal = "RED"
         local isActive  = true
-        local zone = trigger.misc.getZone(entry.zone)
+        local zone = getZone(entry.zone)  -- uses cache
         if zone and countUnitsInZone(zone, coalition.side.RED) == 0 then
             startCoal = "DESTROYED"
             isActive  = false
@@ -821,7 +1201,6 @@ function ABC.init()
         ABC._destroyState[entry.name] = {
             coalition    = startCoal,
             captureTicks = 0,
-            baseMarkId   = markId,
             markIds      = {},
             pos          = nil,
             active       = isActive,
@@ -835,6 +1214,56 @@ function ABC.init()
 
     -- Register the DCS event handler
     world.addEventHandler(ABC._eventHandler)
+
+    -- Post-init FARP coalition reset: runs AFTER the DCS initial auto-capture
+    -- events (which fire at ~t=5) but BEFORE the first scan (at t=10).
+    -- Forces every FARP airbase coalition back to the script's desired state.
+    timer.scheduleFunction(function(_, t)
+        for _, entry in ipairs(ABC.REGISTRY) do
+            if entry.type == "FARP" then
+                local st = ABC._state[entry.name]
+                if st and st.helipads then
+                    local desiredId = COAL_STR_TO_ID[st.coalition] or 0
+                    for _, pad in ipairs(st.helipads) do
+                        if pad.kind == "airbase" and pad.obj and pad.obj:isExist() then
+                            pcall(function() pad.obj:setCoalition(desiredId) end)
+                        end
+                    end
+                end
+            end
+        end
+        env.info("[ABC] Post-init FARP coalition reset complete.", false)
+    end, nil, timer.getTime() + 7)
+
+    -- Repeating FARP helipad re-assertion: every 30 s forces every FARP pad's
+    -- DCS coalition back to the script's current logical state.  Without this,
+    -- the DCS engine can silently revert a setCoalition() call (e.g. the BLUE→
+    -- NEUTRAL transition at init, or the NEUTRAL→BLUE flip on capture) between
+    -- scans, leaving the helipad ring stuck on the wrong colour.
+    timer.scheduleFunction(function(_, t)
+        for _, entry in ipairs(ABC.REGISTRY) do
+            if entry.type == "FARP" then
+                local st = ABC._state[entry.name]
+                if st and st.helipads and #st.helipads > 0 then
+                    local desiredId = COAL_STR_TO_ID[st.coalition] or 0
+                    for _, pad in ipairs(st.helipads) do
+                        if pad.kind == "airbase" and pad.obj and pad.obj:isExist() then
+                            local currentId = -1
+                            pcall(function() currentId = pad.obj:getCoalition() end)
+                            if currentId ~= desiredId then
+                                -- DCS reverted the coalition — force it back silently
+                                pcall(function() pad.obj:setCoalition(desiredId) end)
+                                dbg(string.format(
+                                    "FARP re-assert: '%s' was %d, forced back to %d (%s)",
+                                    tostring(pad.obj:getName()), currentId, desiredId, st.coalition))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return t + 30   -- repeat every 30 s for the duration of the mission
+    end, nil, timer.getTime() + 37)
 
     -- Start the scan loop (first tick after 10 s to let mission settle)
     timer.scheduleFunction(scanAll, nil, timer.getTime() + 10)

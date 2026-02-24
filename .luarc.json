@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "diagnostics": {
+    "globals": [
+      "trigger",
+      "timer",
+      "env",
+      "land",
+      "missionCommands",
+      "coalition",
+      "Group",
+      "Unit",
+      "Object",
+      "Airbase",
+      "Static",
+      "country",
+      "mist",
+      "world",
+      "coord",
+      "atmosphere",
+      "radio",
+      "net",
+      "lfs",
+      "io",
+      "dcs_grpc",
+      "GRPC",
+      "log",
+      "loadstring",
+      "VoiceChat",
+      "TOO_PLAYER_MENUS",
+      "TOO_ZONES",
+      "ZONE_PREFIX",
+      "MAX_TOTAL_GROUPS",
+      "MAX_ATTEMPTS"
+    ]
+  },
+  "runtime": {
+    "version": "Lua 5.1"
+  }
+}

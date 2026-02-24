@@ -83,6 +83,7 @@
   <div class="logo"><span>RED</span> / BLUE<br>IADS+Intercept<br><span style="font-size:10px;color:var(--muted)">Syria</span></div>
   <div class="grp">Overview</div>
   <a href="#overview">How It Works</a>
+  <a href="#architecture">Architecture Diagram</a>
   <a href="#requirements">Requirements</a>
   <a href="#load-order">Load Order</a>
   <a href="#naming">Naming Conventions</a>
@@ -90,6 +91,7 @@
   <a href="#cfg-timing">Update Intervals</a>
   <div class="grp">Config — IADS</div>
   <a href="#cfg-detection">Detection</a>
+  <a href="#cfg-sam-range">SAM Range Table</a>
   <a href="#cfg-sam">SAM Engagement</a>
   <a href="#cfg-lowjet">Low-Jet Immunity</a>
   <a href="#cfg-arm">ARM Defence</a>
@@ -103,7 +105,7 @@
   <a href="#sys-pk">Pk Threshold Gate</a>
   <a href="#sys-arm">ARM Defence</a>
   <a href="#sys-intercept">Air Intercept</a>
-  <a href="#sys-gci">GCI Picture</a>
+  <a href="#sys-awacs">AWACS Orbit</a>
   <a href="#sys-rtb">RTB / Fuel</a>
   <a href="#sys-node">Node Refresh</a>
   <div class="grp">Setup</div>
@@ -118,8 +120,6 @@
   <a href="#fn-events">Event Handler</a>
   <a href="#fn-loops">Timer Loops</a>
   <a href="#fn-zones">Zone Registration</a>
-  <a href="#fn-gci">GCI Utilities</a>
-  <a href="#fn-picture">AWACS Picture</a>
   <a href="#fn-squadron">Squadron Helpers</a>
   <a href="#fn-flight">Scramble &amp; RTB</a>
   <a href="#fn-init">Initialisation</a>
@@ -130,15 +130,14 @@
 <p class="sub"><b>RED_BLUE_IADS_Intercept.lua</b> &nbsp;&#xb7;&nbsp; Syria map &nbsp;&#xb7;&nbsp; Requires MIST 4.5</p>
 
 <h2 id="overview">How It Works</h2>
-<p>Five parallel systems run simultaneously via DCS timer loops:</p>
+<p>Four parallel systems run simultaneously via DCS timer loops:</p>
 <ol>
   <li><strong>IADS Network</strong> &mdash; EWR and SAM groups discover each other. EWR shares contacts to nearby SAMs. The SAM with the best engagement geometry fires.</li>
   <li><strong>ARM Defence</strong> &mdash; an incoming-weapon tracking loop watches every in-flight weapon. If an ARM is detected heading for a radar, that radar shuts down and optionally moves.</li>
   <li><strong>Air Intercept</strong> &mdash; trigger zones mark airspace sectors. When an enemy aircraft enters a zone, the assigned late-activate flight scrambles from the nearest base.</li>
-  <li><strong>GCI Picture</strong> &mdash; an AWACS/GCI controller broadcasts a contact summary to all coalition players on a timed interval.</li>
   <li><strong>RTB Check</strong> &mdash; airborne intercept flights are monitored for fuel. At bingo they are ordered to RTB.</li>
 </ol>
-<div class="box box-info">Both coalitions run independent but symmetrical copies of all five systems. RED has 8 squadrons, BLUE has 3. SAM and EWR groups for both sides are auto-discovered by naming prefix at startup and periodically refreshed.</div>
+<div class="box box-info">Both coalitions run independent but symmetrical copies of all four systems. RED has 16 squadrons, BLUE has 4. SAM and EWR groups for both sides are auto-discovered by naming prefix at startup and periodically refreshed. AWACS aircraft are kept on orbit by a separate 300-second keeper loop. A three-way Lebanon sub-IADS runs independently alongside the main RED network.</div>
 
 <div class="flow">
   <div class="flow-s">Mission start<br><small>buildNodeList()</small></div><div class="flow-a">&#x2192;</div>
@@ -147,6 +146,200 @@
   <div class="flow-s">Contacts shared<br>to SAMs in range</div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">Best SAM scores<br>and engages</div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  IADS Architecture Diagram  (inline SVG, no external dependencies)    -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="architecture">IADS Architecture</h2>
+<p>How every element connects inside a single coalition network. All three networks (RED, BLUE, LEBANON) follow this same pattern independently.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 720" style="width:100%;max-width:920px;margin:18px auto;display:block;border-radius:10px;border:1px solid #2a2f3e;background:#12151e;">
+  <defs>
+    <!-- arrowheads -->
+    <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#4a90e2"/></marker>
+    <marker id="ah-red"  markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#e05555"/></marker>
+    <marker id="ah-grn"  markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#5cb85c"/></marker>
+    <marker id="ah-yel"  markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#e0a020"/></marker>
+    <marker id="ah-pur"  markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#9b59b6"/></marker>
+    <marker id="ah-mute" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#868d9e"/></marker>
+    <!-- glow filter for title -->
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- ── Title ──────────────────────────────────────────────────────── -->
+  <text x="460" y="32" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="15" font-weight="700" letter-spacing="0.1em" filter="url(#glow)">IADS NETWORK ARCHITECTURE — ONE COALITION</text>
+
+  <!-- ════════════════ ROW 1 : SENSOR LAYER (y 55-130) ═══════════════ -->
+  <text x="460" y="64" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">SENSOR LAYER</text>
+
+  <!-- EWR box -->
+  <rect x="40" y="80" width="200" height="56" rx="8" fill="#181c26" stroke="#4a90e2" stroke-width="1.5"/>
+  <text x="140" y="103" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700">EWR Radars</text>
+  <text x="140" y="122" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="10">RED_EWR_ / BLUE_EWR_</text>
+
+  <!-- AWACS box -->
+  <rect x="280" y="80" width="200" height="56" rx="8" fill="#181c26" stroke="#9b59b6" stroke-width="1.5"/>
+  <text x="380" y="103" text-anchor="middle" fill="#9b59b6" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700">AWACS</text>
+  <text x="380" y="122" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="10">awacsOrbitLoop() 5 min</text>
+
+  <!-- SAM Radars box (SAMs also detect) -->
+  <rect x="520" y="80" width="200" height="56" rx="8" fill="#181c26" stroke="#5cb85c" stroke-width="1.5"/>
+  <text x="620" y="103" text-anchor="middle" fill="#5cb85c" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700">SAM Organic Radars</text>
+  <text x="620" y="122" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="10">RED_SAM_ / BLUE_SAM_</text>
+
+  <!-- Ignore filter box -->
+  <rect x="750" y="80" width="140" height="56" rx="8" fill="#181c26" stroke="#e0a020" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="820" y="103" text-anchor="middle" fill="#e0a020" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">Ignore Filter</text>
+  <text x="820" y="120" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="9">CONTACT_IGNORE_</text>
+  <text x="820" y="131" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="9">PREFIXES</text>
+
+  <!-- ════════════════ ROW 2 : DETECTION ENGINE (y 165-240) ══════════ -->
+  <text x="460" y="164" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">DETECTION ENGINE — gatherContacts()  every 10 s</text>
+
+  <!-- DCS Radar API box -->
+  <rect x="120" y="180" width="260" height="56" rx="8" fill="#1d2233" stroke="#4a90e2" stroke-width="1"/>
+  <text x="250" y="203" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">PRIMARY: getDetectedTargets()</text>
+  <text x="250" y="220" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">Radar-realistic, terrain-masked, LOS</text>
+
+  <!-- Fallback box -->
+  <rect x="440" y="180" width="260" height="56" rx="8" fill="#1d2233" stroke="#e0a020" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="570" y="203" text-anchor="middle" fill="#e0a020" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">FALLBACK: getGroups() scan</text>
+  <text x="570" y="220" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">All airborne enemy &gt;30 m/s, &gt;20 m alt</text>
+
+  <!-- Arrows: EWR → Detection -->
+  <line x1="140" y1="136" x2="200" y2="180" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
+  <!-- AWACS → Detection -->
+  <line x1="380" y1="136" x2="320" y2="180" stroke="#9b59b6" stroke-width="1.2" marker-end="url(#ah-pur)"/>
+  <!-- SAM radar → Detection (SAMs contribute to coalition picture) -->
+  <line x1="620" y1="136" x2="520" y2="180" stroke="#5cb85c" stroke-width="1.2" marker-end="url(#ah-grn)" stroke-dasharray="4 3"/>
+  <!-- Ignore filter connection -->
+  <line x1="750" y1="108" x2="700" y2="198" stroke="#e0a020" stroke-width="1" marker-end="url(#ah-yel)" stroke-dasharray="3 3"/>
+
+  <!-- ════════════════ ROW 3 : CONTACT LIST (y 265-320) ══════════════ -->
+  <rect x="200" y="268" width="400" height="52" rx="8" fill="#181c26" stroke="#4a90e2" stroke-width="1.5"/>
+  <text x="400" y="291" text-anchor="middle" fill="#fff" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700">IADS[coa].contacts[]</text>
+  <text x="400" y="308" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">unit, pos, vel, isLowJet — deduplicated per tick</text>
+
+  <!-- Arrow: Detection → Contact list -->
+  <line x1="250" y1="236" x2="340" y2="268" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
+  <line x1="570" y1="236" x2="460" y2="268" stroke="#e0a020" stroke-width="1.2" marker-end="url(#ah-yel)" stroke-dasharray="4 3"/>
+
+  <!-- ════════════════ ROW 4 : SCORING ENGINE (y 350-420) ════════════ -->
+  <text x="460" y="346" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">SCORING &amp; ASSIGNMENT — optimizeEngagements()</text>
+
+  <!-- SAM Range Table -->
+  <rect x="40" y="362" width="190" height="60" rx="8" fill="#181c26" stroke="#5cb85c" stroke-width="1"/>
+  <text x="135" y="385" text-anchor="middle" fill="#5cb85c" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">SAM_RANGE_TABLE</text>
+  <text x="135" y="400" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="9">getSAMRange() → {min, max}</text>
+  <text x="135" y="412" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">or nil → DCS decides</text>
+
+  <!-- Scoring box -->
+  <rect x="270" y="362" width="300" height="60" rx="8" fill="#1d2233" stroke="#4a90e2" stroke-width="1.5"/>
+  <text x="420" y="383" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">computeEngagementScore()</text>
+  <text x="420" y="399" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">PKill = rangeFactor × altFactor × health</text>
+  <text x="420" y="413" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Hard range gate → min score gate → best 2 SAMs win</text>
+
+  <!-- Low-jet box -->
+  <rect x="610" y="362" width="170" height="60" rx="8" fill="#181c26" stroke="#e0a020" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="695" y="385" text-anchor="middle" fill="#e0a020" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">Low-Jet Gate</text>
+  <text x="695" y="400" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">AGL &lt; threshold?</text>
+  <text x="695" y="412" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Non-SHORAD skips jet</text>
+
+  <!-- Arrows into scoring -->
+  <line x1="400" y1="320" x2="420" y2="362" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
+  <line x1="230" y1="392" x2="270" y2="392" stroke="#5cb85c" stroke-width="1.2" marker-end="url(#ah-grn)"/>
+  <line x1="610" y1="392" x2="570" y2="392" stroke="#e0a020" stroke-width="1" marker-end="url(#ah-yel)" stroke-dasharray="4 3"/>
+
+  <!-- ════════════════ ROW 5 : ENGAGEMENT (y 455-530) ════════════════ -->
+  <text x="300" y="450" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">ENGAGEMENT</text>
+
+  <!-- orderSAMEngage -->
+  <rect x="140" y="462" width="240" height="56" rx="8" fill="#181c26" stroke="#e05555" stroke-width="1.5"/>
+  <text x="260" y="485" text-anchor="middle" fill="#e05555" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">orderSAMEngage()</text>
+  <text x="260" y="501" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">setTask(EngageUnit) + radar ON</text>
+
+  <!-- Radar management -->
+  <rect x="430" y="462" width="240" height="56" rx="8" fill="#181c26" stroke="#868d9e" stroke-width="1"/>
+  <text x="550" y="485" text-anchor="middle" fill="#d4d8e2" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">Radar Management</text>
+  <text x="550" y="501" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">No target → setOnOff(false) + ROE green</text>
+
+  <!-- Arrows: Scoring → Engage / Radar mgmt -->
+  <line x1="360" y1="422" x2="280" y2="462" stroke="#e05555" stroke-width="1.2" marker-end="url(#ah-red)"/>
+  <line x1="480" y1="422" x2="530" y2="462" stroke="#868d9e" stroke-width="1" marker-end="url(#ah-mute)"/>
+
+  <!-- ════════════════ ROW 6 : ARM DEFENCE (y 545-625) ═══════════════ -->
+  <text x="460" y="545" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">ARM / AGM DEFENCE — weaponTrackingLoop()  every 2 s</text>
+
+  <!-- Weapon detect -->
+  <rect x="40" y="562" width="200" height="56" rx="8" fill="#181c26" stroke="#e05555" stroke-width="1"/>
+  <text x="140" y="585" text-anchor="middle" fill="#e05555" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">S_EVENT_SHOT</text>
+  <text x="140" y="601" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">ARM / AGM detected → track</text>
+
+  <!-- Suppress -->
+  <rect x="280" y="562" width="200" height="56" rx="8" fill="#181c26" stroke="#e0a020" stroke-width="1.5"/>
+  <text x="380" y="585" text-anchor="middle" fill="#e0a020" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">suppressSAMRadar()</text>
+  <text x="380" y="601" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Radar OFF + neighbours dark</text>
+
+  <!-- SHORAD alert -->
+  <rect x="520" y="562" width="200" height="56" rx="8" fill="#181c26" stroke="#5cb85c" stroke-width="1"/>
+  <text x="620" y="585" text-anchor="middle" fill="#5cb85c" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">SHORAD Alert</text>
+  <text x="620" y="601" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">alertSHORADtoEngageWeapon()</text>
+
+  <!-- Relocate -->
+  <rect x="760" y="562" width="130" height="56" rx="8" fill="#181c26" stroke="#9b59b6" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="825" y="585" text-anchor="middle" fill="#9b59b6" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">Relocate</text>
+  <text x="825" y="601" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Mobile SAMs move</text>
+
+  <!-- ARM flow arrows -->
+  <line x1="240" y1="590" x2="280" y2="590" stroke="#e05555" stroke-width="1.2" marker-end="url(#ah-red)"/>
+  <line x1="480" y1="590" x2="520" y2="590" stroke="#5cb85c" stroke-width="1.2" marker-end="url(#ah-grn)"/>
+  <line x1="380" y1="618" x2="380" y2="638" stroke="#e0a020" stroke-width="1" marker-end="url(#ah-yel)"/>
+  <line x1="720" y1="590" x2="760" y2="590" stroke="#9b59b6" stroke-width="1" marker-end="url(#ah-pur)" stroke-dasharray="4 3"/>
+
+  <!-- Back-link: suppress → radar off on SAM (upward) -->
+  <path d="M 380 562 L 380 530 Q 380 520 370 520 L 290 520" stroke="#e0a020" stroke-width="1" marker-end="url(#ah-yel)" fill="none" stroke-dasharray="3 3"/>
+
+  <!-- ════════════════ ROW 7 : GCI / INTERCEPT (y 650-710) ═══════════ -->
+  <text x="460" y="652" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">GCI / AIR INTERCEPT — gciInterceptLoop()  every 15 s</text>
+
+  <!-- Zone check -->
+  <rect x="80" y="668" width="200" height="44" rx="8" fill="#181c26" stroke="#4a90e2" stroke-width="1"/>
+  <text x="180" y="688" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">Trigger Zones</text>
+  <text x="180" y="702" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="9">RED_ZONE_ / BLUE_ZONE_</text>
+
+  <!-- Scramble -->
+  <rect x="320" y="668" width="200" height="44" rx="8" fill="#181c26" stroke="#e05555" stroke-width="1"/>
+  <text x="420" y="688" text-anchor="middle" fill="#e05555" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">scrambleFlight()</text>
+  <text x="420" y="702" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Late-activate → intercept</text>
+
+  <!-- RTB -->
+  <rect x="560" y="668" width="200" height="44" rx="8" fill="#181c26" stroke="#5cb85c" stroke-width="1"/>
+  <text x="660" y="688" text-anchor="middle" fill="#5cb85c" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">flightMaintenanceLoop()</text>
+  <text x="660" y="702" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Bingo fuel → RTB</text>
+
+  <!-- GCI arrows -->
+  <line x1="280" y1="690" x2="320" y2="690" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
+  <line x1="520" y1="690" x2="560" y2="690" stroke="#5cb85c" stroke-width="1.2" marker-end="url(#ah-grn)"/>
+
+  <!-- Timer tick label (suppress timer → radar back online) -->
+  <text x="380" y="650" text-anchor="middle" fill="#e0a020" font-family="Cascadia Code,Consolas,monospace" font-size="9">timer expires → radar back ON</text>
+
+  <!-- ════════════════ LEGEND (bottom-right) ═════════════════════════ -->
+  <rect x="40" y="42" width="8" height="8" rx="2" fill="#4a90e2"/>
+  <text x="54" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Detection / data flow</text>
+  <rect x="160" y="42" width="8" height="8" rx="2" fill="#e05555"/>
+  <text x="174" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Engagement / weapons</text>
+  <rect x="300" y="42" width="8" height="8" rx="2" fill="#5cb85c"/>
+  <text x="314" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">SAM nodes / SHORAD</text>
+  <rect x="420" y="42" width="8" height="8" rx="2" fill="#e0a020"/>
+  <text x="434" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Filters / suppression</text>
+  <rect x="560" y="42" width="8" height="8" rx="2" fill="#9b59b6"/>
+  <text x="574" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">AWACS / optional</text>
+  <line x1="680" y1="46" x2="710" y2="46" stroke="#868d9e" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="718" y="50" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Conditional / optional</text>
+</svg>
+
+<div class="box box-info"><strong>Three independent copies</strong> of the above network run in parallel: <span class="badge r">RED</span> (61 SAMs, 16 EWR, targets BLUE aircraft), <span class="badge b">BLUE</span> (12 SAMs, 7 EWR, targets RED aircraft), and <span class="badge n">LEBANON</span> (9 SAMs, 10 EWR, isolated RED sub-IADS with Lebanon zone gating). They share no contacts or engagement assignments.</div>
 
 <h2 id="requirements">Requirements</h2>
 <table>
@@ -186,23 +379,23 @@
 <div class="cfg-card">
 <div class="cc-head" onclick="tog(this)"><span class="cc-key">UPDATE_INTERVAL</span><span class="cc-default">10 s</span><span class="cc-quick">Main IADS loop &mdash; contact gathering, SAM engagement decisions.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every <code>UPDATE_INTERVAL</code> seconds the script runs <code>pruneDeadNodes()</code> to remove destroyed SAMs/EWRs, then <code>gatherContacts()</code> for both coalitions, shares detections to SAM nodes, scores each SAM's engagement geometry, and fires the best shooter. This is the heartbeat of the entire IADS.</p>
+<p>Every <code>UPDATE_INTERVAL</code> seconds the script runs <code>pruneDeadNodes()</code> to remove destroyed SAMs/EWRs, then <code>gatherContacts()</code> for all three coalition sub-IADS (RED, BLUE, LEBANON), shares detections to SAM nodes, scores each SAM's engagement geometry, and fires the best shooter. This is the heartbeat of the entire IADS.</p>
 <p><strong>Performance note (Feb 2026):</strong> Changed from 5 s to 10 s. The main loop no longer calls <code>buildNodeList()</code> (which triggered 6&times; <code>coalition.getGroups(GROUND)</code> per tick). Instead, a lightweight <code>pruneDeadNodes()</code> removes dead groups from the existing lists without any API calls. Full node-list rebuilds only happen on the 15-minute <code>nodeRefreshLoop</code>. Additionally, <code>gciInterceptLoop</code> now caches <code>coalition.getGroups(AIRPLANE)</code> once per coalition per tick instead of calling it 21&times; per squadron.</p>
 <p><strong>Recommended range:</strong> 5&ndash;15 s. The default 10 s gives responsive SAM engagement while keeping API overhead low.</p>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">AIR_INTERCEPT_INTERVAL</span><span class="cc-default">10 s</span><span class="cc-quick">How often intercept zones are checked for enemy aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">AIR_INTERCEPT_INTERVAL</span><span class="cc-default">30 s</span><span class="cc-quick">How often intercept zones are checked for enemy aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every 10 seconds the script checks whether any enemy aircraft are inside any coalition trigger zones. If so, and if the assigned squadron has available (alive, not currently airborne) flights, one flight is scrambled.</p>
-<p>10 s means up to a 10-second delay between an aircraft entering a zone and a scramble order. At 900 km/h an aircraft travels ~2.5 km in 10 s &mdash; increase the zone radius by that amount if you want zero-miss scrambles, or lower to 5 s for tighter response.</p>
+<p>Every 30 seconds the script checks whether any enemy aircraft are inside any coalition trigger zones. If so, and if the assigned squadron has available (alive, not currently airborne) flights, one flight is scrambled.</p>
+<p>30 s means up to a 30-second delay between an aircraft entering a zone and a scramble order. At 900 km/h an aircraft travels ~7.5 km in 30 s &mdash; increase the zone radius if you want tighter response, or lower to 10 s for more reactive scrambles at the cost of higher API load.</p>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">WEAPON_TRACK_INTERVAL</span><span class="cc-default">2 s</span><span class="cc-quick">How often in-flight weapons are scanned for ARM threats.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">WEAPON_TRACK_INTERVAL</span><span class="cc-default">5 s</span><span class="cc-quick">How often in-flight weapons are scanned for ARM threats.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every 2 seconds the script iterates every weapon in <code>trackedWeapons[]</code>. It checks: is this weapon still alive? Is it an ARM type? Is it heading towards any of our radar groups? If yes, that radar shuts down for <code>ARM_SHUTDOWN_TIME</code> seconds.</p>
-<p>2 seconds is responsive enough for ARM tracking &mdash; ARMs typically fly for 20&ndash;60 seconds so sub-second tracking has no benefit. The previous 1 s interval was halved to reduce the tracking cost during large engagements with many in-flight weapons while maintaining fully reactive ARM defence.</p>
+<p>Every 5 seconds the script iterates every weapon in <code>trackedWeapons[]</code>. It checks: is this weapon still alive? Is it an ARM type? Is it heading towards any of our radar groups? If yes, that radar shuts down for <code>ARM_SHUTDOWN_TIME</code> seconds.</p>
+<p>5 seconds is responsive enough for ARM tracking &mdash; ARMs typically fly for 20&ndash;60 seconds so sub-second tracking has no benefit. The 5 s interval keeps the tracking cost low during large engagements with many in-flight weapons while maintaining fully reactive ARM defence.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -221,55 +414,70 @@
 </div></div>
 
 <h2 id="cfg-detection">Configuration &mdash; Detection</h2>
+<p>Detection is handled automatically. The script uses <code>coalition.getDetectedTargets()</code> as its primary sensor source (DCS native radar model) with a <code>coalition.getGroups()</code> scan as fallback when the primary API is unavailable. There are no per-coalition detection range knobs &mdash; coverage is governed entirely by the DCS radar model and SAM engagement range. See the <a href="#sys-detection">Detection Pipeline deep-dive</a> for full details.</p>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">USE_DCS_DETECTION</span><span class="cc-default">true</span><span class="cc-quick">Toggle between realistic DCS radar model and simple range-sphere detection.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">CONTACT_IGNORE_PREFIXES</span><span class="cc-default">BLUE_AWACS_, RED_AWACS_</span><span class="cc-quick">Unit name prefixes excluded from contact lists regardless of detection method.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>When <code>true</code>, the primary detection pass uses <code>coalition.getDetectedTargets(coaID, Unit.SensorType.RADAR)</code> &mdash; the same contact list DCS itself uses for the AI. This respects: radar line-of-sight, terrain masking, aircraft RCS, ECM jamming, altitude-induced terrain masking, and RCS modifiers.</p>
-<p>When <code>false</code>, only the secondary fallback (range-sphere geometry check) runs. Every aircraft within <code>EWR_DETECTION_RANGE</code> of any live EWR node is detected regardless of terrain or ECM.</p>
-<p><strong>Recommendation:</strong> Leave <code>true</code> for realistic play. The secondary sphere check always runs in addition to supplement the DCS sensor model &mdash; it never replaces the primary pass. This ensures AWACS gets its extended reach and no contacts fall through gaps.</p>
+<p>An array of unit name prefix strings. During <code>gatherContacts()</code>, any unit whose name starts with one of these prefixes is silently discarded even if it was returned by the DCS radar sensor model. The default entries prevent BLUE and RED AWACS flights from appearing as SAM targets.</p>
+<p>DCS surfaces some units tagged as invisible in the ME (AWACS, FAC, tankers) via <code>coalition.getDetectedTargets()</code>. Adding their group prefix here keeps them out of the contact lists without needing to change any ME settings.</p>
+<pre>CONTACT_IGNORE_PREFIXES = {
+    "BLUE_AWACS_",
+    "RED_AWACS_",
+    "BLUE_TANKER_",  -- example: exclude tankers
+}</pre>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">EWR_DETECTION_RANGE</span><span class="cc-default">250,000 m (250 km)</span><span class="cc-quick">Radius within which a ground EWR node shares contacts to SAMs.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">IMMORTAL_IADS_NETWORKS</span><span class="cc-default">{ LEBANON = true }</span><span class="cc-quick">Networks whose radars are never suppressed in response to incoming weapons.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>EWR nodes (e.g. 1L13 Nebo, P-19, TPS-75) share their contacts to all SAM nodes within this radius. This value is used in the secondary sphere fallback and as the IADS network sharing radius.</p>
-<p>SAM nodes themselves contribute to detection at <strong>60% of this value</strong> (<code>EWR_DETECTION_RANGE * 0.6</code> = 150 km by default) reflecting their shorter-range organic radars. AWACS nodes use the separate <code>AWACS_DETECTION_RANGE</code>.</p>
-<p>250 km is realistic for a long-range surveillance radar. Reduce if you want EWR blind spots that SEAD can exploit by destroying forward EWR nodes before striking SAMs further back.</p>
+<p>A hash map of sub-IADS network names to <code>true</code>. When <code>suppressSAMRadar()</code> is called for a SAM in a network listed here, the suppression is skipped entirely &mdash; the radar stays on and the SAM never evacuates. Use this for networks whose units are set <em>Immortal</em> in the Mission Editor; since they cannot actually be killed by an ARM, there is no benefit to shutting down or relocating.</p>
+<p>The Lebanon sub-IADS is immortal by design, providing persistent layered defence regardless of SEAD pressure. Remove the entry if you want Lebanon SAMs to react to ARM threats like a normal network.</p>
 </div></div>
 
-<div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_ENGAGE_SHARE_RANGE</span><span class="cc-default">180,000 m (180 km)</span><span class="cc-quick">How far a SAM shares targeting data to other SAMs for cooperative engagement.</span><span class="cc-toggle">&#x25BC; details</span></div>
-<div class="cc-body">
-<p>When a SAM has a qualified contact it shares targeting to all other SAMs within this radius. Those SAMs add the shared contact to their engagement queue and are scored against it. This creates a cooperative IADS where destroying one SAM doesn't leave a gap &mdash; adjacent SAMs receive the handoff.</p>
-<p>180 km is representative of how integrated an S-300 / S-400 battery network operates. Reduce to 80&ndash;100 km for a simpler network where each battery operates more independently.</p>
-</div></div>
+<h2 id="cfg-sam-range">Configuration &mdash; SAM Range Table</h2>
+<p>Per-type missile envelope table. <code>getSAMRange()</code> walks the first launcher unit in a group, matches its <code>:getTypeName()</code> against keys in this table (plain <code>string.find</code>, case-sensitive), and returns <code>{min, max}</code> metres, or <code>nil</code> if no pattern matches. Results are lazy-cached in <code>_samRangeCache</code> for the session.</p>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">AWACS_DETECTION_RANGE</span><span class="cc-default">420,000 m (420 km)</span><span class="cc-quick">Detection radius contributed by airborne AWACS / AEW aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_RANGE_TABLE</span><span class="cc-default">see table</span><span class="cc-quick">Per-type {min, max} missile envelope in metres. Hard gates in engagement scoring.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Any group matching <code>RED_AWACS_</code> or <code>BLUE_AWACS_</code> that is airborne contributes a detection sphere of this radius in the secondary fallback pass. 420 km represents a realistic AEW radar surveillance range for an E-3 / A-50 class aircraft at high altitude.</p>
-<p>When <code>USE_DCS_DETECTION = true</code>, the DCS sensor model already gives the AWACS its own radar-realistic detections; this value supplements to catch any gaps. If you don't use AWACS in your mission, simply don't name any groups with the AWACS prefix &mdash; the range value has no effect if no matching groups exist.</p>
+<p><code>computeEngagementScore()</code> immediately returns 0 if the contact is outside the SAM&rsquo;s per-type <code>[min, max]</code> envelope. This replaces the old single global range stop with realistic per-system constraints. Groups whose launcher type matches no pattern skip the Lua-side range gate entirely &mdash; the <code>EngageUnit</code> task is still issued and DCS decides at controller level whether the SAM can reach the contact.</p>
+<h3>Representative entries</h3>
+<table>
+  <tr><th>System</th><th>Pattern key</th><th>Min (km)</th><th>Max (km)</th><th>Role</th></tr>
+  <tr><td>SA-5 Gammon / S-200</td><td><code>S-200</code></td><td>17</td><td>240</td><td>Very long-range area denial</td></tr>
+  <tr><td>SA-10 S-300PS</td><td><code>S-300PS</code></td><td>5</td><td>120</td><td>Long-range area defence</td></tr>
+  <tr><td>SA-17 Buk-M2</td><td><code>SA-17 Buk M2</code></td><td>3</td><td>50</td><td>Medium-range area defence</td></tr>
+  <tr><td>MIM-104 Patriot</td><td><code>Patriot ln</code></td><td>3</td><td>70</td><td>BLUE medium-range defence</td></tr>
+  <tr><td>MIM-23 Hawk</td><td><code>Hawk ln</code></td><td>2</td><td>45</td><td>BLUE / Lebanon medium-range</td></tr>
+  <tr><td>IRIS-T SLM</td><td><code>IRISTSLM</code></td><td>1</td><td>40</td><td>BLUE medium-range (DCS 2.9+)</td></tr>
+  <tr><td>IRIS-T SLS</td><td><code>IRISTSLS</code></td><td>0.5</td><td>12</td><td>BLUE short-range (DCS 2.9+)</td></tr>
+  <tr><td>SA-22 Pantsir-S1</td><td><code>Pantsir-S1</code></td><td>0.2</td><td>20</td><td>SHORAD point defence</td></tr>
+  <tr><td>Tor-M1</td><td><code>Tor 9A331</code></td><td>1.5</td><td>12</td><td>Short-range SHORAD</td></tr>
+  <tr><td>ZSU-23-4 Shilka</td><td><code>ZSU-23-4</code></td><td>0.1</td><td>2.5</td><td>AAA gun only</td></tr>
+</table>
+<p>To add a new type: insert a new key-value pair using a substring from <code>unit:getTypeName()</code>. Add both hyphen and underscore variants if DCS returns both. Log <code>unit:getTypeName()</code> in a <code>S_EVENT_SHOT</code> handler to find exact internal names.</p>
+<div class="box box-tip">If a SAM is not engaging when expected, check that its launcher unit type is in <code>SAM_RANGE_TABLE</code>. Unmatched types skip the Lua-side range gate and rely on DCS&rsquo;s own controller to decide whether the SAM can fire.</div>
 </div></div>
 
 <h2 id="cfg-sam">Configuration &mdash; SAM Engagement</h2>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_ALT</span><span class="cc-default">30 m AGL</span><span class="cc-quick">Minimum altitude for a contact to be considered a valid SAM target.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_ALT</span><span class="cc-default">20 m AGL</span><span class="cc-quick">Minimum altitude for a contact to be considered a valid SAM target.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Contacts below this altitude (metres, from <code>pos.y</code>) are filtered out of the engagement queue. This prevents the IADS from fixating on ground vehicles, boats, or aircraft that are taxiing. 30 m is one building-height above ground &mdash; effectively only airborne threats qualify.</p>
+<p>Contacts below this altitude (metres, from <code>pos.y</code>) are filtered out of the engagement queue. This prevents the IADS from fixating on ground vehicles, boats, or aircraft that are taxiing. 20 m is essentially at ground level &mdash; any airborne threat qualifies.</p>
 <p>Raise to 100 m if you want the IADS to ignore nap-of-earth helicopter ingress. Set to 0 to let SAMs engage anything including vehicles (rarely useful).</p>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_FIRE_DELAY_MIN / MAX</span><span class="cc-default">2 &ndash; 8 s</span><span class="cc-quick">Random reaction delay before a SAM fires once it has a valid firing solution.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_FIRE_DELAY_MIN / MAX</span><span class="cc-default">0 &ndash; 3 s</span><span class="cc-quick">Random reaction delay before a SAM fires once it has a valid firing solution.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>Once a SAM wins the engagement scoring contest, a random delay between <code>SAM_FIRE_DELAY_MIN</code> and <code>SAM_FIRE_DELAY_MAX</code> is applied before the actual fire order. This prevents all SAMs firing simultaneously in the same DCS frame, which looks unnatural and can cause missile spawn issues.</p>
-<p>The randomness also makes the IADS feel less mechanical &mdash; sometimes the missile comes quickly, sometimes there's a brief hesitation. Raise the max to 15 s for a noticeably sluggish network; lower the min to 0 for instantaneous response.</p>
+<p>The 0&ndash;3 s window makes the IADS feel fast and dangerous &mdash; the minimum is 0 (instant response) with a small random jitter up to 3 s for natural variation. Raise the max to 15 s for a noticeably sluggish network.</p>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">PKill_BASE</span><span class="cc-default">0.75</span><span class="cc-quick">Base probability-of-kill used in the SAM scoring formula.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">PKill_BASE</span><span class="cc-default">0.92</span><span class="cc-quick">Base probability-of-kill used in the SAM scoring formula.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>The engagement scoring formula is: <code>score = PKill_BASE &times; altFactor &times; rangeFactor &times; healthFactor</code>. The SAM with the highest score engages. PKill_BASE is the baseline for a healthy SAM unit with the target perfectly on boresight at optimal range.</p>
 <p>Factors reduce the score: targets at very low altitude drop <code>altFactor</code>, targets near the edge of range drop <code>rangeFactor</code>, damaged SAMs drop <code>healthFactor</code>. The score is relative &mdash; it determines which SAM gets the shot, not whether the missile actually hits (that's DCS's own miss calculation).</p>
@@ -277,15 +485,15 @@
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_SCORE</span><span class="cc-default">0.35</span><span class="cc-quick">Minimum Pk score a SAM needs before it will fire. Prevents wasted shots.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_SCORE</span><span class="cc-default">0.25</span><span class="cc-quick">Minimum Pk score a SAM needs before it will fire. Prevents wasted shots.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>After the scoring formula computes a value for every SAM&ndash;contact pair, the result is compared to this threshold. If the score is below it, the SAM <strong>holds fire</strong> regardless of whether it is the best available shooter. This prevents damaged SAMs at extreme range from wasting missiles on hopeless shots.</p>
-<p>At the default <strong>0.35</strong>, any target flying at normal bombing altitude (above ~500&nbsp;m / 1,600&nbsp;ft) will be engaged at essentially full range. The threshold only filters junk shots: crippled batteries, extreme distances, and very low altitude targets at long range.</p>
+<p>At the current <strong>0.25</strong>, the threshold skips only genuinely hopeless geometry: very low-altitude targets at long range, severely crippled batteries at extreme distance. Any normal attack profile at normal bombing altitude clears this gate easily.</p>
 <table>
   <tr><th>Value</th><th>Behaviour</th></tr>
-  <tr><td><code>0.05</code></td><td>Fire at almost anything detected (old default). Wastes missiles.</td></tr>
-  <tr><td><code>0.25</code></td><td>Skip truly hopeless shots (extreme range + low alt + damaged).</td></tr>
-  <tr><td><code>0.35</code></td><td><strong>Recommended.</strong> Solid engagement solution required. No gaps against normal attack profiles.</td></tr>
+  <tr><td><code>0.05</code></td><td>Fire at almost anything detected. Wastes missiles on hopeless shots.</td></tr>
+  <tr><td><code>0.25</code> <span class="badge g">current</span></td><td>Skip truly hopeless shots (extreme range + low alt + damaged).</td></tr>
+  <tr><td><code>0.35</code></td><td>Solid engagement solution required. Recommended if you want more disciplined fire.</td></tr>
   <tr><td><code>0.50</code></td><td>Disciplined &mdash; holds until near-optimal geometry. Damaged SAMs become noticeably less effective.</td></tr>
   <tr><td><code>0.60+</code></td><td>Very conservative. Only fires in ideal conditions. Players can exploit the gaps.</td></tr>
 </table>
@@ -377,10 +585,25 @@ RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">RTB_LOITER_TIME</span><span class="cc-default">120 s</span><span class="cc-quick">How long a flight loiters after the threat zone clears before RTB is ordered.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">RTB_LOITER_TIME</span><span class="cc-default">0 s</span><span class="cc-quick">How long a flight loiters after the threat zone clears before RTB is ordered.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>After an intercept zone goes empty (no more enemy contacts), the script waits this many seconds before checking again. If still empty, RTB is ordered. This prevents flights from immediately bugging out the moment a contact briefly drops off radar only to return 10 seconds later.</p>
-<p>120 s (2 minutes) provides enough buffer for a momentarily-lost contact to reappear. Reduce to 60 s for aggressive immediate RTB. Increase to 300 s if you want fighters to patrol after clearing a zone.</p>
+<p>After an intercept zone goes empty (no more enemy contacts), the script waits this many seconds before ordering RTB. At <strong>0</strong> (the current default) RTB is issued immediately the moment the zone clears &mdash; flights do not linger.</p>
+<p>Increase to 30&ndash;120 s if you want fighters to patrol briefly after clearing a zone, reducing the chance of a rapid re-entry catching them on the ground rearming. Note that the leash check (<code>INTERCEPT_LEASH_BUFFER</code>) can still recall flights that stray too far, regardless of this timer.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SCRAMBLE_THREAT_BUFFER</span><span class="cc-default">0 m</span><span class="cc-quick">Extra radius beyond the zone boundary that still counts as a threat for scramble purposes.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>Added to the zone&rsquo;s <code>zd.radius</code> when <code>getThreatsForZone()</code> checks for threats. At <strong>0</strong> (current default), the enemy aircraft must be physically inside the zone boundary (<code>dist2d &le; zd.radius</code>) before a scramble is ordered.</p>
+<p>Increase to 40,000&ndash;80,000 m to scramble intercept flights when an enemy is still approaching the zone, giving fighters time to climb and position before the intruder crosses the boundary. At the default of 0, zones must be sized generously enough to provide that lead time themselves.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">INTERCEPT_LEASH_BUFFER</span><span class="cc-default">80,000 m</span><span class="cc-quick">Maximum distance beyond zone radius before an airborne flight is force-recalled.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>The <code>flightMaintenanceLoop()</code> compares each airborne flight&rsquo;s distance from its assigned zone centre against <code>zd.radius + INTERCEPT_LEASH_BUFFER</code>. If the flight has strayed further than this, it is immediately recalled via <code>orderFlightRTB()</code> regardless of threat status or <code>RTB_LOITER_TIME</code>.</p>
+<p>80 km (80,000 m) gives fighters enough room to prosecute a threat that has been engaged beyond the zone boundary without immediately recalling them, while preventing fighters from chasing targets deep into friendly territory or being permanently lost to AI pathfinding.</p>
+<p>Reduce to 40,000 m for tightly contained engagement areas. Increase to 120,000+ m if squadrons regularly need to pursue retreating threats well beyond the zone.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -391,27 +614,13 @@ RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
 </div></div>
 
 <h2 id="cfg-gci">Configuration &mdash; GCI / AWACS</h2>
-
-<div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">GCI_PICTURE_INTERVAL</span><span class="cc-default">180 s (3 min)</span><span class="cc-quick">How often AWACS broadcasts a contact picture to all coalition players.</span><span class="cc-toggle">&#x25BC; details</span></div>
-<div class="cc-body">
-<p>Every 180 seconds the script compiles a summary of all currently tracked enemy contacts and broadcasts it to all players on that coalition via <code>trigger.action.outTextForCoalition</code>. The message is prefixed with the callsign defined in <code>AWACS_CALLSIGN</code> (RED = "OVERLORD", BLUE = "MAGIC").</p>
-<p>The picture includes contact count, approximate bearing and distance from an AWACS reference point, and altitude band. 3 minutes is a realistic AEW reporting cycle. Reduce to 60 s for faster-paced air warfare. Set to a very high value (99999) to effectively disable automatic pictures while keeping AWACS detection contribution active.</p>
-</div></div>
+<p>AWACS aircraft (groups matching <code>RED_AWACS_</code> or <code>BLUE_AWACS_</code>) are kept on orbit by a background keeper loop. There are no player-facing picture broadcasts &mdash; the script operates as a silent backend IADS with no HUD messages except an activation notice at mission start and dispatch errors.</p>
 
 <div class="cfg-card">
 <div class="cc-head" onclick="tog(this)"><span class="cc-key">GCI_FUEL_RTB_THRESHOLD</span><span class="cc-default">0.20 (20%)</span><span class="cc-quick">Fuel fraction at which an intercept flight is ordered to RTB.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>The threshold is compared against <code>Unit:getFuel()</code> which returns a 0.0&ndash;1.0 fraction of <em>internal</em> fuel. <strong>External tanks are NOT included</strong> &mdash; DCS's <code>getFuel()</code> only reports internal fuel regardless of loadout. A Hornet with drop tanks may actually have far more total fuel than the script can detect.</p>
 <p>0.20 (bingo 20%) is reasonable for most aircraft to still complete a divert. Extend to 0.30 for short-range aircraft (MiG-21, Harrier). The threshold is checked per unit, not per group &mdash; if any unit in the flight hits bingo, the entire group is called RTB.</p>
-</div></div>
-
-<div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">AWACS_CALLSIGN / GCI_CALLSIGN</span><span class="cc-default">OVERLORD / MAGIC</span><span class="cc-quick">Radio callsign strings used in player-facing GCI and picture messages.</span><span class="cc-toggle">&#x25BC; details</span></div>
-<div class="cc-body">
-<p>These strings are prepended to all GCI picture broadcasts and intercept control messages. They are purely cosmetic &mdash; they don't affect any game mechanics. Change to match your mission's radio narrative. <code>GCI_CALLSIGN</code> is used for scramble/RTB orders; <code>AWACS_CALLSIGN</code> for the periodic picture broadcasts.</p>
-<pre>AWACS_CALLSIGN = { RED = "OVERLORD", BLUE = "MAGIC" }
-GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 </div></div>
 
 <h2 id="cfg-squadrons">Configuration &mdash; Squadrons</h2>
@@ -426,186 +635,152 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 </table>
 <div class="box box-info"><strong>How the pool works:</strong> The script discovers all groups with the given prefix that are alive and not yet activated. Each scramble activates the next available group. Once all groups are used, the squadron is exhausted for the mission. There is no respawn &mdash; late-activate groups are one-and-done. Add more ME groups to increase total sortie count.</div>
 
-<h3>RED Squadrons (8 total)</h3>
+<h3>RED Squadrons (16 total)</h3>
 <table>
   <tr><th>Callsign</th><th>homeBase</th><th>Zone</th><th>groupPrefix</th><th>maxFlights</th></tr>
-  <tr><td>FOXBAT</td><td>Mezzeh</td><td>RED_ZONE_DAMASCUS</td><td>RED_AIR_DAMASCUS</td><td>3</td></tr>
-  <tr><td>FULCRUM</td><td>Aleppo</td><td>RED_ZONE_ALEPPO</td><td>RED_AIR_ALEPPO</td><td>3</td></tr>
-  <tr><td>FLANKER</td><td>Bassel Al-Assad</td><td>RED_ZONE_LATAKIA</td><td>RED_AIR_LATAKIA</td><td>3</td></tr>
-  <tr><td>FENCER</td><td>Tiyas</td><td>RED_ZONE_PALMYRA</td><td>RED_AIR_PALMYRA</td><td>2</td></tr>
-  <tr><td>FROGFOOT</td><td>Hama</td><td>RED_ZONE_HOMS</td><td>RED_AIR_HOMS</td><td>2</td></tr>
-  <tr><td>SOKOL</td><td>Deir ez-Zor</td><td>RED_ZONE_DEIR_EZ_ZOR</td><td>RED_AIR_DEIR_EZ_ZOR</td><td>2</td></tr>
-  <tr><td>VYMPEL</td><td>Tabqa</td><td>RED_ZONE_RAQQA</td><td>RED_AIR_RAQQA</td><td>2</td></tr>
+  <tr><td>FOXBAT</td><td>Mezzeh</td><td>RED_ZONE_MEZZEH</td><td>RED_AIR_MEZZEH</td><td>2</td></tr>
+  <tr><td>FULCRUM</td><td>Damascus</td><td>RED_ZONE_DAMASCUS</td><td>RED_AIR_DAMASCUS</td><td>2</td></tr>
+  <tr><td>FENCER</td><td>Marj Ruhayyil</td><td>RED_ZONE_MARJ_RUHAYYIL</td><td>RED_AIR_MARJ_RUHAYYIL</td><td>2</td></tr>
+  <tr><td>SHAHIN</td><td>Khalkhalah</td><td>RED_ZONE_KHALKHALAH</td><td>RED_AIR_KHALKHALAH</td><td>2</td></tr>
+  <tr><td>NEMER</td><td>Sayqal</td><td>RED_ZONE_AT_TANF</td><td>RED_AIR_SAYQAL</td><td>2</td></tr>
+  <tr><td>SOKOL</td><td>Sayqal</td><td>RED_ZONE_SAYQAL</td><td>RED_AIR_SAYQAL</td><td>2</td></tr>
+  <tr><td>FLANKER</td><td>Tha'lah</td><td>RED_ZONE_THALAH</td><td>RED_AIR_THALAH</td><td>2</td></tr>
+  <tr><td>VYMPEL</td><td>Palmyra</td><td>RED_ZONE_PALMYRA</td><td>RED_AIR_PALMYRA</td><td>2</td></tr>
+  <tr><td>BUKET</td><td>Deir ez-Zor</td><td>RED_ZONE_DEIR_EZ-ZOR</td><td>RED_AIR_DEIR_EZ_ZOR</td><td>2</td></tr>
+  <tr><td>FROGFOOT</td><td>Shayrat</td><td>RED_ZONE_TABQA</td><td>RED_AIR_SHAYRAT</td><td>2</td></tr>
+  <tr><td>GRACH</td><td>Tabqa</td><td>RED_ZONE_TABQA</td><td>RED_AIR_TABQA</td><td>2</td></tr>
   <tr><td>BERKUT</td><td>Hama</td><td>RED_ZONE_HAMA</td><td>RED_AIR_HAMA</td><td>2</td></tr>
+  <tr><td>ALKU</td><td>Aleppo</td><td>RED_ZONE_ALEPPO</td><td>RED_AIR_ALEPPO</td><td>2</td></tr>
+  <tr><td>NASR</td><td>Al Qusayr</td><td>RED_ZONE_AL_QUSAYR</td><td>RED_AIR_AL_QUSAYR</td><td>2</td></tr>
+  <tr><td>KOBRA</td><td>Bassel Al-Assad</td><td>RED_ZONE_BASSEL_AL-ASSAD</td><td>RED_AIR_BASSEL_AL-ASSAD</td><td>2</td></tr>
+  <tr><td>FAGGOT</td><td>An Nasiriyah</td><td>RED_ZONE_AN_NASIRIYAH</td><td>RED_AIR_AN_NASIRIYAH</td><td>2</td></tr>
 </table>
 
-<h3>BLUE Squadrons (3 total)</h3>
+<h3>BLUE Squadrons (4 total)</h3>
 <table>
   <tr><th>Callsign</th><th>homeBase</th><th>Zone</th><th>groupPrefix</th><th>maxFlights</th></tr>
-  <tr><td>VIPER</td><td>Incirlik</td><td>BLUE_ZONE_NORTH</td><td>BLUE_AIR_NORTH</td><td>4</td></tr>
-  <tr><td>HORNET</td><td>Hatay</td><td>BLUE_ZONE_HATAY</td><td>BLUE_AIR_HATAY</td><td>3</td></tr>
-  <tr><td>EAGLE</td><td>Ramat David</td><td>BLUE_ZONE_SOUTH</td><td>BLUE_AIR_SOUTH</td><td>3</td></tr>
+  <tr><td>HORNET</td><td>Ramat David</td><td>BLUE_ZONE_RAMAT_DAVID</td><td>BLUE_AIR_RAMAT_DAVID</td><td>2</td></tr>
+  <tr><td>FALCON</td><td>Megiddo</td><td>BLUE_ZONE_NorthWest</td><td>BLUE_AIR_MEGIDDO</td><td>2</td></tr>
+  <tr><td>SPARTAN</td><td>Prince Hassan</td><td>BLUE_ZONE_PrinceHassan</td><td>BLUE_AIR_PrinceHassan</td><td>2</td></tr>
+  <tr><td>LANCER</td><td>H4</td><td>BLUE_ZONE_H4</td><td>BLUE_AIR_H4</td><td>2</td></tr>
 </table>
 
 <h2 id="sys-detection">System Deep-Dive &mdash; Detection Pipeline</h2>
-<p>Contact gathering runs every <code>UPDATE_INTERVAL</code> seconds via <code>gatherContacts(coaName, enemyCoa)</code>. Two passes run in sequence; results are deduplicated by unit name in a <code>seen</code> table.</p>
-<h3>Pass 1 &mdash; DCS Radar Model (when USE_DCS_DETECTION = true)</h3>
-<p><code>coalition.getDetectedTargets(myCoaID, Unit.SensorType.RADAR)</code> returns an array of detected objects. The script filters for: alive, enemy coalition, altitude &gt; SAM_MIN_ENGAGE_ALT, not already in seen list. Each valid contact is stored with its position, velocity, detection time, and a <code>byRadar = true</code> flag.</p>
-<h3>Pass 2 &mdash; Range Sphere Supplement (always runs)</h3>
-<p>Every live EWR node, SAM node, and AWACS aircraft is used as a detection origin. Every enemy aircraft within that node's detection radius is added if not already seen. Detection radii:</p>
-<ul>
-  <li>EWR nodes: <code>EWR_DETECTION_RANGE</code> (250 km default)</li>
-  <li>SAM nodes: <code>EWR_DETECTION_RANGE * 0.6</code> (150 km default)</li>
-  <li>AWACS aircraft: <code>AWACS_DETECTION_RANGE</code> (420 km default)</li>
-</ul>
+<p>Contact gathering runs every <code>UPDATE_INTERVAL</code> seconds via <code>gatherContacts(coaName, enemyCoa)</code>. The script attempts the most realistic detection path first and falls back automatically if the DCS API is unavailable. Results are deduplicated by unit name in a <code>seen</code> table.</p>
+<h3>Primary Path &mdash; DCS Radar Model</h3>
+<p><code>coalition.getDetectedTargets(myCoaID, Unit.SensorType.RADAR)</code> returns the objects currently detected by the coalition's own sensors. This is the same contact list DCS uses internally for its AI. It naturally respects terrain masking, ECM, RCS, and altitude effects. This path runs whenever the API is available (DCS 2.7+), which is the vast majority of cases.</p>
+<p>Each returned object is filtered for: alive, enemy coalition, altitude &gt; <code>SAM_MIN_ENGAGE_ALT</code>, not already in the seen list. Valid contacts are stored with position, velocity, detection time, and <code>byRadar = true</code>.</p>
+<p>If <code>coalition.getDetectedTargets()</code> succeeds the function returns immediately — the fallback path is not run.</p>
+<h3>Fallback Path &mdash; coalition.getGroups() Scan</h3>
+<p>Only runs if the primary API throws an error or is unavailable. Scans all live enemy <code>AIRPLANE</code> and <code>HELICOPTER</code> groups and filters for airborne units: requires ground-speed &gt; 30 m/s to exclude parked aircraft, taxiing aircraft, and late-activate frozen groups. Contacts are stored with <code>byRadar = false</code>.</p>
+<p>A one-time log warning is written to dcs.log when the fallback activates: <code>[IADS] INFO: coalition.getDetectedTargets unavailable – using coalition.getGroups fallback</code>. SAM engagement ranges in <code>optimizeEngagements()</code> still act as coverage limits in fallback mode.</p>
 
 <h2 id="sys-sam">System Deep-Dive &mdash; SAM Scoring &amp; Engagement</h2>
-<p>After contacts are gathered, each contact is scored against each live SAM node. The engagement sequence:</p>
+<p>After contacts are gathered, each contact is scored against every live SAM node. The engagement sequence:</p>
 <ol>
-  <li>For each contact, find all SAM nodes within <code>SAM_ENGAGE_SHARE_RANGE</code>.</li>
-  <li>For each candidate SAM compute: <code>score = PKill_BASE &times; altFactor &times; rangeFactor &times; healthFactor</code></li>
-  <li>The SAM with the highest score that is not currently suppressed (<code>suppressedUntil[name] &lt; timer.getTime()</code>) gets the fire order.</li>
-  <li>A random delay of <code>SAM_FIRE_DELAY_MIN</code> to <code>SAM_FIRE_DELAY_MAX</code> is applied before the controller fires.</li>
+  <li>At the start of each tick, a <code>samCache</code> is built once: position, health factor, and per-type range (from <code>getSAMRange()</code> &mdash; <code>{min, max}</code> for known types, <code>nil</code> for unrecognised) for each live SAM node. This is a single flat pass &mdash; scoring never calls <code>Group.getByName()</code> or <code>getUnits()</code> again after the cache is built.</li>
+  <li>For each contact, every SAM is scored: <code>score = PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor</code>. Contacts outside a SAM&rsquo;s per-type <code>[min, max]</code> envelope immediately score 0 and are skipped. Low-flying jets bypass non-SHORAD SAMs entirely (see Low-Jet Immunity).</li>
+  <li>Up to <code>SAM_MAX_ENGAGE_PER_CONTACT</code> SAMs (default 2) can be assigned to the same contact. The primary fires immediately; secondary fires 1.5 s later to saturate point-defence.</li>
+  <li>The assigned SAM receives a randomised delayed fire order after <code>SAM_FIRE_DELAY_MIN</code>&ndash;<code>SAM_FIRE_DELAY_MAX</code> seconds to simulate crew reaction time.</li>
+  <li>SAMs with no assigned contact have their radar shut off (<code>setOnOff(false)</code>) to reduce SEAD exposure. Only when the assignment actually changes is a DCS controller call made &mdash; avoiding hundreds of redundant API calls per tick on large networks.</li>
 </ol>
-<div class="box box-warn">The script assigns fire orders but DCS's AI SAM controller ultimately decides whether to launch. If the target leaves the SAM's engagement envelope before the delay expires, the fire order may be ignored. This is correct behaviour.</div>
+<div class="box box-warn">The script assigns fire orders but DCS&rsquo;s AI SAM controller ultimately decides whether to launch. If the target leaves the SAM&rsquo;s DCS engagement envelope before the delay expires, the fire order may be ignored. This is correct behaviour.</div>
 
 <h2 id="sys-pk">System Deep-Dive &mdash; Pk Threshold Gate</h2>
-<p>The <code>SAM_MIN_ENGAGE_SCORE</code> constant (default <strong>0.35</strong>) acts as a quality gate on every engagement. A SAM will only fire when its computed score exceeds this value. This section explains exactly how the scoring formula works and what each threshold level means for real DCS combat scenarios.</p>
+<p>The <code>SAM_MIN_ENGAGE_SCORE</code> constant (default <strong>0.25</strong>) acts as a quality gate on every engagement. A SAM will only fire when its computed score exceeds this value.</p>
 
 <h3>The Scoring Formula</h3>
 <pre>Score = PKill_BASE (0.92) &times; rangeFactor &times; altFactor &times; healthFactor</pre>
-<p>Each factor runs from 0.0 to 1.0. They <strong>multiply</strong> together, so one bad factor drags the whole score down.</p>
+<p>Each factor runs from 0.0 to 1.0 and they <strong>multiply</strong> together, so one bad factor drags the whole score down.</p>
 
 <h3>rangeFactor</h3>
-<p>Peaks at 40% of <code>SAM_ENGAGE_SHARE_RANGE</code> (180&nbsp;km) = <strong>72&nbsp;km</strong> (the sweet spot). Falls off at both extremes.</p>
+<p>Based on each SAM&rsquo;s own <code>{min, max}</code> missile envelope from <code>SAM_RANGE_TABLE</code> &mdash; not a global range. Peaks at <strong>60% through the envelope</strong>. At the minimum range edge the factor is 0.40; at maximum range it is 0.60; at 60% it reaches 1.00.</p>
+<pre>relD        = (range - minR) / (maxR - minR)   -- 0.0 at min, 1.0 at max
+rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</pre>
+<p>Example: S-300PS (min=5 km, max=120 km) optimal point = 5 + 60% &times; 115 = <strong>74 km</strong>. Pantsir-S1 (min=0.2 km, max=20 km) optimal = <strong>12 km</strong>. Tor (min=1.5 km, max=12 km) optimal = <strong>7.7 km</strong>.</p>
 <table>
-  <tr><th>Distance from SAM</th><th>rangeFactor</th></tr>
-  <tr><td>36 km (close)</td><td>0.80</td></tr>
-  <tr><td>54 km</td><td>0.90</td></tr>
-  <tr><td><strong>72 km (optimal)</strong></td><td><strong>1.00</strong></td></tr>
-  <tr><td>90 km</td><td>0.90</td></tr>
-  <tr><td>120 km</td><td>0.73</td></tr>
-  <tr><td>144 km</td><td>0.60</td></tr>
-  <tr><td>170 km</td><td>0.46</td></tr>
-  <tr><td>180 km (max range)</td><td>0.40</td></tr>
+  <tr><th>Distance as % of envelope</th><th>rangeFactor</th></tr>
+  <tr><td>0% (min range / blind zone edge)</td><td>0.40</td></tr>
+  <tr><td>20%</td><td>0.60</td></tr>
+  <tr><td>40%</td><td>0.80</td></tr>
+  <tr><td><strong>60% (sweet spot)</strong></td><td><strong>1.00</strong></td></tr>
+  <tr><td>80%</td><td>0.80</td></tr>
+  <tr><td>100% (max range)</td><td>0.60</td></tr>
 </table>
 
 <h3>altFactor</h3>
-<p>Perfect (1.0) for any target between 500&nbsp;m and 12,000&nbsp;m (~1,600&nbsp;ft to ~39,000&nbsp;ft). Drops below and above that band.</p>
+<p>Perfect (1.0) for any target between 500&nbsp;m and 12,000&nbsp;m (~1,600&nbsp;ft to ~39,000&nbsp;ft). Drops linearly below and above that band.</p>
 <table>
   <tr><th>Target Altitude</th><th>altFactor</th></tr>
   <tr><td>100 m (328 ft)</td><td>0.20</td></tr>
-  <tr><td>200 m (656 ft)</td><td>0.40</td></tr>
   <tr><td>300 m (984 ft)</td><td>0.60</td></tr>
-  <tr><td>500 m+ to 12,000 m</td><td><strong>1.00</strong></td></tr>
+  <tr><td>500 m to 12,000 m</td><td><strong>1.00</strong></td></tr>
   <tr><td>15,000 m (49,000 ft)</td><td>0.63</td></tr>
   <tr><td>18,000 m (59,000 ft)</td><td>0.25</td></tr>
 </table>
 
 <h3>healthFactor</h3>
-<p>Proportion of surviving units in the SAM group. Examples: 4 of 4 alive = 1.00, 3 of 4 = 0.75, 2 of 4 = 0.50.</p>
+<p>Proportion of surviving units in the SAM group: 4/4 alive = 1.00, 3/4 = 0.75, 2/4 = 0.50.</p>
 
-<h3>Real DCS Engagement Scenarios (Healthy SAM, healthFactor = 1.0)</h3>
-<p>These tables show what score a typical engagement produces, and whether it clears each threshold level.</p>
-
-<h3>Typical Bomb-Delivery Profiles</h3>
+<h3>Real DCS Scenarios &mdash; Healthy SA-17 Buk (min=3 km, max=50 km, optimal=31 km)</h3>
 <table>
-  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.35?</th><th>0.50?</th></tr>
-  <tr><td>JDAM run, 20,000 ft (6 km), 50 km out</td><td>6 km</td><td>50 km</td><td><strong>0.83</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>JDAM run, 20,000 ft, 120 km out</td><td>6 km</td><td>120 km</td><td><strong>0.67</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>LGB toss, 15,000 ft (4.5 km), 30 km</td><td>4.5 km</td><td>30 km</td><td><strong>0.74</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>Dumb bomb pop-up, 10,000 ft (3 km), 20 km</td><td>3 km</td><td>20 km</td><td><strong>0.64</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>JSOW/JASSM launch, 25,000 ft, 90 km</td><td>7.6 km</td><td>90 km</td><td><strong>0.83</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>Maverick run, 8,000 ft (2.4 km), 15 km</td><td>2.4 km</td><td>15 km</td><td><strong>0.57</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.25?</th><th>0.35?</th></tr>
+  <tr><td>JDAM run, FL200 (6 km), 20 km out</td><td>6 km</td><td>20 km</td><td><strong>0.73</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>JDAM run, FL200, 31 km (optimal)</td><td>6 km</td><td>31 km</td><td><strong>0.92</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>JDAM run, FL200, 45 km</td><td>6 km</td><td>45 km</td><td><strong>0.73</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>Contact beyond 50 km (outside envelope)</td><td>any</td><td>&gt;50 km</td><td><strong>0.00</strong></td><td><span class="badge r">NO (hard gate)</span></td><td><span class="badge r">NO</span></td></tr>
 </table>
-<div class="box box-info">Any normal bombing profile scores <strong>0.55+</strong>. The threshold won&rsquo;t prevent engagement against standard attack profiles &mdash; SAMs will fire well before weapon release range.</div>
+<div class="box box-info">Any target inside the SAM&rsquo;s own missile envelope at normal altitude will score well above 0.35. The threshold only blocks hopeless shots: crippled batteries at the extreme fringe, or very low-altitude contacts at max range.</div>
 
-<h3>Where the Threshold Filters (Edge Cases)</h3>
+<h3>Where the Threshold Filters</h3>
 <table>
-  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.35?</th><th>0.50?</th></tr>
-  <tr><td>Low ingress, 300 m, 160 km out</td><td>300 m</td><td>160 km</td><td><strong>0.25</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
-  <tr><td>Low ingress, 300 m, 100 km</td><td>300 m</td><td>100 km</td><td><strong>0.44</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
-  <tr><td>Low ingress, 200 m, 130 km</td><td>200 m</td><td>130 km</td><td><strong>0.24</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
-  <tr><td>Damaged SAM (50% health), 5 km alt, 140 km</td><td>5 km</td><td>140 km</td><td><strong>0.30</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
-  <tr><td>Damaged SAM (50%), typical bomb run, 60 km</td><td>5 km</td><td>60 km</td><td><strong>0.42</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
-  <tr><td>Damaged SAM (75%), 3 km alt, 150 km</td><td>3 km</td><td>150 km</td><td><strong>0.34</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><th>Scenario</th><th>Score (Buk)</th><th>0.25?</th><th>0.35?</th></tr>
+  <tr><td>Low ingress 300 m, 40 km (fringe of envelope)</td><td><strong>0.45</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>Damaged SAM 50%, 6 km alt, 45 km</td><td><strong>0.37</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><td>Damaged SAM 25%, 300 m alt, 45 km</td><td><strong>0.17</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Contact outside the type’s SAM_RANGE_TABLE envelope</td><td><strong>0.00</strong></td><td><span class="badge r">NO (hard gate)</span></td><td><span class="badge r">NO</span></td></tr>
 </table>
 
-<h3>Gameplay Effect by Threshold Level</h3>
-<table>
-  <tr><th>Threshold</th><th>What Fires</th><th>What Holds Fire</th></tr>
-  <tr><td><code>0.05</code> (old)</td><td>Literally everything. Half-dead SAM at 175&nbsp;km shoots at a 200&nbsp;m AGL target. Wastes missiles.</td><td>Almost nothing.</td></tr>
-  <tr><td><code>0.25</code></td><td>Most encounters. Damaged SAMs still take long-range speculative shots.</td><td>Only the most hopeless combos (extreme range + low alt + damaged).</td></tr>
-  <tr><td><code>0.35</code> <span class="badge g">current</span></td><td>Any standard-altitude approach gets engaged well before bomb range. Low-altitude targets only engaged once they close in to reasonable range. Damaged SAMs stop wasting missiles at max range.</td><td>Crippled SAMs at extreme range. Low flyers at long range (they&rsquo;ll still get shot at once they close in).</td></tr>
-  <tr><td><code>0.50</code></td><td>Clean engagements only &mdash; target is in the productive part of the envelope. SAMs feel disciplined and dangerous rather than trigger-happy.</td><td>Fringes of the envelope. Damaged SAMs become significantly less effective (realistic).</td></tr>
-  <tr><td><code>0.60</code></td><td>Only near-optimal geometry. SAM crews are extremely conservative &mdash; every shot counts.</td><td>Anything outside the sweet spot. Players notice SAMs are &ldquo;smarter&rdquo; but can exploit the gaps.</td></tr>
-</table>
-
-<div class="box box-tip"><strong>Bottom line:</strong> At <code>0.35</code>, a player flying at any normal bombing altitude (above ~1,600&nbsp;ft / 500&nbsp;m) will get engaged at effectively full range &mdash; the threshold doesn&rsquo;t protect them at all. What it <em>does</em> do is stop damaged SAMs from wasting missiles at hopeless targets, and makes low-altitude ingress actually rewarding (you get closer before they shoot, but they still shoot once you&rsquo;re in a reasonable envelope).</div>
-
-<div class="box box-info">The 75&nbsp;m AGL jet immunity (<code>SAM_LOW_JET_IMMUNITY_AGL</code>) is <strong>separate</strong> and still applies &mdash; that&rsquo;s the hard floor for terrain masking against non-SHORAD SAMs. The Pk threshold gate operates above that floor.</div>
+<div class="box box-tip"><strong>Bottom line:</strong> The primary engagement gate is the hard per-type <code>SAM_RANGE_TABLE</code> envelope &mdash; a SAM simply cannot be assigned a contact outside its own missile range. The <code>SAM_MIN_ENGAGE_SCORE</code> threshold is a secondary quality gate that prevents crippled batteries from wasting missiles at the fringe of their envelope.</div>
+<div class="box box-info">The 75&nbsp;m AGL jet immunity (<code>SAM_LOW_JET_IMMUNITY_AGL</code>) is separate. That&rsquo;s a hard contact-list filter for non-SHORAD SAMs; the Pk threshold operates above that floor for contacts that do reach the scoring loop.</div>
 
 <h2 id="sys-arm">System Deep-Dive &mdash; ARM Defence</h2>
-<p>The 1-second weapon tracking loop iterates all in-flight weapons found via <code>world.searchObjects</code>. For each weapon:</p>
+<p>The 5-second weapon tracking loop iterates all in-flight weapons from the <code>trackedWeapons[]</code> list (populated by <code>S_EVENT_SHOT</code>). For each weapon:</p>
 <ol>
   <li>Check its type name against <code>ARM_TYPES</code> using <code>string.find()</code> partial match &mdash; catches both underscore and hyphen DCS naming variants.</li>
-  <li>If it is an ARM, compute its velocity vector to estimate the aim point.</li>
-  <li>For each live radar group within the estimated impact corridor, trigger EMCON: record <code>suppressedUntil[group] = timer.getTime() + ARM_SHUTDOWN_TIME</code>.</li>
+  <li>If it is an ARM, extrapolate its velocity vector 60 s forward to estimate the aim point, then find the SAM node closest to that projected point.</li>
+  <li>If the projected miss-distance is less than <code>ARM_SUPPRESS_TRIGGER_DIST</code> (default 150 km), trigger EMCON: record <code>suppressedUntil[group] = timer.getTime() + ARM_SHUTDOWN_TIME</code>. Also briefly suppress neighbouring SAMs within <code>ARM_NEIGHBOR_SUPPRESS_RANGE</code> (12 km).</li>
   <li>If the group has mobile units, apply a random positional offset up to <code>ARM_MOVE_RADIUS</code>.</li>
-  <li>The suppressed group is skipped in the SAM scoring loop until the suppression expires.</li>
+  <li>The suppressed group is skipped in the SAM scoring loop until the suppression expires; then radar is automatically restored.</li>
 </ol>
 <p>Both <code>ARM_TYPES</code> and <code>AGM_TYPES</code> lists include dual-form DCS names (e.g. <code>"AGM_88"</code> and <code>"AGM-88"</code>) to handle DCS version differences in weapon type-name formatting.</p>
 
 <h2 id="sys-intercept">System Deep-Dive &mdash; Air Intercept Scramble</h2>
-<p>The 10-second intercept loop:</p>
+<p>The 30-second intercept loop (<code>gciInterceptLoop</code>):</p>
 <ol>
-  <li>For each zone, look up <code>zd.point</code> (zone centre) and <code>zd.radius</code> from MIST's zone database, then do a 2D distance check: <code>dist2d(contact.pos, zd.point) &le; zd.radius + 80,000 m</code> (80 km threat buffer). <strong>This is always a circle test</strong> &mdash; polygon zone shapes are not respected; only the bounding-circle radius from MIST is used.</li>
-  <li>If any enemy is in the zone and the squadron's current airborne count is below <code>maxFlights</code>, find the next available (alive, not yet activated) group with the squadron's <code>groupPrefix</code>.</li>
-  <li>Activate the group via <code>group:activate()</code> and assign waypoints: climb to <code>INTERCEPT_ALTITUDE</code>, intercept point over the zone centre, then RTB waypoint at <code>homeBase</code>.</li>
-  <li>The flight is added to the active flights list for monitoring by the RTB loop.</li>
+  <li>For each zone, reads <code>zd.point</code> (zone centre) and <code>zd.radius</code> from <code>trigger.misc.getZone()</code>. To detect threats, the loop scans the cached enemy airplane group list directly (not IADS radar contacts) so scrambles trigger even if the enemy is in a notch or below radar coverage.</li>
+  <li>2D distance check: <code>dist2d(unit.pos, zd.point) &le; zd.radius</code>. No additional buffer &mdash; the threat must be inside the zone boundary. This is always a circle test &mdash; polygon zone shapes are not respected.</li>
+  <li>If any enemy is inside the zone and the squadron&rsquo;s current airborne count is below <code>maxFlights</code>, find the next available (alive, not yet activated) group with the squadron&rsquo;s <code>groupPrefix</code>.</li>
+  <li>Activate the group via <code>trigger.action.activateGroup()</code> and assign a 4-second-delayed task: ROE weapons free, then either <code>EngageUnit</code> (if a live threat exists) or <code>Orbit</code> over zone centre at <code>INTERCEPT_ALTITUDE</code> and <code>INTERCEPT_SPEED</code>.</li>
+  <li>The flight is registered in <code>gciSt.flights</code> for monitoring by the maintenance and fuel loops.</li>
 </ol>
-<p><strong>Pool exhaustion:</strong> when all numbered groups for a prefix are used (dead or activated), no more scrambles occur. This is intentional &mdash; the IADS has a finite aircraft per base. Add more ME late-activate groups to increase the total sortie count.</p>
+<p><strong>Pool exhaustion:</strong> when all numbered groups for a prefix are used (dead or activated), no more scrambles occur. Add more late-activate ME groups to increase the total sortie count.</p>
 
-<h2 id="sys-gci">System Deep-Dive &mdash; GCI Picture Broadcast (Per-Pilot BRAA)</h2>
-<p>Every <code>GCI_PICTURE_INTERVAL</code> seconds the script compiles a contact summary from <code>state.contacts</code> and delivers a <strong>personalised BRAA (Bearing, Range, Altitude, Aspect)</strong> picture call to each individual Blue pilot. Bearings and ranges are computed from <strong>each pilot&rsquo;s own position</strong>, not from the AWACS.</p>
-
-<h3>How It Works</h3>
+<h2 id="sys-awacs">System Deep-Dive &mdash; AWACS Orbit Keeper</h2>
+<p>A dedicated 300-second loop (<code>awacsOrbitLoop</code>) ensures all BLUE AWACS aircraft remain on orbit at the configured altitude and speed. On each tick:</p>
 <ol>
-  <li>Confirms at least one <code>BLUE_AWACS_*</code> group is alive &mdash; if not, no picture is broadcast (AWACS is the &ldquo;sender&rdquo; even though BRAA is pilot-relative).</li>
-  <li>Contacts are grouped by DCS flight group &mdash; each group&rsquo;s centroid position and highest altitude are pre-computed <strong>once</strong> (shared across all pilots).</li>
-  <li>Uses <code>coalition.getPlayers(BLUE)</code> to get every player-controlled Blue aircraft currently alive.</li>
-  <li>For each player, computes bearing and range <strong>from that pilot&rsquo;s current position</strong> to each contact group centroid.</li>
-  <li>Sends the message <strong>only to that pilot&rsquo;s group</strong> via <code>trigger.action.outTextForGroup()</code> &mdash; no other players see it.</li>
+  <li>Scan all groups matching <code>AWACS_PREFIX_BLUE</code> (<code>BLUE_AWACS_*</code>).</li>
+  <li>For each alive, active AWACS group, check whether its controller has a valid Orbit task.</li>
+  <li>If the task is missing or stale, push a fresh Orbit task at <code>AWACS_ORBIT_ALT_FT</code> (default 30,000 ft) and <code>AWACS_ORBIT_KTS</code> (default 350 kts) over the group's current position.</li>
 </ol>
-
-<h3>Example Broadcasts</h3>
-<p>Two pilots in different locations see different BRAA for the same contacts:</p>
-<pre>[MAGIC]  Viper1-1, PICTURE &mdash; 2 group(s):
-  RED_CAP_DAMASCUS_01  BRAA 045&deg; / 62 nm  Angels 25
-  RED_CAP_HAMA_02 x2   BRAA 350&deg; / 41 nm  Angels 18</pre>
-<pre>[MAGIC]  Hornet2-1, PICTURE &mdash; 2 group(s):
-  RED_CAP_DAMASCUS_01  BRAA 090&deg; / 105 nm  Angels 25
-  RED_CAP_HAMA_02 x2   BRAA 030&deg; / 78 nm   Angels 18</pre>
-
-<div class="box box-info"><strong>Performance note:</strong> Contact grouping and altitude calculations are done once per tick. Only the bearing / range math is repeated per pilot. With 20 players and 10 contact groups the per-tick cost is ~200 trig calls &mdash; negligible.</div>
-
-<h3>Decision Flow</h3>
-<div class="flow">
-  <div class="flow-s">AWACS alive?<br><small>getAirGroupsByPrefix</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Contacts &gt; 0?<br><small>IADS[coa].contacts</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Group contacts<br><small>centroid + maxAlt</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">For each player<br><small>coalition.getPlayers</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">BRAA from pilot pos<br><small>bearingTo + dist2d</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">outTextForGroup<br><small>individual message</small></div>
-</div>
-
-<div class="box box-tip"><strong>Key difference from previous version:</strong> The old implementation used <code>trigger.action.outTextForCoalition()</code> with bearing/range from the AWACS position (BULLSEYE-style). The new implementation uses <code>trigger.action.outTextForGroup()</code> with bearing/range from each pilot&rsquo;s own position (true BRAA). The <code>gciRefPoint()</code> function is retained for GCI scramble calls and DCS.log diagnostics but is no longer used for the picture broadcast.</div>
+<p>This prevents AWACS aircraft from departing their orbit pattern after completing an ME waypoint list, and recovers from task loss caused by DCS AI interruptions. The loop only targets BLUE AWACS groups &mdash; RED AWACS are assumed to be scripted via ME waypoints or a separate management script.</p>
+<div class="box box-info">The loop runs every 300 s (5 min). It will not override a valid in-progress orbit task. If an AWACS is shot down the keep loop silently skips it via <code>groupAlive()</code>.</div>
 
 <h2 id="sys-rtb">System Deep-Dive &mdash; RTB &amp; Fuel Check</h2>
 <p>Every <code>RTB_CHECK_INTERVAL</code> seconds, for each active (airborne) flight:</p>
 <ol>
   <li>Iterate every unit in the group. Call <code>unit:getFuel()</code> which returns 0.0&ndash;1.0 (internal fuel only).</li>
-  <li>If any unit's fuel &le; <code>GCI_FUEL_RTB_THRESHOLD</code>, issue RTB waypoints back to <code>homeBase</code> and broadcast <code>"[callsign] BINGO. RTB."</code> to the coalition.</li>
+  <li>If any unit's fuel &le; <code>GCI_FUEL_RTB_THRESHOLD</code>, issue RTB waypoints back to <code>homeBase</code>. The RTB order is silent — no player message is broadcast, only a dcs.log entry.</li>
   <li>If the zone has been clear (no contacts) for &ge; <code>RTB_LOITER_TIME</code>, also issue RTB even if fuel is sufficient.</li>
   <li>Despawn/removal from active list occurs when DCS reports all units dead or when the group lands at the home base (altitude &lt;10 m, speed &lt;10 km/h near base).</li>
 </ol>
@@ -674,7 +849,6 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
   <tr><td>No intercept scrambles</td><td>Check: (1) air groups are Late Activation, (2) zone name in SQUADRONS matches the ME trigger zone exactly, (3) maxFlights not already reached, (4) all _01 _02 groups not already dead.</td></tr>
   <tr><td>SAMs never fire on script contacts</td><td>SAMs may be using their own DCS AI contacts. Check SAM_MIN_ENGAGE_ALT isn't filtering contacts out and suppressedUntil isn't keeping them silent from a prior ARM.</td></tr>
   <tr><td>ARM defence not triggering</td><td>Weapon type name not in ARM_TYPES. Add a S_EVENT_SHOT handler logging <code>weapon:getTypeName()</code> to find the exact DCS internal name.</td></tr>
-  <tr><td>GCI picture never broadcasts</td><td>GCI_PICTURE_INTERVAL may be very high, or state.contacts is empty. Check USE_DCS_DETECTION and verify enemy aircraft are above SAM_MIN_ENGAGE_ALT.</td></tr>
   <tr><td>Flights don't RTB on bingo</td><td>Unit:getFuel() only counts internal tanks. Aircraft with large drop tanks may read above threshold even when effectively bingo. Raise GCI_FUEL_RTB_THRESHOLD to 0.35 for such aircraft.</td></tr>
 </table>
 
@@ -725,26 +899,11 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">groupHasAliveUnit(groupName) → boolean</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Alias for <code>groupAlive()</code>. Retained for legacy compatibility with earlier script versions that used a different naming convention. Behaviour is identical.</p>
-<p class="returns">Returns: boolean</p>
-</div></div>
-
-<div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">getGroupPos(groupName) → Vec3 | nil</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
 <p>Returns the 3D world position of the first alive, active unit in the named group. Used to get a representative position for EWR nodes, SAM batteries, and airborne AWACS for range calculations. Returns <code>nil</code> if the group does not exist or all units are dead — every caller must nil-check the result.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>groupName</code></td><td>string</td><td>Exact DCS group name.</td></tr></table>
 <p class="returns">Returns: Vec3 or <code>nil</code></p>
-</div></div>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">setGroupOption(group, option, value)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Safe wrapper around <code>group:getController():setOption()</code>. Guards against nil group or nil controller before calling — prevents script errors when called on a group that has been destroyed mid-frame. Used throughout the script to set ROE, alarm state, and radar on/off.</p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>group</code></td><td>DCS Group</td><td>Must already be resolved via <code>Group.getByName()</code>.</td></tr><tr><td><code>option</code></td><td>number</td><td>DCS AI option enum. 0 = ROE, 1 = reaction on threat, 9 = radar use.</td></tr><tr><td><code>value</code></td><td>number</td><td>Option value. See DCS Enum documentation for valid values per option.</td></tr></table>
-<p class="returns">Returns: nothing</p>
 </div></div>
 
 <div class="ref-card">
@@ -778,11 +937,12 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <p>These two functions drive the active sensor / contact management cycle called every <code>UPDATE_INTERVAL</code>.</p>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">buildNodeList(coaName, coaID, samPrefix, ewrPrefix)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">buildNodeList(coaName, coaID, samPrefix, ewrPrefix, excludePrefix)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
 <p>Completely rebuilds the SAM and EWR node lists for one coalition. Clears <code>IADS[coaName].samNodes</code> and <code>.ewrNodes</code>, then calls <code>getGroupsByPrefix()</code> for the supplied prefixes and filters results through <code>groupAlive()</code>. Dead or not-yet-spawned groups are silently excluded. Calls <code>log()</code> with the resulting node counts.</p>
-<p>Called at startup by <code>init()</code>, every <code>UPDATE_INTERVAL</code> by <code>iadsUpdateLoop()</code>, and every <code>NODE_REFRESH_INTERVAL</code> (15 min) by <code>nodeRefreshLoop()</code>.</p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr><tr><td><code>coaID</code></td><td>coalition.side</td><td><code>coalition.side.RED</code> or <code>coalition.side.BLUE</code></td></tr><tr><td><code>samPrefix</code></td><td>string</td><td>e.g. <code>"RED_SAM_"</code></td></tr><tr><td><code>ewrPrefix</code></td><td>string</td><td>e.g. <code>"RED_EWR_"</code></td></tr></table>
+<p>Called at startup by <code>init()</code> and every <code>NODE_REFRESH_INTERVAL</code> (15 min) by <code>nodeRefreshLoop()</code>. For lightweight incremental dead-group cleanup between full rebuilds, <code>iadsUpdateLoop()</code> uses <code>pruneDeadNodes()</code> instead of this function.</p>
+<p>The optional <code>excludePrefix</code> argument prevents the main RED network absorbing Lebanon groups: <code>buildNodeList("RED", ..., "RED_SAM_",..., "RED_SAM_LEBANON_")</code> skips any group whose name starts with <code>"RED_SAM_LEBANON_"</code>.</p>
+<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr><tr><td><code>coaID</code></td><td>coalition.side</td><td><code>coalition.side.RED</code> or <code>coalition.side.BLUE</code></td></tr><tr><td><code>samPrefix</code></td><td>string</td><td>e.g. <code>"RED_SAM_"</code></td></tr><tr><td><code>ewrPrefix</code></td><td>string</td><td>e.g. <code>"RED_EWR_"</code></td></tr><tr><td><code>excludePrefix</code></td><td>string (optional)</td><td>Groups whose name starts with this string are excluded from both lists. Used to keep Lebanon groups out of the main RED network.</td></tr></table>
 <p class="returns">Returns: nothing — modifies <code>IADS[coaName]</code> tables in place</p>
 <div class="box box-tip">After mission load, check dcs.log for <code>[IADS] RED IADS: 12 SAM nodes, 4 EWR nodes</code> to verify node discovery is working.</div>
 </div></div>
@@ -797,7 +957,8 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <tr><td><code>pos</code></td><td>Vec3</td><td>World position at time of detection.</td></tr>
 <tr><td><code>vel</code></td><td>Vec3</td><td>Velocity vector (m/s) at time of detection.</td></tr>
 <tr><td><code>name</code></td><td>string</td><td>Unit name — used as deduplication key.</td></tr>
-<tr><td><code>byRadar</code></td><td>boolean</td><td><code>true</code> if detected via DCS native radar model; <code>false</code> if via sphere-range fallback.</td></tr>
+<tr><td><code>byRadar</code></td><td>boolean</td><td><code>true</code> if detected via DCS native radar model; <code>false</code> if via coalition group scan fallback.</td></tr>
+<tr><td><code>isLowJet</code></td><td>boolean</td><td><code>true</code> if the contact is a fixed-wing aircraft flying below <code>SAM_LOW_JET_IMMUNITY_AGL</code>. Non-SHORAD RED SAMs skip contacts with this flag set.</td></tr>
 </table>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr><tr><td><code>enemyCoa</code></td><td>coalition.side</td><td>Opposing coalition ID to scan for.</td></tr></table>
 <p class="returns">Returns: the updated <code>IADS[coaName].contacts</code> array</p>
@@ -806,22 +967,34 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <!--  FUNCTION REFERENCE — SAM Engagement                          -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <h2 id="fn-sam">Function Reference — SAM Engagement</h2>
-<p>These three functions form the SAM brain: scoring, assigning, and firing.</p>
+<p>These four functions form the SAM brain: resolving per-type missile envelopes, scoring contacts, assigning targets, and firing.</p>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">computeEngagementScore(samName, contact) → number</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">getSAMRange(groupName) &rarr; {min,max} | nil</span><span class="rc-scope">internal</span><span class="rc-toggle">&blacktriangledown; details</span></div>
 <div class="rc-body">
-<p>Calculates a 0.0–1.0 probability-of-kill score for a SAM engaging a specific contact. Returns 0 immediately if the SAM is currently suppressed (<code>suppressedUntil</code> not expired) or the contact is beyond <code>SAM_ENGAGE_SHARE_RANGE</code>. The score drives which SAM wins the engagement assignment in <code>optimizeEngagements()</code>.</p>
-<p><strong>Score formula:</strong> <code>PKill_BASE × rangeFactor × altFactor × healthFactor</code></p>
-<ul>
-<li><strong>rangeFactor</strong> — peaks at 40% of SAM_ENGAGE_SHARE_RANGE; falls off at close range and beyond. Minimum 0.05.</li>
-<li><strong>altFactor</strong> — 1.0 for 500–12,000 m AGL. Ramps down linearly below 500 m (nap-of-earth penalty) and above 12,000 m (high-altitude penalty). Clamped to 0.1–1.0.</li>
-<li><strong>healthFactor</strong> — ratio of alive units to total units in the SAM group. A one-launcher Pantsir with all missiles expended still scores; a half-destroyed battery scores 0.5×.</li>
-</ul>
+<p>Walks the live units in a SAM group, finds the first whose <code>:getTypeName()</code> matches a pattern key in <code>SAM_RANGE_TABLE</code> (plain <code>string.find</code>, case-sensitive), and returns the corresponding <code>{min, max}</code> table. Results are lazy-cached in <code>_samRangeCache[groupName]</code> for the session; once resolved the group is never walked again.</p>
+<p>Returns <code>nil</code> when no pattern matches. The caller (<code>computeEngagementScore()</code>) treats a <code>nil</code> return as &ldquo;unknown envelope&rdquo;: range gates are skipped and the <code>EngageUnit</code> task is issued anyway, delegating the hard range decision to the DCS SAM controller.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>samName</code></td><td>string</td><td>SAM group name from <code>IADS[coaName].samNodes</code>.</td></tr>
+<tr><td><code>groupName</code></td><td>string</td><td>DCS group name of the SAM site.</td></tr></table>
+<p class="returns">Returns: <code>{min, max}</code> in metres, or <code>nil</code> if the SAM type is not in <code>SAM_RANGE_TABLE</code></p>
+<div class="box box-tip">Add unrecognised types to <code>SAM_RANGE_TABLE</code> using a substring from <code>unit:getTypeName()</code>. Enter both hyphen and underscore variants if DCS returns both internal names for the same system.</div>
+</div></div>
+
+<div class="ref-card">
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">computeEngagementScore(samEntry, contact) → number</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-body">
+<p>Calculates a probability-of-kill score for a SAM engaging a specific contact. Accepts a pre-built cache entry rather than a SAM group name &mdash; no DCS API calls are made inside this function. The score drives which SAM wins the engagement assignment in <code>optimizeEngagements()</code>.</p>
+<p><strong>Score formula when range is known:</strong> <code>PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor</code></p>
+<ul>
+<li><strong>rangeFactor</strong> — applied only when <code>samEntry.rng</code> is non-nil (SAM type is in <code>SAM_RANGE_TABLE</code>). Hard returns 0 if contact is outside <code>[min, max]</code>. Peaks at <strong>60% through the envelope</strong>, falls off toward either edge. Minimum 0.05.</li>
+<li><strong>altFactor</strong> — 1.0 for 500–12,000 m AGL. Ramps down linearly below 500 m (nap-of-earth penalty) and above 12,000 m (high-altitude penalty). Clamped to 0.1–1.0.</li>
+<li><strong>healthFactor</strong> — pre-computed ratio of alive units to total units (stored in <code>samEntry.health</code>). A half-destroyed battery scores 0.5&times;.</li>
+</ul>
+<p>When <code>samEntry.rng</code> is <code>nil</code> (SAM type not in <code>SAM_RANGE_TABLE</code>), range gates are skipped and a flat mid-weight score of <code>PKill_BASE &times; 0.5 &times; altFactor &times; health</code> is returned. The <code>EngageUnit</code> task is still issued; DCS decides whether the SAM can reach the contact.</p>
+<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
+<tr><td><code>samEntry</code></td><td>table <code>{pos, health, rng}</code></td><td>Pre-built cache entry from <code>samCache[]</code> in <code>optimizeEngagements()</code>. <code>pos</code> is Vec3, <code>health</code> is 0.0–1.0, <code>rng</code> is <code>{min, max}</code> from <code>getSAMRange()</code> or <code>nil</code> for unrecognised types.</td></tr>
 <tr><td><code>contact</code></td><td>contact table</td><td>Entry from <code>IADS[coaName].contacts</code>.</td></tr></table>
-<p class="returns">Returns: number 0.0–~0.75 (0 = cannot or should not engage)</p>
+<p class="returns">Returns: number 0.0–~0.92 (0 = outside known missile envelope or cannot engage)</p>
 </div></div>
 
 <div class="ref-card">
@@ -839,13 +1012,14 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">optimizeEngagements(coaName)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>The IADS engagement brain. Runs a full contacts × SAM scoring matrix every tick:</p>
+<p>The IADS engagement brain. Called each <code>UPDATE_INTERVAL</code> tick. Full sequence:</p>
 <ol>
-<li>For each contact in <code>IADS[coaName].contacts</code>, calls <code>computeEngagementScore()</code> across all SAM nodes.</li>
-<li>The highest-scoring un-suppressed SAM for each contact wins, and receives a randomised delayed <code>orderSAMEngage()</code> call after <code>SAM_FIRE_DELAY_MIN</code>–<code>SAM_FIRE_DELAY_MAX</code> seconds (simulates battery reaction time).</li>
-<li>SAM nodes with no assigned contact are put into radar standby (<code>setOnOff(false)</code>) to reduce SEAD exposure.</li>
+<li><strong>Build <code>samCache</code></strong> &mdash; a single flat pass over all live SAM nodes, storing <code>{pos, health, rng}</code> for each. This reduces per-tick DCS API calls from O(contacts &times; SAMs &times; <code>SAM_MAX_ENGAGE_PER_CONTACT</code>) to O(SAMs).</li>
+<li><strong>Score and assign</strong> &mdash; for each contact, calls <code>computeEngagementScore()</code> for every un-suppressed SAM using the cached data. The highest-scoring SAM above <code>SAM_MIN_ENGAGE_SCORE</code> wins the primary slot. If <code>SAM_MAX_ENGAGE_PER_CONTACT</code> &gt; 1, the second-best un-used SAM wins the secondary slot.</li>
+<li><strong>Fire orders</strong> &mdash; primary SAM fires after a randomised <code>SAM_FIRE_DELAY_MIN</code>&ndash;<code>SAM_FIRE_DELAY_MAX</code> delay. Secondary fires 1.5 s later to saturate point-defence. A new controller call is only issued if the assigned target actually changed from the previous tick (tracked via <code>state.lastEngagement</code>), preventing redundant task resets every 10 s.</li>
+<li><strong>Radar standby</strong> &mdash; SAMs with no assigned contact have their radar shut off (<code>setOnOff(false)</code>) to reduce SEAD exposure.</li>
 </ol>
-<p>Multiple contacts can map to the same SAM if there are fewer SAMs than contacts — the same battery can win multiple scoring contests in the same tick. The assignment is re-computed from scratch every <code>UPDATE_INTERVAL</code>.</p>
+<p>Low-flying jets (<code>isLowJet = true</code>) are skipped by non-SHORAD SAMs. Lebanon sub-IADS additionally gates contacts to inside <code>LEBANON_ZONES</code>.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
 <p class="returns">Returns: nothing — fires timer callbacks for each engagement order</p>
@@ -883,18 +1057,23 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <tr><td><code>wpnVel</code></td><td>Vec3</td><td>Current velocity vector (m/s).</td></tr>
 <tr><td><code>coaName</code></td><td>string</td><td>Defending coalition.</td></tr></table>
 <p class="returns">Returns: samName (string or nil), distance (number, metres)</p>
-<div class="box box-info">Suppression is only triggered in <code>weaponTrackingLoop()</code> if the miss distance is &lt; 80,000 m. This prevents a HARM launched in one sector from suppressing SAMs in an unrelated area.</div>
+<div class="box box-info">Suppression is triggered in <code>weaponTrackingLoop()</code> when the projected miss distance is &lt; <code>ARM_SUPPRESS_TRIGGER_DIST</code> (default 150,000 m). This prevents an ARM launched far away from suppressing SAMs in completely unrelated sectors.</div>
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">alertSHORADtoEngageWeapon(weapon, coaName)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">alertSHORADtoEngageWeapon(weapon, coaName, skipSuppressed)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Called every tracking tick for in-flight AGM-type weapons (cruise missiles, glide bombs, etc.). For each SAM node within 15,000 m of the weapon's current position, sets ROE to weapons free (option 0, value 1) and pushes an <code>EngageTargets</code> task covering radar-guided, INS-guided, and TV-guided weapon categories. Gives SHORAD and AAA units a chance to intercept the incoming munition.</p>
-<p>The task push is wrapped in <code>pcall()</code> — if the target-type enum does not exist in the current DCS Open Beta version, the call silently fails rather than crashing the script.</p>
+<p>Called every tracking tick for in-flight ARM and AGM weapons. For each SAM node within range of the weapon, sets ROE and alarm state to engage. Two distance tiers:</p>
+<ul>
+<li><strong>CLOSE (&le; 30,000 m)</strong> — radar on, ROE weapons free (option 0 → 2), alarm red (option 9 → 2). The SAM is fully in the kill chain.</li>
+<li><strong>WARN (&le; 60,000 m)</strong> — radar on, alarm red only (tracking mode). SAM holds fire but activates its sensor to acquire the threat.</li>
+</ul>
+<p>When <code>skipSuppressed = true</code> (ARM tracks), SAM nodes currently under <code>suppressedUntil</code> are skipped so the targeted SAM stays dark while nearby guns and IR SAMs can still attempt an intercept. When <code>skipSuppressed = false</code> (AGM tracks), all nearby SAMs are alerted regardless of suppression state.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>weapon</code></td><td>DCS Weapon</td><td>Live weapon object from <code>trackedWeapons[]</code>.</td></tr>
-<tr><td><code>coaName</code></td><td>string</td><td>Defending coalition.</td></tr></table>
-<p class="returns">Returns: nothing (best-effort, pcall-protected)</p>
+<tr><td><code>coaName</code></td><td>string</td><td>Defending coalition.</td></tr>
+<tr><td><code>skipSuppressed</code></td><td>boolean</td><td><code>true</code> for ARM tracks (keep targeted radar dark); <code>false</code> for AGM tracks (alert all nearby SAMs).</td></tr></table>
+<p class="returns">Returns: nothing</p>
 </div></div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -920,40 +1099,40 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <!--  FUNCTION REFERENCE — Timer Loops                             -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <h2 id="fn-loops">Function Reference — Timer Loops</h2>
-<p>Five self-rescheduling timer callbacks drive all runtime behaviour. Each returns its own next execution time via the DCS <code>timer.scheduleFunction()</code> API.</p>
+<p>Seven self-rescheduling timer callbacks drive all runtime behaviour. Each returns its own next execution time via the DCS <code>timer.scheduleFunction()</code> API.</p>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">weaponTrackingLoop() → nextTime</span><span class="rc-scope">timer — 1 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">weaponTrackingLoop() → nextTime</span><span class="rc-scope">timer — 5 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Runs every <code>WEAPON_TRACK_INTERVAL</code> (1 s — the fastest loop). Iterates <code>trackedWeapons[]</code>. For each tracked weapon:</p>
+<p>Runs every <code>WEAPON_TRACK_INTERVAL</code> (5 s). Iterates <code>trackedWeapons[]</code>. For each tracked weapon:</p>
 <ul>
-<li>Calls <code>wpn:getPoint()</code> inside <code>pcall()</code>. If the call fails or returns nil, the weapon has impacted or expired and is dropped from the list.</li>
-<li><strong>ARM weapons not yet alerted:</strong> calls <code>findARMTarget()</code>; if miss distance &lt; 80 km, calls <code>suppressSAMRadar()</code> and sets <code>wt.alerted = true</code> to prevent repeated suppression.</li>
-<li><strong>AGM weapons:</strong> calls <code>alertSHORADtoEngageWeapon()</code> every tick — continuously re-alerts nearby SHORAD as the weapon approaches.</li>
+<li>Calls <code>wpn:getPoint()</code> inside <code>pcall()</code>. If the call fails or returns nil, the weapon has impacted or expired and is dropped from the list. A 300-second TTL also prunes weapons that somehow never return nil (mod weapons, DCS edge cases).</li>
+<li><strong>ARM weapons not yet alerted:</strong> calls <code>findARMTarget()</code>; if miss distance &lt; <code>ARM_SUPPRESS_TRIGGER_DIST</code> (default 150,000 m), calls <code>suppressSAMRadar()</code> on the predicted target and sets <code>wt.alerted = true</code> to prevent repeated suppression.</li>
+<li><strong>ARM weapons already alerted:</strong> calls <code>alertSHORADtoEngageWeapon(skipSuppressed=true)</code> every tick so nearby SHORAD can attempt an intercept while the targeted SAM stays dark.</li>
+<li><strong>AGM weapons:</strong> calls <code>alertSHORADtoEngageWeapon(skipSuppressed=false)</code> every tick — continuously re-alerts all nearby SHORAD as the weapon approaches.</li>
 </ul>
 <p>At the end of each tick, <code>trackedWeapons</code> is replaced with the filtered active-only array.</p>
 <p class="returns">Returns: <code>timer.getTime() + WEAPON_TRACK_INTERVAL</code></p>
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">iadsUpdateLoop() → nextTime</span><span class="rc-scope">timer — 5 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">iadsUpdateLoop() → nextTime</span><span class="rc-scope">timer — 10 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>The main IADS heartbeat. Runs every <code>UPDATE_INTERVAL</code> (5 s). Each tick performs the full detection-to-engagement pipeline for both coalitions in sequence:</p>
+<p>The main IADS heartbeat. Runs every <code>UPDATE_INTERVAL</code> (10 s). Each tick performs the full detection-to-engagement pipeline for all three coalition sub-IADS (RED, BLUE, LEBANON) in sequence:</p>
 <ol>
-<li><code>buildNodeList()</code> × 2 — refreshes SAM/EWR node arrays, dropping killed groups.</li>
-<li><code>gatherContacts()</code> × 2 — rebuilds both contact lists from scratch using dual-pass detection.</li>
-<li><code>optimizeEngagements()</code> × 2 — scores and assigns SAM engagements for all contacts.</li>
+<li><code>pruneDeadNodes()</code> × 3 — lightweight incremental removal of destroyed SAM/EWR groups without full API calls.</li>
+<li><code>gatherContacts()</code> × 3 — rebuilds all three contact lists; uses DCS native radar model (primary) or coalition group scan (fallback) per-unit.</li>
+<li><code>optimizeEngagements()</code> × 3 — scores and assigns SAM engagements for all contacts in RED, BLUE, and LEBANON.</li>
 </ol>
 <p class="returns">Returns: <code>timer.getTime() + UPDATE_INTERVAL</code></p>
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciInterceptLoop() → nextTime</span><span class="rc-scope">timer — 10 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciInterceptLoop() → nextTime</span><span class="rc-scope">timer — 30 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Runs every <code>AIR_INTERCEPT_INTERVAL</code> (10 s). For each coalition, for each configured squadron:</p>
+<p>Runs every <code>AIR_INTERCEPT_INTERVAL</code> (30 s). For each coalition, for each configured squadron:</p>
 <ol>
-<li>Checks if a picture broadcast is due (<code>now − lastPicture ≥ GCI_PICTURE_INTERVAL</code>); if so calls <code>broadcastPicture()</code> and resets the timer.</li>
-<li>Calls <code>getThreatsForZone()</code> for the squadron's assigned zone.</li>
+<li>Calls <code>getThreatsForZone()</code> for the squadron's assigned zone using a pre-cached enemy airplane group list (cached once per coalition per tick to avoid redundant API calls).</li>
 <li><strong>Threats present:</strong> resets <code>clearSince</code>; computes <code>need = min(threats, maxFlights) − countAirborne()</code>; calls <code>dispatchFlight()</code> for each needed scramble.</li>
 <li><strong>No threats, flights airborne:</strong> starts or advances <code>clearSince</code>. Once <code>clearSince ≥ RTB_LOITER_TIME</code>, calls <code>orderFlightRTB()</code> for every airborne flight in the squadron.</li>
 </ol>
@@ -976,14 +1155,36 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">nodeRefreshLoop(_, time) → nextTime</span><span class="rc-scope">timer — 900 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Runs every <code>NODE_REFRESH_INTERVAL</code> (900 s / 15 min). Calls <code>buildNodeList()</code> for both coalitions — the definitive cleanup pass that permanently removes any SAM or EWR group destroyed since the previous full refresh. While <code>iadsUpdateLoop()</code> also calls <code>buildNodeList()</code> every 5 s for incremental updates, <code>nodeRefreshLoop()</code> serves as the authoritative long-period rebuild ensuring no stale entries persist.</p>
+<p>Runs every <code>NODE_REFRESH_INTERVAL</code> (900 s / 15 min). Calls <code>buildNodeList()</code> for all three coalition sub-IADS (RED, BLUE, LEBANON) — the definitive cleanup pass that permanently removes any SAM or EWR group destroyed since the previous full refresh. While <code>iadsUpdateLoop()</code> calls <code>pruneDeadNodes()</code> every 10 s for lightweight incremental dead-group removal without API calls, <code>nodeRefreshLoop()</code> serves as the authoritative long-period full rebuild ensuring no stale entries persist.</p>
 <p class="returns">Returns: <code>time + NODE_REFRESH_INTERVAL</code></p>
 </div></div>
 
+<div class="ref-card">
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">awacsOrbitLoop(_, time) → nextTime</span><span class="rc-scope">timer — 300 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-body">
+<p>Runs every 300 s (5 min). Checks all alive BLUE AWACS groups. For each group, compares the current altitude of the lead unit against <code>AWACS_ORBIT_ALT_FT</code> (default 30,000 ft). If the altitude has dropped more than 1,000 ft below the target, pushes a fresh Circle Orbit task at the configured altitude and speed (<code>AWACS_ORBIT_KTS</code>). Groups that are already flying at the correct altitude are left undisturbed. Silently skips groups that have been destroyed via <code>groupAlive()</code>.</p>
+<p>This prevents AWACS aircraft departing their orbit after completing an ME waypoint list, and recovers from orbit task loss caused by DCS AI interruptions. RED AWACS are not managed — they are assumed to be scripted via ME waypoints.</p>
+<p class="returns">Returns: <code>time + 300</code></p>
+</div></div>
+
+<div class="ref-card">
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">memoryCleanupLoop() &rarr; nextTime</span><span class="rc-scope">timer &mdash; 600 s</span><span class="rc-toggle">&#x25bc; details</span></div>
+<div class="rc-body">
+<p>Runs every <code>MEM_CLEANUP_INTERVAL</code> (600 s / 10 min). A full housekeeping pass that purges accumulated table entries which per-tick operations may miss:</p>
+<ol>
+<li><strong>Flight record purge</strong> &mdash; removes <code>gciState.flights</code> entries with status <code>"dead"</code> or <code>"standby"</code>. Keeps <code>countAirborne()</code> and <code>getAvailableFlights()</code> operating on a small active-only set rather than the full mission history.</li>
+<li><strong>Suppression timer purge</strong> &mdash; clears expired <code>suppressedUntil</code> entries and entries for SAM groups that no longer exist. Catches entries missed by the per-tick <code>pruneDeadNodes()</code>.</li>
+<li><strong>Weapon entry hard-purge</strong> &mdash; belt-and-suspenders TTL pass: removes any tracked weapon entry older than 360 s, guarding against mod weapons or DCS edge-cases that never return nil from <code>getPoint()</code>.</li>
+<li><strong>Stale contact purge</strong> &mdash; removes <code>IADS[coaName].contacts</code> entries whose DCS unit no longer exists or has been killed between ticks.</li>
+</ol>
+<p>Logs a one-line summary to dcs.log: <code>[MemClean] cycle complete &mdash; purged: N flight records | N suppress timers | N weapon entries | N stale contacts</code>.</p>
+<p class="returns">Returns: <code>now + MEM_CLEANUP_INTERVAL</code></p>
+</div></div>
+
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  FUNCTION REFERENCE — Zone Registration                       -->
+<!--  FUNCTION REFERENCE &mdash; Zone Registration                       -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<h2 id="fn-zones">Function Reference — Zone Registration</h2>
+<h2 id="fn-zones">Function Reference &mdash; Zone Registration</h2>
 
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">discoverZones()</span><span class="rc-scope">internal — called at init</span><span class="rc-toggle">▼ details</span></div>
@@ -991,88 +1192,6 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <p>Scans <code>mist.DBs.zonesByName</code> for zone names beginning with <code>"RED_ZONE_"</code> or <code>"BLUE_ZONE_"</code> and registers them in <code>gciState[coalition].zones</code>. Called once from <code>init()</code>. If the MIST zone database is unavailable (older MIST versions or MIST not yet loaded), logs a warning and exits without crashing — zones must then be registered manually with the public API.</p>
 <p class="returns">Returns: nothing</p>
 <div class="box box-warn">Trigger zones created dynamically after mission start are not captured by <code>discoverZones()</code>. Use <code>registerRedZone()</code> or <code>registerBlueZone()</code> from a DO Script trigger to add them.</div>
-</div></div>
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  FUNCTION REFERENCE — GCI Utilities                           -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<h2 id="fn-gci">Function Reference — GCI Utilities</h2>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciMsg(coalName, text, duration)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Broadcasts a text message to all players of the specified coalition via <code>trigger.action.outTextForCoalition()</code>. Automatically prepends the coalition GCI callsign badge (e.g. <code>[GCI MOSCOW]</code>, <code>[GCI CONTROL]</code>) configured in <code>IADS_CFG.GCI_CALLSIGN</code>.</p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>coalName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr>
-<tr><td><code>text</code></td><td>string</td><td>Message body. GCI callsign is prepended automatically.</td></tr>
-<tr><td><code>duration</code></td><td>number</td><td>Seconds on screen. Defaults to 14 s if nil.</td></tr></table>
-<p class="returns">Returns: nothing</p>
-</div></div>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">bearingTo(src, dst) → degrees</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Calculates the true bearing (0–360°) from <code>src</code> to <code>dst</code> using <code>math.atan2(dx, dz)</code>. DCS uses a Z-north coordinate system where X is east — this formula produces a correct north-referenced bearing. Negative results are normalised to the 0–360 range.</p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>src</code></td><td>Vec3</td><td>Reference point (e.g. AWACS position).</td></tr>
-<tr><td><code>dst</code></td><td>Vec3</td><td>Target point (e.g. contact centroid).</td></tr></table>
-<p class="returns">Returns: number (0–360 degrees)</p>
-</div></div>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">contactPicture(contacts, refPt) → posStr, centroid</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Computes the geometric centroid of all contacts and formats a BULLSEYE-style position report including bearing, range in nautical miles, and altitude band breakdown. If <code>contacts</code> is empty, returns <code>"no contacts"</code> and <code>nil</code>.</p>
-<p><strong>Altitude bands:</strong> HIGH &gt; 7,500 m · MEDIUM 3,000–7,500 m · LOW &lt; 3,000 m. Example output: <code>"275° / 98 nm, 2 high, 1 medium"</code></p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>contacts</code></td><td>array</td><td>Contact tables array from <code>IADS[coaName].contacts</code>.</td></tr>
-<tr><td><code>refPt</code></td><td>Vec3</td><td>Bullseye anchor — typically from <code>gciRefPoint()</code>.</td></tr></table>
-<p class="returns">Returns: posStr (string), centroid (Vec3 or nil)</p>
-</div></div>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciRefPoint(coalName) → Vec3</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Returns the best available reference point for picture bearings, in priority order:</p>
-<ol>
-<li>First alive airborne AWACS position matching the coalition's <code>AWACS_PREFIX</code>.</li>
-<li>First alive ground EWR node position.</li>
-<li>Hardcoded Syria map centre fallback: <code>{x = -110000, y = 500, z = 50000}</code> — used if both lists are empty.</li>
-</ol>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>coalName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
-<p class="returns">Returns: Vec3</p>
-</div></div>
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  FUNCTION REFERENCE — Per-Pilot BRAA Picture Broadcast        -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<h2 id="fn-picture">Function Reference — Per-Pilot BRAA Picture Broadcast</h2>
-
-<div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">broadcastPicture(coalName)</span><span class="rc-scope">internal — called from gciInterceptLoop</span><span class="rc-toggle">▼ details</span></div>
-<div class="rc-body">
-<p>Generates and delivers <strong>personalised BRAA picture calls</strong> to every online pilot in the coalition. Each pilot receives bearings and ranges computed from <em>their own aircraft position</em>, not a shared AWACS reference.</p>
-<h4>Execution Flow</h4>
-<ol>
-<li>Confirms at least one AWACS group (matching <code>AWACS_PREFIX</code>) is alive — if not, silently skips the entire broadcast.</li>
-<li>Retrieves all online human players for the coalition via <code>coalition.getPlayers(coaEnum)</code>.</li>
-<li>For each player unit that is alive:
-  <ul>
-  <li>If contacts exist: calls <code>contactPicture(contacts, pilotPos)</code> using the pilot's own position as the reference point, then sends a personalised message via <code>trigger.action.outTextForGroup()</code>.</li>
-  <li>If no contacts: sends a <code>"PICTURE CLEAR"</code> message to that pilot's group.</li>
-  </ul>
-</li>
-<li>If fewer than <code>IADS_CFG.GCI_MIN_CONTACTS</code> contacts exist, the broadcast is suppressed entirely (same gate as before).</li>
-</ol>
-<p>Messages display for 16 seconds. Example per-pilot broadcasts:</p>
-<pre>[OVERLORD → Viper1]  BRAA PICTURE: 3 contact(s), 045° / 32 nm, 2 high, 1 medium.
-[OVERLORD → Hawg3]   BRAA PICTURE: 3 contact(s), 310° / 67 nm, 2 high, 1 medium.
-[MAGIC   → Flanker1] BRAA PICTURE CLEAR. No enemy contacts.</pre>
-<h4>API Change from v2.0</h4>
-<p>Prior to the per-pilot upgrade, <code>broadcastPicture()</code> used <code>trigger.action.outTextForCoalition()</code> with a single AWACS-relative bearing. The new version iterates players and calls <code>trigger.action.outTextForGroup()</code> once per pilot, yielding unique bearings per airframe.</p>
-<table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
-<tr><td><code>coalName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
-<p class="returns">Returns: nothing (side-effect: one HUD message per online pilot)</p>
 </div></div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -1102,15 +1221,17 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">getThreatsForZone(zoneName, coaName) → table</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">getThreatsForZone(zoneName, coaName, cachedGroups) → table</span><span class="rc-scope">internal</span><span class="rc-toggle">&#x25bc; details</span></div>
 <div class="rc-body">
-<p>Returns all enemy contacts within the zone's detection threshold. Reads the zone definition from <code>mist.DBs.zonesByName[zoneName]</code> (fields <code>zd.point</code> and <code>zd.radius</code>), then filters <code>IADS[coaName].contacts</code> using: <code>dist2d(contact.pos, zd.point) ≤ zd.radius + 80,000 m</code>.</p>
-<p>The 80 km buffer means approaching threats trigger scrambles before breaching the zone boundary, giving intercept flights time to climb and position. The check is a <strong>circle only</strong> — polygon-shaped trigger zones are handled as their MIST-stored radius, not their actual shape.</p>
+<p>Returns all enemy aircraft groups with at least one alive unit inside the trigger zone boundary. Uses a <strong>direct airplane position scan</strong> (not radar contacts) so a GCI scramble triggers even when the enemy is below radar coverage, in a notch, or otherwise undetected by the IADS sensor chain.</p>
+<p>Reads the zone boundary via <code>trigger.misc.getZone(zoneName)</code> and checks: <code>dist2d(unitPos, zd.point) &le; zd.radius</code>. There is no approach buffer &mdash; the threat must be <strong>inside</strong> the zone to trigger a scramble (controlled by <code>SCRAMBLE_THREAT_BUFFER</code>, currently 0). One entry per group is returned (the first live unit found).</p>
+<p>The optional <code>cachedGroups</code> arg accepts a pre-fetched <code>coalition.getGroups(AIRPLANE)</code> list from <code>gciInterceptLoop()</code>, which caches it once per coalition per tick to avoid redundant API calls across all squadrons.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>zoneName</code></td><td>string</td><td>Exact trigger zone name (e.g. <code>"RED_ZONE_DAMASCUS"</code>).</td></tr>
-<tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
-<p class="returns">Returns: array of contact tables (may be empty)</p>
-<div class="box box-warn"><strong>Polygon zones ignored:</strong> MIST only stores a <code>radius</code> for trigger zones. Polygon zones get a radius derived from their bounding circle. Always use circular trigger zones for reliable intercept sectors.</div>
+<tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr>
+<tr><td><code>cachedGroups</code></td><td>table (optional)</td><td>Pre-fetched enemy airplane group list. If nil, the function fetches it itself.</td></tr></table>
+<p class="returns">Returns: array of <code>{unit, pos, group}</code> tables (may be empty)</p>
+<div class="box box-warn"><strong>Circle zones only:</strong> The check uses <code>zd.radius</code> from the native DCS zone API. Polygon zones will behave as their bounding circle. Always use circular trigger zones for reliable intercept sectors.</div>
 </div></div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -1121,11 +1242,10 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">dispatchFlight(groupName, coalName, sqd, threats, gciSt)</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Activates a late-activate intercept group, registers it as airborne, broadcasts the scramble call, and assigns the intercept task. Full sequence:</p>
+<p>Activates a late-activate intercept group, registers it as airborne, and assigns the intercept task. Fully silent — no player-facing output. Full sequence:</p>
 <ol>
-<li><strong>Activate</strong> — <code>group:activate()</code> spawns the group from late-activate state.</li>
+<li><strong>Activate</strong> — <code>trigger.action.activateGroup(g)</code> spawns the group from late-activate state. If <code>Group.getByName()</code> returns nil, logs an error and aborts.</li>
 <li><strong>Register</strong> — adds an entry to <code>gciSt.flights[groupName]</code> with status <code>"airborne"</code>, zone, homeBase, callsign, coalition, and launch time.</li>
-<li><strong>Broadcast</strong> — calls <code>gciMsg()</code> with a scramble message including the threat picture from <code>contactPicture()</code> and hostile count.</li>
 <li><strong>Delayed task (4 s)</strong> — a timer fires 4 seconds after activation. Sets ROE weapons free (option 0 → 2) and aggressive threat reaction (option 1 → 0). If a live threat unit is available → <code>EngageUnit</code>. If not → <code>Orbit</code> over zone centre at <code>INTERCEPT_ALTITUDE</code> and <code>INTERCEPT_SPEED</code>.</li>
 </ol>
 <p>The 4-second delay is required because the group controller may not be ready immediately after <code>activate()</code> — tasking too quickly results in tasks being silently dropped by DCS.</p>
@@ -1147,13 +1267,13 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <li>Sets ROE to return-fire only (option 0 → 4).</li>
 <li>Pushes a two-waypoint Mission task: current position → Landing at home airbase.</li>
 <li>Marks flight status <code>"rtb"</code>.</li>
-<li>Broadcasts GCI RTB radio call with the reason string.</li>
+<li>Logs the RTB order to dcs.log with the reason string.</li>
 <li>Schedules a cleanup timer +600 s (10 min). When it fires, if status is still <code>"rtb"</code>: calls <code>group:destroy()</code> and sets status to <code>"standby"</code>, making the group name available for a future scramble cycle.</li>
 </ol>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>groupName</code></td><td>string</td><td>Airborne group to recall.</td></tr>
 <tr><td><code>gciSt</code></td><td>table</td><td><code>gciState[coalName]</code></td></tr>
-<tr><td><code>reason</code></td><td>string or nil</td><td>Shown in GCI call and log — e.g. <code>"Zone clear."</code>, <code>"Bingo fuel (19%)."</code></td></tr></table>
+<tr><td><code>reason</code></td><td>string or nil</td><td>Shown in dcs.log — e.g. <code>"Zone clear."</code>, <code>"Bingo fuel (19%)."</code></td></tr></table>
 <p class="returns">Returns: nothing</p>
 <div class="box box-info">After the 600 s cleanup the group is destroyed in DCS, not returned to late-activate state. For reliable multi-sortie cycles, add additional late-activate intercept groups in the ME.</div>
 </div></div>
@@ -1168,17 +1288,19 @@ GCI_CALLSIGN   = { RED = "GCI MOSCOW", BLUE = "GCI CONTROL" }</pre>
 <div class="rc-body">
 <p>Master initialisation. Called via a 1-second delayed timer (at the bottom of the script) to ensure MIST is fully loaded before any IADS logic executes. Sequence:</p>
 <ol>
-<li>Seeds <code>math.random</code> with <code>os.time()</code> for randomised SAM fire delays and move offsets.</li>
-<li>Validates MIST is loaded — logs the MIST version to dcs.log.</li>
-<li>Calls <code>discoverZones()</code> — registers all prefixed trigger zones from MIST DB.</li>
-<li>Calls <code>buildNodeList()</code> for both RED and BLUE — populates initial SAM/EWR node arrays.</li>
-<li>Schedules the four runtime timer loops with staggered offsets to avoid simultaneous execution:<br>
+<li>Validates MIST is loaded — logs the MIST version to dcs.log. (<code>math.randomseed</code> is not called — DCS sandboxes it; <code>math.random()</code> works correctly without explicit seeding.)</li>
+<li>Calls <code>validateSquadrons()</code> — checks every squadron <code>groupPrefix</code> against the MIST group database and logs counts to dcs.log (useful for catching ME naming mismatches at startup).</li>
+<li>Calls <code>discoverZones()</code> — registers all <code>RED_ZONE_*</code> and <code>BLUE_ZONE_*</code> trigger zones from MIST DB.</li>
+<li>Calls <code>buildNodeList()</code> for RED, BLUE, and LEBANON — populates initial SAM/EWR node arrays for all three coalition sub-IADS.</li>
+<li>Schedules the runtime timer loops with staggered offsets:<br>
     &bull; <code>weaponTrackingLoop</code> at T+5 s<br>
     &bull; <code>iadsUpdateLoop</code> at T+10 s<br>
     &bull; <code>gciInterceptLoop</code> at T+15 s<br>
-    &bull; <code>flightMaintenanceLoop</code> at T+30 s</li>
+    &bull; <code>awacsOrbitLoop</code> at T+20 s<br>
+    &bull; <code>flightMaintenanceLoop</code> at T+30 s<br>
+    &bull; <code>memoryCleanupLoop</code> at T+MEM_CLEANUP_INTERVAL</li>
 <li>Schedules <code>nodeRefreshLoop</code> at T+900 s (first full node rebuild at 15 min).</li>
-<li>Broadcasts <code>"RED/BLUE Integrated Air Defence + Red Air Intercept ACTIVE"</code> to all players.</li>
+<li>Broadcasts <code>"[IADS] RED/BLUE Integrated Air Defence + Red Air Intercept ACTIVE"</code> via <code>trigger.action.outText</code> (10 s, visible to all players).</li>
 </ol>
 <p class="returns">Returns: nothing</p>
 </div></div>

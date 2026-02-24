@@ -226,9 +226,6 @@ function DGSS_CSAR.loseLife(playerName, unit)
     local current = DGSS_CSAR.getPlayerLives(playerName)
     local newLives = math.max(0, current - 1)
     DGSS_CSAR.setPlayerLives(playerName, newLives)
-    
-    -- Debug logging
-    env.info(string.format("[CSAR-LIVES] Player '%s' lost a life: %d -> %d", playerName, current, newLives))
 
     if unit and unit.getID then
         pcall(function()
@@ -256,36 +253,12 @@ function DGSS_CSAR.gainLife(playerName, rescueUnit)
     local newLives = math.min(DGSS_CSAR.LIVES.maxLives, current + DGSS_CSAR.LIVES.lifeGainAmount)
     DGSS_CSAR.setPlayerLives(playerName, newLives)
 
-    -- Try to find the original player's current unit to notify them directly
-    local notified = false
-    local allGroups = coalition.getGroups(DGSS_CSAR.COALITION)
-    if allGroups then
-        for _, group in ipairs(allGroups) do
-            if group and group:isExist() then
-                for _, unit in ipairs(group:getUnits()) do
-                    if unit and unit:isExist() and unit:getPlayerName() == playerName then
-                        trigger.action.outTextForUnit(
-                            unit:getID(),
-                            string.format(DGSS_CSAR.MESSAGES.lifeGained, newLives),
-                            10
-                        )
-                        notified = true
-                        break
-                    end
-                end
-            end
-            if notified then break end
-        end
-    end
-
-    -- If original player not found in-game, broadcast to coalition
-    if not notified then
-        trigger.action.outTextForCoalition(
-            DGSS_CSAR.COALITION,
-            string.format("%s has been rescued and regained a life! (Now has %d lives)", playerName, newLives),
-            10
-        )
-    end
+    -- Broadcast to coalition (avoids expensive coalition.getGroups scan)
+    trigger.action.outTextForCoalition(
+        DGSS_CSAR.COALITION,
+        string.format("%s has been rescued and regained a life! (Now has %d lives)", playerName, newLives),
+        10
+    )
 end
 
 ----------------------------------------------------------------
@@ -902,6 +875,7 @@ local PLAYER_EVENT_HANDLER_CSAR = {}
 
 function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     if not event or not event.id then return end
+    local _ok, _err = pcall(function()
 
     local eventId = event.id
     local unit = event.initiator
@@ -919,7 +893,6 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     if unit then
         local okCoal, unitCoalition = pcall(function() return unit:getCoalition() end)
         if okCoal and unitCoalition and unitCoalition ~= DGSS_CSAR.COALITION then
-            env.info(string.format("[CSAR] Ignoring event - unit is not BLUE coalition (coalition: %s)", tostring(unitCoalition)))
             return
         end
     end
@@ -950,10 +923,6 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     -- This is the PRIMARY protection against double life loss
     local lastIncident = DGSS_CSAR.INCIDENT_PROCESSED[playerName]
     if lastIncident and (t - lastIncident) < DGSS_CSAR.INCIDENT_COOLDOWN then
-        -- Block ALL death/eject/leave events during cooldown - player already had their incident processed
-        env.info(string.format("[CSAR] Event BLOCKED for '%s' - incident cooldown active (%.2fs since last, cooldown is %ds)", 
-            playerName, t - lastIncident, DGSS_CSAR.INCIDENT_COOLDOWN))
-        
         -- Still allow menu cleanup on leave event, but don't process life loss
         if isLeaveEvent then
             -- Menu cleanup already happened above, just return
@@ -971,8 +940,6 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     if isDeathEvent then reason = "PILOT_DEAD" end
     if isEjectEvent then reason = "EJECTION" end
     if isLeaveEvent then reason = "SLOT_LEAVE" end
-    
-    env.info(string.format("[CSAR] Processing %s for player '%s'", reason, playerName))
     
     -- For slot leave, only penalize if outside safe zone AND not recently ejected
     if isLeaveEvent then
@@ -1022,8 +989,6 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     
     -- For death/eject events - check if in CSAR zone first
     -- Incident already marked at top of function
-    env.info(string.format("[CSAR] Processing life loss for '%s' - cooldown active for %d seconds", playerName, DGSS_CSAR.INCIDENT_COOLDOWN))
-    
     -- Get position safely
     local okPos, pos = pcall(function() return unit:getPoint() end)
     if not okPos or not pos then
@@ -1057,10 +1022,6 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
     end
     
     -- Position already retrieved earlier for safe zone check
-    -- Log the raw position for debugging
-    env.info(string.format("[CSAR] Raw position for '%s': x=%.1f, y=%.1f (alt), z=%.1f", 
-        playerName, pos.x, pos.y, pos.z))
-    
     -- CHECK IF THIS AIRCRAFT WAS CARRYING SURVIVORS - RESPAWN THEM!
     local unitName = unit:getName()
     local carry = DGSS_CSAR.CARRYING_SURVIVOR[unitName]
@@ -1094,16 +1055,9 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
             string.format("Rescue aircraft crashed! %d survivor(s) are down at the crash site!", carry.count), 15)
     end
     
-    -- Convert to Lat/Lon for debugging
-    local lat, lon = coord.LOtoLL(pos)
-    env.info(string.format("[CSAR] Position in Lat/Lon for '%s': %.6f, %.6f", playerName, lat, lon))
-    
     -- Project to ground level
     local groundAlt = land.getHeight({ x = pos.x, y = pos.z }) or 0
     pos.y = groundAlt
-    
-    env.info(string.format("[CSAR] Ground position for '%s': x=%.1f, y=%.1f (ground alt), z=%.1f", 
-        playerName, pos.x, pos.y, pos.z))
     
     DGSS_CSAR.spawnSurvivorGroup(pos, playerName)
     env.info(string.format("[CSAR] Survivor spawned for '%s' at (%.1f, %.1f)", playerName, pos.x, pos.z))
@@ -1116,6 +1070,8 @@ function PLAYER_EVENT_HANDLER_CSAR:onEvent(event)
             DGSS_CSAR.CARRYING_SURVIVOR[unitName] = nil
         end
     end
+    end) -- close pcall
+    if not _ok then env.warning("[CSAR] PLAYER_EVENT onEvent error: " .. tostring(_err)) end
 end
 
 world.addEventHandler(PLAYER_EVENT_HANDLER_CSAR)
@@ -1176,6 +1132,7 @@ local CONVOY_EVENT_HANDLER = {}
 function CONVOY_EVENT_HANDLER:onEvent(event)
     if not event or not event.id then return end
     if event.id ~= world.event.S_EVENT_DEAD then return end
+    local _ok, _err = pcall(function()
     
     local unit = event.initiator
     if not unit then return end
@@ -1224,6 +1181,8 @@ function CONVOY_EVENT_HANDLER:onEvent(event)
         -- Remove from tracking
         DGSS_CSAR.TRACKED_CONVOY_UNITS[unitName] = nil
     end
+    end) -- close pcall
+    if not _ok then env.warning("[CSAR] CONVOY_EVENT onEvent error: " .. tostring(_err)) end
 end
 
 world.addEventHandler(CONVOY_EVENT_HANDLER)
@@ -1274,6 +1233,19 @@ local function createUniversalLivesMenu(group)
     
     -- Skip if we've already added the menu to this group
     if LIVES_MENU_GROUPS[groupId] then return end
+
+    -- Only create menus for groups that have a human player.
+    -- AI-only groups (AWACS, tankers, AI CAP, etc.) don't need an F10 menu.
+    -- The poller re-checks every 30 s, so a player who slots in later will
+    -- get their menu on the next cycle.
+    local hasPlayer = false
+    for _, u in ipairs(group:getUnits()) do
+        if u:isExist() and u:getPlayerName() then
+            hasPlayer = true
+            break
+        end
+    end
+    if not hasPlayer then return end
     
     -- Add universal Lives menu available to everyone
     if DGSS_CSAR.LIVES.enabled then
@@ -1388,16 +1360,16 @@ local function universalMenuPoller_CSAR()
     end
 
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 12)
+        mist.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 30)
     else
-        timer.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 12)
+        timer.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 30)
     end
 end
 
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 8)
+    mist.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 15)
 else
-    timer.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 8)
+    timer.scheduleFunction(universalMenuPoller_CSAR, {}, timer.getTime() + 15)
 end
 
 ----------------------------------------------------------------
@@ -1594,16 +1566,16 @@ local function checkPlayerSpawnLockout()
     for _, g in ipairs(blueHelos) do processGroup(g) end
 
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 8)
+        mist.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 60)
     else
-        timer.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 8)
+        timer.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 60)
     end
 end
 
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 8)
+    mist.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 60)
 else
-    timer.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 8)
+    timer.scheduleFunction(checkPlayerSpawnLockout, {}, timer.getTime() + 60)
 end
 
 ----------------------------------------------------------------

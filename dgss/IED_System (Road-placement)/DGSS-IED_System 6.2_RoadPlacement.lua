@@ -1231,6 +1231,12 @@ local function checkUnitNearIED(unit, iedPos)
 end
 
 local function checkActiveIEDs()
+    -- Skip entirely when no live IEDs exist (avoids coalition.getGroups call every 10s for nothing)
+    local _hasActive = false
+    for _, _d in pairs(DGSS_IED.ACTIVE_IEDs) do
+        if not _d.exploded then _hasActive = true; break end
+    end
+    if not _hasActive then return end
     pcall(function()
         local blueGroups = coalition.getGroups(DGSS_IED.COALITION, Group.Category.GROUND) or {}
         
@@ -1411,7 +1417,8 @@ local function initializeIEDSystem()
     -- Register event handler for static destruction
     local eventHandler = {}
     function eventHandler:onEvent(event)
-        onStaticDeath(event)
+        local _ok, _err = pcall(onStaticDeath, event)
+        if not _ok then env.warning("[IED] onEvent error: " .. tostring(_err)) end
     end
     world.addEventHandler(eventHandler)
     

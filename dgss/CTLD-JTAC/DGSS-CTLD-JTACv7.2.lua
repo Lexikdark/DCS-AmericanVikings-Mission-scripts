@@ -31,18 +31,9 @@ function DGSS_CTLD.spawnGroup(groupName, templateName, position, kind)
             y       = position.z,           -- Northing (DCS expects y = z)
             heading = 0,
         })
-        env.info(string.format("[DGSS_CTLD] Preparing to spawn unit #%d: type='%s' at (%.1f, %.1f)", i, unitType, position.x + (i-1)*3, position.z))
     end
 
     local groupData = { name = groupName, units = units }
-    env.info("[DGSS_CTLD] Spawning group with data: " .. (groupName or "nil") .. " | Template: " .. (templateName or "nil") .. " | Kind: " .. (kind or "nil"))
-    env.info("[DGSS_CTLD] Group table: " .. (require and require('lfs') and 'see log' or 'table output suppressed'))
-    -- Print the groupData table in a readable way (if possible)
-    if type(groupData) == 'table' then
-        for idx, u in ipairs(groupData.units) do
-            env.info(string.format("[DGSS_CTLD] Unit %d: type=%s x=%.1f y=%.1f heading=%.2f", idx, u.type, u.x, u.y, u.heading))
-        end
-    end
 
     local group = coalition.addGroup(
         countryId,
@@ -51,7 +42,6 @@ function DGSS_CTLD.spawnGroup(groupName, templateName, position, kind)
     )
 
     if group then
-        env.info("[DGSS_CTLD] Spawned group: " .. groupName)
         return group
     else
         env.warning("[DGSS_CTLD] Failed to spawn group: " .. groupName .. " | Template: " .. tostring(templateName) .. " | Kind: " .. tostring(kind))
@@ -173,7 +163,7 @@ end
 -- No line-of-sight required
 ----------------------------------------------------------------
 
-SCAN_RADIUS = 18520  -- meters (10 nautical miles, global for DGSS_CTLD access)
+SCAN_RADIUS = 10000  -- meters (~5.4 nm) — reduced from 18520 for performance
 
 ----------------------------------------------------------------
 -- COORDINATE CONVERSION UTILITIES
@@ -215,100 +205,68 @@ local function formatCoordinates(pos)
     return mgrsStr, latLonStr
 end
 
--- Find all enemies within scan radius and return sorted list (with line-of-sight check)
+-- Find all enemies within scan radius and return sorted list.
+-- LOS is checked ONCE per group (on the geometrically nearest unit only),
+-- not per-unit, to avoid hundreds of expensive land.isVisible raycasts.
 local function findAllNearbyEnemies(jtacUnit, cachedRedGroups)
-    if not jtacUnit or not jtacUnit:isExist() then
-        env.warning("[JTAC SCAN] jtacUnit invalid or doesn't exist")
-        return {}
-    end
-    
+    if not jtacUnit or not jtacUnit:isExist() then return {} end
+
     local pos = jtacUnit:getPoint()
-    if not pos then 
-        env.warning("[JTAC SCAN] jtacUnit position invalid")
-        return {} 
-    end
+    if not pos then return {} end
 
-    -- JTAC eye position (2m above unit for better visibility)
     local jtacEyePos = {x = pos.x, y = pos.y + 2.0, z = pos.z}
+    local enemies    = {}
+    local maxDistSq  = SCAN_RADIUS * SCAN_RADIUS
+    local redGroups  = cachedRedGroups or {}
 
-    local enemies = {}
-    local maxDistSq = SCAN_RADIUS * SCAN_RADIUS
-
-    -- Use cached red groups (passed from jtacUpdateLoop)
-    local redGroups = cachedRedGroups or {}
-
-    local unitCount = 0
-    local losChecked = 0
-    local losBlocked = 0
-    
     for _, g in ipairs(redGroups) do
         if g and g:isExist() then
             local groupUnits = g:getUnits()
-            local groupInRange = false
+
+            -- Step 1: find the closest unit by distance (no LOS cost)
             local closestDistSq = nil
-            local closestVisibleUnit = nil
-            
+            local closestUnit   = nil
             for _, u in ipairs(groupUnits) do
                 if u and u:isExist() then
-                    unitCount = unitCount + 1
                     local p = u:getPoint()
                     if p then
                         local dx = p.x - pos.x
                         local dz = p.z - pos.z
-                        local distSq = dx*dx + dz*dz  -- Horizontal distance only, ignore altitude
-                        
+                        local distSq = dx*dx + dz*dz
                         if distSq <= maxDistSq then
-                            -- Distance check passed - now check line of sight
-                            local targetPos = {x = p.x, y = p.y + 1.0, z = p.z}  -- Target center mass (1m above ground)
-                            local hasLOS = false
-                            
-                            losChecked = losChecked + 1
-                            
-                            -- Check if JTAC can see the target (no terrain blocking)
-                            if land and land.isVisible then
-                                local losOk, losResult = pcall(land.isVisible, jtacEyePos, targetPos)
-                                hasLOS = (losOk and losResult) or false
-                            else
-                                -- Fallback: assume visible if land.isVisible not available
-                                hasLOS = true
-                            end
-                            
-                            if hasLOS then
-                                groupInRange = true
-                                if not closestDistSq or distSq < closestDistSq then
-                                    closestDistSq = distSq
-                                    closestVisibleUnit = u
-                                end
-                            else
-                                losBlocked = losBlocked + 1
+                            if not closestDistSq or distSq < closestDistSq then
+                                closestDistSq = distSq
+                                closestUnit   = u
                             end
                         end
                     end
                 end
             end
-            
-            if groupInRange and closestVisibleUnit then
-                -- Add the group as a targetable enemy group (only if at least one unit is visible)
-                -- Get first visible unit's type name for display
-                local typeName = "Unknown"
-                pcall(function() typeName = closestVisibleUnit:getTypeName() end)
-                
-                table.insert(enemies, {
-                    group = g,
-                    groupName = g:getName(),
-                    units = groupUnits,
-                    closestDistSq = closestDistSq,
-                    closestDist = math.sqrt(closestDistSq or 0),
-                    typeName = typeName,
-                    dist = math.sqrt(closestDistSq or 0),
-                })
+
+            -- Step 2: single LOS check on that closest unit only
+            if closestUnit and closestDistSq then
+                local p = closestUnit:getPoint()
+                local targetPos = {x = p.x, y = p.y + 1.0, z = p.z}
+                local hasLOS = true
+                if land and land.isVisible then
+                    local ok, result = pcall(land.isVisible, jtacEyePos, targetPos)
+                    hasLOS = ok and result
+                end
+                if hasLOS then
+                    local typeName = "Unknown"
+                    pcall(function() typeName = closestUnit:getTypeName() end)
+                    table.insert(enemies, {
+                        group         = g,
+                        groupName     = g:getName(),
+                        units         = groupUnits,
+                        closestDistSq = closestDistSq,
+                        closestDist   = math.sqrt(closestDistSq),
+                        typeName      = typeName,
+                        dist          = math.sqrt(closestDistSq),
+                    })
+                end
             end
         end
-    end
-
-    if losChecked > 0 then
-        env.info(string.format("[JTAC SCAN] LOS Check: %d checked, %d visible, %d blocked by terrain", 
-            losChecked, losChecked - losBlocked, losBlocked))
     end
 
     table.sort(enemies, function(a, b) return a.closestDistSq < b.closestDistSq end)
@@ -447,13 +405,7 @@ local function laseTarget(jtacName, jtacData, jtacUnit, cachedRedGroups)
         jtacData.lasedAt = timer.getTime()
     end)
     
-    if success then
-        local mgrsStr, latLonStr = formatCoordinates(tgtPos)
-        env.info(string.format(
-            "[JTAC LASE] %s designated %s at %s with code %d",
-            jtacName, targetTypeName, mgrsStr, jtacData.laser
-        ))
-    else
+    if not success then
         env.warning(string.format("[JTAC LASE] %s: laser creation failed", jtacName))
     end
 end
@@ -521,11 +473,6 @@ function ctld.createLaser(sourceUnit, targetPos, laserCode, jtacName)
         createdAt = timer.getTime(),
     }
     
-    env.info(string.format(
-        "[CTLD] Laser created: %s | Code: %d | Target: (%.0f, %.0f, %.0f)",
-        jtacName or "unknown", laserCode, targetPos.x, targetPos.y, targetPos.z
-    ))
-    
     return true
 end
 
@@ -546,7 +493,6 @@ function ctld.destroyLaser(jtacName)
     end
     
     ctld.activeSpots[jtacName] = nil
-    env.info(string.format("[CTLD] Laser destroyed: %s", jtacName or "unknown"))
 end
 
 -- Cleanup dead laser spots (called periodically)
@@ -646,55 +592,80 @@ local function deployTargetSmoke(jtacName)
     ))
 end
 
--- Main JTAC update loop - runs every 8 seconds for all active JTACs
-local function jtacUpdateLoop()
+-- Staggered JTAC update: 1 JTAC per tick, 3s between ticks.
+-- With MAX_JTAC_TEAMS=10 this gives a ~30s full cycle - same effective
+-- rate as before but spreads raycasts across multiple frames instead of
+-- firing all land.isVisible calls in a single Lua timeslice.
+local _jtacBatchIndex     = 0   -- current position in the sorted key list
+local _jtacSortedKeys     = {}  -- stable-ordered list of registry keys
+local _jtacCachedRedGroups = {} -- red ground groups, refreshed once per cycle
+
+local function jtacTickOne()
     if not DGSS_CTLD or not DGSS_CTLD.JTAC_REGISTRY then
         return
     end
-    
-    -- Cache coalition.getGroups() ONCE per cycle (not per-JTAC)
-    local cachedRedGroups = {}
-    pcall(function()
-        cachedRedGroups = coalition.getGroups(coalition.side.RED, Group.Category.GROUND) or {}
-    end)
-    
-    for groupName, data in pairs(DGSS_CTLD.JTAC_REGISTRY) do
+
+    -- Rebuild key list and refresh red cache at the start of each cycle
+    if _jtacBatchIndex <= 0 or _jtacBatchIndex > #_jtacSortedKeys then
+        _jtacSortedKeys = {}
+        for k in pairs(DGSS_CTLD.JTAC_REGISTRY) do
+            _jtacSortedKeys[#_jtacSortedKeys + 1] = k
+        end
+        table.sort(_jtacSortedKeys)  -- stable order each cycle
+
+        _jtacCachedRedGroups = {}
+        pcall(function()
+            _jtacCachedRedGroups = coalition.getGroups(coalition.side.RED, Group.Category.GROUND) or {}
+        end)
+
+        _jtacBatchIndex = 1
+    end
+
+    -- Nothing registered
+    if #_jtacSortedKeys == 0 then
+        _jtacBatchIndex = 0
+        return
+    end
+
+    -- Process exactly one JTAC this tick
+    local groupName = _jtacSortedKeys[_jtacBatchIndex]
+    _jtacBatchIndex = _jtacBatchIndex + 1
+
+    if groupName then
+        local data = DGSS_CTLD.JTAC_REGISTRY[groupName]
         if data then
             local g = Group.getByName(groupName)
             if g and g:isExist() then
                 local u = g:getUnit(1)
                 if u and u:isExist() then
-                    -- Refresh unit reference (critical after transport/unload)
                     data.lastKnownPosition = u:getPoint()
-                    -- Autonomously lase nearest enemy (using cached red groups)
-                    laseTarget(groupName, data, u, cachedRedGroups)
+                    laseTarget(groupName, data, u, _jtacCachedRedGroups)
                 else
-                    -- Unit dead, unregister
                     DGSS_CTLD.JTAC_REGISTRY[groupName] = nil
                 end
             else
-                -- Group dead, unregister
                 DGSS_CTLD.JTAC_REGISTRY[groupName] = nil
             end
         end
     end
 end
 
--- Schedule JTAC update loop using proper MIST function
+-- Schedule each JTAC tick 3s apart.
+-- Full cycle = 3s × MAX_JTAC_TEAMS (10) = 30s, same as the old monolithic loop.
 local function scheduleJtacLoop()
-    jtacUpdateLoop()
-    
+    jtacTickOne()
+
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
+        mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 3)
     else
-        timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
+        timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 3)
     end
 end
 
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
+    mist.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 3)
 else
-    timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 15)
+    timer.scheduleFunction(scheduleJtacLoop, {}, timer.getTime() + 3)
 end
 
 ----------------------------------------------------------------
@@ -3109,17 +3080,20 @@ end
 local PLAYER_LEAVE_HANDLER_CTLD = {}
 function PLAYER_LEAVE_HANDLER_CTLD:onEvent(event)
     if not event or not event.id then return end
-    if event.id == world.event.S_EVENT_PLAYER_LEAVE_UNIT then
-        local unit = event.initiator
-        if not unit then return end
-        local okExists, exists = pcall(function() return unit:isExist() end)
-        if okExists and exists then
-            local okName, unitName = pcall(function() return unit:getName() end)
-            if okName and unitName then
-                DGSS_CTLD.cleanupMenusForUnit(unitName)
+    local _ok, _err = pcall(function()
+        if event.id == world.event.S_EVENT_PLAYER_LEAVE_UNIT then
+            local unit = event.initiator
+            if not unit then return end
+            local okExists, exists = pcall(function() return unit:isExist() end)
+            if okExists and exists then
+                local okName, unitName = pcall(function() return unit:getName() end)
+                if okName and unitName then
+                    DGSS_CTLD.cleanupMenusForUnit(unitName)
+                end
             end
         end
-    end
+    end)
+    if not _ok then env.warning("[CTLD] onEvent error: " .. tostring(_err)) end
 end
 world.addEventHandler(PLAYER_LEAVE_HANDLER_CTLD)
 
@@ -3413,13 +3387,13 @@ local function staticJtacMenuBuilder()
     
     -- Schedule next rebuild
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
+        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 30)
     else
-        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
+        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 30)
     end
 end
 
--- Start static menu builder immediately (every 1 second)
+-- Start static menu builder (30s interval)
 env.info("[JTAC] Starting static JTAC menu builder")
 if mist and mist.scheduleFunction then
     mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)

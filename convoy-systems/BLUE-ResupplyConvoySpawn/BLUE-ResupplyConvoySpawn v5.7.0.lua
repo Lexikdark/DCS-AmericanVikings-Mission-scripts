@@ -116,15 +116,15 @@ ConvoySystem.destinationZones = {
     {name = "KIRYAT_SHMONA",  fullName = "Kiryat Shmona", zoneName = "KIRYAT_SHMONA_Spawn"},
     {name = "MEGIDDO",        fullName = "Megiddo", zoneName = "MEGIDDO_Spawn"},
     {name = "HAIFA",          fullName = "Haifa", zoneName = "HAIFA_Spawn"},
-    {name = "FOB_ALPHA",       fullName = "FOB ALPHA", zoneName = "FOB_ALPHA_Spawn"},
-    {name = "FOB_BRAVO",       fullName = "FOB BRAVO", zoneName = "FOB_BRAVO_Spawn"},
-    {name = "FOB_CHARLIE", fullName = "FOB CHARLIE", zoneName = "FOB_CHARLIE_Spawn"},
-    {name = "FOB_DELTA", fullName = "FOB DELTA", zoneName = "FOB_DELTA_Spawn"},
-    {name = "FOB_ECHO", fullName = "FOB ECHO", zoneName = "FOB_ECHO_Spawn"},
-    {name = "FOB_FOXTROT", fullName = "FOB FOXTROT", zoneName = "FOB_FOXTROT_Spawn"},
-    {name = "FOB_HOTEL", fullName = "FOB HOTEL", zoneName = "FOB_HOTEL_Spawn"},
-    {name = "FOB_GOLF", fullName = "FOB GOLF", zoneName = "FOB_GOLF_Spawn"},
-    {name = "FOB_INDIA", fullName = "FOB INDIA", zoneName = "FOB_INDIA_Spawn"},
+    {name = "FOB_ALPHA",       fullName = "FOB_Alpha", zoneName = "FOB_ALPHA_Spawn"},
+    {name = "FOB_BRAVO",       fullName = "FOB_Bravo", zoneName = "FOB_BRAVO_Spawn"},
+    {name = "FOB_CHARLIE", fullName = "FOB_Charlie", zoneName = "FOB_CHARLIE_Spawn"},
+    {name = "FOB_DELTA", fullName = "FOB_Delta", zoneName = "FOB_DELTA_Spawn"},
+    {name = "FOB_ECHO", fullName = "FOB_Echo", zoneName = "FOB_ECHO_Spawn"},
+    {name = "FOB_FOXTROT", fullName = "FOB_Foxtrot", zoneName = "FOB_FOXTROT_Spawn"},
+    {name = "FOB_HOTEL", fullName = "FOB_Hotel", zoneName = "FOB_HOTEL_Spawn"},
+    {name = "FOB_GOLF", fullName = "FOB_Golf", zoneName = "FOB_GOLF_Spawn"},
+    {name = "FOB_INDIA", fullName = "FOB_India", zoneName = "FOB_INDIA_Spawn"},
     -- Syrian capturable airbases
     {name = "MEZZEH",           fullName = "Mezzeh",           zoneName = "MEZZEH_Spawn"},
     {name = "DAMASCUS",         fullName = "Damascus",         zoneName = "DAMASCUS_Spawn"},
@@ -1694,8 +1694,6 @@ end
 
 -- Update convoy status and check for destination arrival
 local function updateConvoys()
-    env.info("ConvoySystem: >>>>>> updateConvoys() ENTERED <<<<<<")
-    
     local currentTime = timer.getAbsTime()
     local convoysToRemove = {}
     
@@ -1712,7 +1710,6 @@ local function updateConvoys()
         end
         
         if not anyGroupExists and not convoy.resupplied then
-            env.info("ConvoySystem: Cleanup - Convoy " .. convoyId .. " has no existing groups, marking for removal")
             table.insert(convoysToRemove, convoyId)
         end
     end
@@ -1721,10 +1718,8 @@ local function updateConvoys()
     for _ in pairs(ConvoySystem.spawnedConvoys) do
         convoyCount = convoyCount + 1
     end
-    env.info("ConvoySystem: updateConvoys() called - checking " .. convoyCount .. " convoys")
-    
+
     for convoyId, convoy in pairs(ConvoySystem.spawnedConvoys) do
-        env.info("ConvoySystem: Checking convoy " .. convoyId .. " (status: " .. convoy.status .. ", resupplied: " .. tostring(convoy.resupplied) .. ")")
         
         local allGroupsDestroyed = true
         local groupCount = 0
@@ -1738,9 +1733,7 @@ local function updateConvoys()
         if group and group:isExist() then
             groupCount = 1
             allGroupsDestroyed = false
-            
-            env.info("ConvoySystem: Group '" .. convoy.groupName .. "' exists, checking arrival status (resupplied: " .. tostring(convoy.resupplied) .. ")")
-                
+
                 -- Check if group reached destination zone
                 if not convoy.resupplied then
                     -- Get lead unit position (Groups don't have getPosition in DCS)
@@ -1801,16 +1794,10 @@ local function updateConvoys()
                     -- Add buffer to zone radius for more forgiving detection
                     local effectiveRadius = destZoneRadius + 100  -- 100m buffer
                     local inZone = false
-                    
-                    env.info(string.format("ConvoySystem: Convoy %s distance check: %.0fm (zone radius: %.0fm + 100m buffer, destination: %s)",
-                        convoyId, distance, destZoneRadius, convoy.destinationZone))
-                    env.info(string.format("ConvoySystem: Convoy pos: x=%.0f, z=%.0f | Dest pos: x=%.0f, z=%.0f",
-                        groupPos.x, groupPos.z, convoy.destinationPos.x, convoy.destinationPos.z))
-                    
+
                     -- Primary check: distance-based (within zone radius + buffer)
                     if distance <= effectiveRadius then
                         inZone = true
-                        env.info("ConvoySystem: Distance check PASSED - convoy is in zone!")
                     -- Secondary check: close enough and stopped moving (arrived at waypoint)
                     elseif distance <= 1500 then
                         -- Check if convoy has stopped (velocity near zero)
@@ -1818,12 +1805,7 @@ local function updateConvoys()
                         local speed = math.sqrt(vel.x*vel.x + vel.z*vel.z)
                         if speed < 2 then
                             inZone = true
-                            env.info("ConvoySystem: Convoy stopped near destination (within 1.5km, speed=" .. string.format("%.1f", speed) .. "m/s) - treating as arrived!")
-                        else
-                            env.info(string.format("ConvoySystem: Convoy still moving (speed=%.1fm/s), waiting...", speed))
                         end
-                    else
-                        env.info("ConvoySystem: Distance check FAILED - convoy not yet in zone (need to be within " .. effectiveRadius .. "m or within 1500m and stopped)")
                     end
                     
                     -- Tertiary check: MIST zone verification (try multiple zone name variants)
@@ -1854,9 +1836,6 @@ local function updateConvoys()
                             
                             if mistZoneVerified then
                                 inZone = true
-                                env.info("ConvoySystem: MIST zone check verified arrival for convoy " .. convoyId)
-                            else
-                                env.info("ConvoySystem: MIST zone check FAILED for convoy " .. convoyId)
                             end
                         end
                     end
@@ -1955,16 +1934,15 @@ local function updateConvoys()
                         end
                     end  -- end if inZone
                 else
-                    env.info("ConvoySystem: Lead unit not found for convoy " .. convoyId .. ", skipping this cycle")
+                    -- lead unit not found this cycle
                 end  -- end leadUnit check
             end  -- end if not convoy.resupplied
         else
-            env.info("ConvoySystem: Group '" .. tostring(convoy.groupName) .. "' in convoy " .. convoyId .. " no longer exists")
+            -- group no longer exists
         end
-        
+
         -- Remove convoy if all units destroyed or timeout
         if allGroupsDestroyed then
-            env.info("ConvoySystem: Convoy " .. convoyId .. " - all groups destroyed")
             table.insert(convoysToRemove, convoyId)
         elseif (currentTime - convoy.createdAt) > 19800 then  -- 5.5 hour timeout for long mountain routes
             env.warning("ConvoySystem: Convoy " .. convoyId .. " exceeded 5.5 hour timeout (Age: " .. 
@@ -1992,7 +1970,6 @@ local function updateConvoys()
         
         ConvoySystem.spawnedConvoys[convoyId] = nil
         ConvoySystem.convoyRequesters[convoyId] = nil
-        env.info("ConvoySystem: Removed convoy " .. convoyId)
     end
     
     -- Clean up stale convoy requester entries
@@ -2253,21 +2230,17 @@ local function startConvoySystem()
     
     -- Schedule regular updates with error protection
     local function convoyUpdateLoop(args, time)
-        env.info("ConvoySystem: >>>>>> TIMER CALLBACK FIRED at time " .. tostring(time) .. " <<<<<<")
-        
         local success, err = pcall(function()
             updateConvoys()
             sendProgressNotifications()
         end)
-        
+
         if not success then
             env.error("ConvoySystem: ERROR in update loop: " .. tostring(err))
         end
-        
+
         -- Reschedule for next update
-        local nextTime = time + ConvoySystem.updateInterval
-        env.info("ConvoySystem: Rescheduling update loop for time " .. tostring(nextTime))
-        return nextTime
+        return time + ConvoySystem.updateInterval
     end
     
     local startTime = timer.getTime() + ConvoySystem.updateInterval

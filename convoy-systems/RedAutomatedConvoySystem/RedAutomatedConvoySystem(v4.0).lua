@@ -36,9 +36,9 @@ CONVOY_TEMPLATES = {
 
 local NUM_CONVOY_POINTS = 40
 local CONVOY_SPEED      = 22  -- m/s (increased for faster gameplay)
-local MAX_CONVOYS       = 20
-local INITIAL_CONVOYS   = 5
-local STAGGER_DELAY     = 120
+local MAX_CONVOYS       = 6
+local INITIAL_CONVOYS   = 3
+local STAGGER_DELAY     = 600  -- 10 minutes between spawns
 local STALL_TIMEOUT     = 300  -- Clean up convoys that don't move for 5 minutes (300 seconds)
 local STALL_CHECK_THRESHOLD = 10  -- Meters - if moved less than this, consider it stalled
 
@@ -51,6 +51,7 @@ local activeConvoys = {}
 local convoyID      = 0
 local nextSpawnTime = 0
 local MIN_TRAVEL_DISTANCE = 64820  -- 35nm in meters
+local MAX_TRAVEL_DISTANCE = 148160 -- 80nm in meters (avoids pathfinding stalls)
 
 ---------------------------------------------------------------------
 -- LOAD NODES ConvoyZone1..N
@@ -110,34 +111,34 @@ local function getRandomStartNode()
     end
 end
 
--- Get random destination node (35nm+ away, or farthest if none qualify)
+-- Get random destination node (35-80 nm away, capped to avoid pathfinding stalls)
 local function getRandomDestNode(startNode)
     local validDests = {}
-    local farthest = nil
-    local maxDist = 0
+    local closest = nil
+    local closestDist = math.huge
     
     for _, n in ipairs(convoyNodes) do
         if n.name ~= startNode.name then
             local dist = getDistance(startNode, n)
-            if dist >= MIN_TRAVEL_DISTANCE then
+            if dist >= MIN_TRAVEL_DISTANCE and dist <= MAX_TRAVEL_DISTANCE then
                 table.insert(validDests, n)
             end
-            -- Track farthest as fallback
-            if dist > maxDist then
-                maxDist = dist
-                farthest = n
+            -- Track closest valid (>= min) as fallback
+            if dist >= MIN_TRAVEL_DISTANCE and dist < closestDist then
+                closestDist = dist
+                closest = n
             end
         end
     end
     
-    -- Prefer 35nm+ zones, but fallback to farthest zone if none available
+    -- Prefer 35-80 nm zones; fallback to closest qualifying zone
     if #validDests > 0 then
         return validDests[math.random(1, #validDests)]
-    elseif farthest then
-        env.info("[CONVOY][WARN] No zones 35nm+ away from " .. startNode.name .. 
-                 ", using farthest: " .. farthest.name .. 
-                 " (" .. string.format("%.1f", maxDist / 1852) .. " nm)")
-        return farthest
+    elseif closest then
+        env.info("[CONVOY][WARN] No zones within 35-80 nm from " .. startNode.name ..
+                 ", using closest qualifying: " .. closest.name ..
+                 " (" .. string.format("%.1f", closestDist / 1852) .. " nm)")
+        return closest
     else
         return nil
     end
@@ -179,7 +180,7 @@ local function buildRoute(a, b)
             [2] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "On Road",
+                ["action"] = "Off Road",  -- Off Road avoids DCS road pathfinder (no CREATING PATH TOO LONG stalls)
                 ["x"] = wp2X,
                 ["y"] = wp2Y,
                 ["speed"] = CONVOY_SPEED,
@@ -188,7 +189,7 @@ local function buildRoute(a, b)
             [3] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "On Road",
+                ["action"] = "Off Road",  -- Off Road avoids DCS road pathfinder
                 ["x"] = wp3X,
                 ["y"] = wp3Y,
                 ["speed"] = CONVOY_SPEED,
@@ -449,7 +450,7 @@ end
 local function convoyLoop()
     updateConvoys()
     convoyManager()
-    return timer.getTime() + 10  -- Optimized: check every 10 seconds
+    return timer.getTime() + 30  -- check every 30 seconds
 end
 
 ---------------------------------------------------------------------
