@@ -1,8 +1,8 @@
 ----------------------------------------------------------------
--- CSAR + LIVES SYSTEM (Unified Version) v4.9
+-- CSAR + LIVES SYSTEM (Unified Version) v5.1
 -- Crash/eject survivors + per‑player lives + hard lockout
 -- Blue smoke + MGRS + DM coordinates + distance
--- Separate menus for Downed Pilots and Convoy Survivors
+-- Separate menus for Downed Pilots and Stranded Survivors (Ambient)
 ----------------------------------------------------------------
 
 DGSS_CSAR = {}
@@ -58,6 +58,20 @@ DGSS_CSAR.MAX_PICKUP_SPEED    = 7.5  -- m/s (10 knots) - maximum speed to pick u
 DGSS_CSAR.MAX_PICKUP_ALTITUDE = 15.2  -- meters AGL (50 feet) - maximum altitude to pick up
 DGSS_CSAR.MAX_DROPOFF_SPEED   = 7.5  -- m/s (10 knots) - maximum speed to drop off survivors
 DGSS_CSAR.MAX_DROPOFF_ALTITUDE = 15.2  -- meters AGL (50 feet) - maximum altitude to drop off
+
+----------------------------------------------------------------
+-- AMBIENT CSAR CONFIG
+-- Periodic random survivor spawns inside BLUE_ZONE_ / RED_ZONE_ zones
+----------------------------------------------------------------
+DGSS_CSAR.AMBIENT_CSAR = {
+    enabled           = true,
+    maxAliveSurvivors = 15,           -- max ambient survivors on map at once
+    spawnIntervalMin  = 600,          -- minimum interval between spawns (seconds / 10 min)
+    spawnIntervalMax  = 1200,         -- maximum interval between spawns (seconds / 20 min)
+    rescuesPerLife    = 5,            -- rescues needed to earn the rescue pilot +1 life
+    zonePrefixes      = { "BLUE_ZONE_", "RED_ZONE_" },
+    zoneScanMax       = 30,           -- scans PREFIX_1 … PREFIX_30 to discover zones
+}
 
 -- Check speed and altitude limits for pickup/dropoff operations
 function DGSS_CSAR.checkPickupDropoffConditions(unit, isPickup)
@@ -117,6 +131,7 @@ DGSS_CSAR.MESSAGES = {
     noSurvivorsNearby = "No CSAR survivors detected nearby.",
     noPilotsNearby    = "No downed pilots detected nearby.",
     noConvoyNearby    = "No convoy survivors detected nearby.",
+    noAmbientNearby   = "No stranded survivors detected nearby.",
     markNearestInfo   = "Nearest CSAR survivor information displayed.",
 }
 
@@ -166,6 +181,9 @@ DGSS_CSAR.EJECT_EXEMPTION_TIME = 300  -- 5 minutes exemption from SLOT_LEAVE pen
 
 -- Lockout timers per player
 DGSS_CSAR.LOCKOUT           = {}
+
+-- Per-pilot ambient rescue counter (toward life rewards)
+DGSS_CSAR.AMBIENT_RESCUE_COUNT = {}
 
 ----------------------------------------------------------------
 -- UTILS
@@ -373,11 +391,14 @@ function DGSS_CSAR.getNearestActiveSurvivor(pos, radius, filterType)
         -- Apply type filter if specified
         local shouldProcess = true
         if filterType then
-            if filterType == "pilot" and survivorData.isConvoy then
-                -- Skip convoy survivors when looking for pilots
+            if filterType == "pilot" and (survivorData.isConvoy or survivorData.isAmbient) then
+                -- Skip convoy/ambient survivors when looking for pilots
                 shouldProcess = false
             elseif filterType == "convoy" and not survivorData.isConvoy then
-                -- Skip pilot survivors when looking for convoy
+                -- Skip pilot/ambient survivors when looking for convoy
+                shouldProcess = false
+            elseif filterType == "ambient" and not survivorData.isAmbient then
+                -- Skip pilot/convoy survivors when looking for ambient stranded survivors
                 shouldProcess = false
             end
         end
@@ -434,6 +455,8 @@ function DGSS_CSAR.markNearestSurvivor(unit, filterType)
             noMsg = DGSS_CSAR.MESSAGES.noPilotsNearby
         elseif filterType == "convoy" then
             noMsg = DGSS_CSAR.MESSAGES.noConvoyNearby
+        elseif filterType == "ambient" then
+            noMsg = DGSS_CSAR.MESSAGES.noAmbientNearby
         end
         trigger.action.outTextForUnit(unit:getID(), noMsg, 5)
         return
@@ -447,7 +470,14 @@ function DGSS_CSAR.markNearestSurvivor(unit, filterType)
 
     local spos = sUnit:getPoint()
     local survivorData = DGSS_CSAR.SURVIVORS[nearestName]
-    local survivorType = (survivorData and survivorData.isConvoy) and "Convoy Survivor" or "Downed Pilot"
+    local survivorType
+    if survivorData and survivorData.isAmbient then
+        survivorType = "Stranded Survivor"
+    elseif survivorData and survivorData.isConvoy then
+        survivorType = "Convoy Survivor"
+    else
+        survivorType = "Downed Pilot"
+    end
 
     ------------------------------------------------------------
     -- DISTANCE + HEADING
@@ -458,7 +488,7 @@ function DGSS_CSAR.markNearestSurvivor(unit, filterType)
     local distanceKm = distance / 1000
     local distanceNM = distance / 1852
 
-    local heading = math.deg(math.atan2(dx, dz))
+    local heading = math.deg(math.atan2(dz, dx))
     if heading < 0 then heading = heading + 360 end
 
     ------------------------------------------------------------
@@ -545,20 +575,24 @@ function DGSS_CSAR.pickupSurvivor(heloUnit, survivorGroupName)
     
     -- Store survivor info before removing from table
     local survivorInfo = DGSS_CSAR.SURVIVORS[survivorGroupName]
-    local isConvoy = survivorInfo and survivorInfo.isConvoy or false
+    local isConvoy  = survivorInfo and survivorInfo.isConvoy  or false
+    local isAmbient = survivorInfo and survivorInfo.isAmbient or false
     local originalPlayerName = survivorInfo and survivorInfo.playerName or nil
     
     DGSS_CSAR.SURVIVORS[survivorGroupName] = nil
 
     local unitName = heloUnit:getName()
     DGSS_CSAR.CARRYING_SURVIVOR[unitName] =
-        DGSS_CSAR.CARRYING_SURVIVOR[unitName] or { count = 0, playerSurvivors = 0, convoySurvivors = 0, originalPlayers = {} }
+        DGSS_CSAR.CARRYING_SURVIVOR[unitName] or { count = 0, playerSurvivors = 0, convoySurvivors = 0, ambientSurvivors = 0, originalPlayers = {} }
 
     DGSS_CSAR.CARRYING_SURVIVOR[unitName].count =
         DGSS_CSAR.CARRYING_SURVIVOR[unitName].count + 1
     
     -- Track type of survivor and original player
-    if isConvoy then
+    if isAmbient then
+        DGSS_CSAR.CARRYING_SURVIVOR[unitName].ambientSurvivors =
+            (DGSS_CSAR.CARRYING_SURVIVOR[unitName].ambientSurvivors or 0) + 1
+    elseif isConvoy then
         DGSS_CSAR.CARRYING_SURVIVOR[unitName].convoySurvivors =
             DGSS_CSAR.CARRYING_SURVIVOR[unitName].convoySurvivors + 1
     else
@@ -618,19 +652,21 @@ function DGSS_CSAR.dropOffSurvivors(heloUnit)
         return
     end
 
-    local playerSurvivorsDelivered = carry.playerSurvivors or 0
-    local convoySurvivorsDelivered = carry.convoySurvivors or 0
+    local playerSurvivorsDelivered  = carry.playerSurvivors  or 0
+    local convoySurvivorsDelivered  = carry.convoySurvivors  or 0
+    local ambientSurvivorsDelivered = carry.ambientSurvivors or 0
     local originalPlayers = carry.originalPlayers or {}
     
     carry.count = 0
-    carry.playerSurvivors = 0
-    carry.convoySurvivors = 0
-    carry.originalPlayers = {}
+    carry.playerSurvivors  = 0
+    carry.convoySurvivors  = 0
+    carry.ambientSurvivors = 0
+    carry.originalPlayers  = {}
 
     local msg = DGSS_CSAR.MESSAGES.survivorDropped
-    if convoySurvivorsDelivered > 0 then
-        msg = string.format("Survivors delivered safely! (%d player, %d convoy crew)", 
-            playerSurvivorsDelivered, convoySurvivorsDelivered)
+    if convoySurvivorsDelivered > 0 or ambientSurvivorsDelivered > 0 then
+        msg = string.format("Survivors delivered safely! (%d pilot, %d convoy crew, %d stranded)",
+            playerSurvivorsDelivered, convoySurvivorsDelivered, ambientSurvivorsDelivered)
     end
     
     trigger.action.outTextForUnit(heloUnit:getID(), msg, 10)
@@ -667,6 +703,11 @@ function DGSS_CSAR.dropOffSurvivors(heloUnit)
             DGSS_CSAR.gainLife(originalPlayerName, heloUnit)
             env.info(string.format("[CSAR] Life restored to original player '%s'", originalPlayerName))
         end
+    end
+
+    -- Award life to rescue pilot for every N ambient survivor rescues
+    if ambientSurvivorsDelivered > 0 and rescuePilotName then
+        DGSS_CSAR.processAmbientRescue(rescuePilotName, ambientSurvivorsDelivered)
     end
 end
 ----------------------------------------------------------------
@@ -779,29 +820,29 @@ function DGSS_CSAR.createMenusForUnit(unit)
     )
 
     ------------------------------------------------------------
-    -- CONVOY SURVIVORS MENU
+    -- SURVIVORS MENU (Ambient / Stranded)
     ------------------------------------------------------------
-    local convoyMenu = missionCommands.addSubMenuForGroup(groupId, "Convoy Survivors", root)
-    DGSS_CSAR.UNIT_MENUS[unitName].convoyMenu = convoyMenu
+    local survivorsMenu = missionCommands.addSubMenuForGroup(groupId, "Survivors", root)
+    DGSS_CSAR.UNIT_MENUS[unitName].survivorsMenu = survivorsMenu
 
-    -- Mark nearest convoy survivor
+    -- Mark nearest stranded survivor
     missionCommands.addCommandForGroup(
         groupId,
-        "Mark Nearest Convoy Survivor",
-        convoyMenu,
+        "Mark Nearest Survivor",
+        survivorsMenu,
         function()
             local u = Unit.getByName(unitName)
             if u and u:isExist() then
-                DGSS_CSAR.markNearestSurvivor(u, "convoy")
+                DGSS_CSAR.markNearestSurvivor(u, "ambient")
             end
         end
     )
 
-    -- Request convoy smoke
+    -- Request survivor smoke
     missionCommands.addCommandForGroup(
         groupId,
-        "Request Convoy Smoke",
-        convoyMenu,
+        "Request Survivor Smoke",
+        survivorsMenu,
         function()
             local u = Unit.getByName(unitName)
             if u and u:isExist() then
@@ -809,54 +850,54 @@ function DGSS_CSAR.createMenusForUnit(unit)
                 local nearestName = DGSS_CSAR.getNearestActiveSurvivor(
                     pos,
                     DGSS_CSAR.CSAR.nearestSearchRadius,
-                    "convoy"
+                    "ambient"
                 )
                 if nearestName then
                     DGSS_CSAR.requestSmoke(nearestName)
                 else
-                    trigger.action.outTextForUnit(u:getID(), DGSS_CSAR.MESSAGES.noConvoyNearby, 5)
+                    trigger.action.outTextForUnit(u:getID(), DGSS_CSAR.MESSAGES.noAmbientNearby, 5)
                 end
             end
         end
     )
 
-    -- Pickup convoy survivor
+    -- Pickup stranded survivor
     missionCommands.addCommandForGroup(
         groupId,
-        "Pickup Convoy Survivor",
-        convoyMenu,
+        "Pickup Survivor",
+        survivorsMenu,
         function()
-            env.info("[CSAR] Pickup Convoy Survivor menu clicked for unit: " .. tostring(unitName))
+            env.info("[CSAR] Pickup Survivor menu clicked for unit: " .. tostring(unitName))
             local u = Unit.getByName(unitName)
             if not u or not u:isExist() then
                 env.info("[CSAR] Pickup failed - unit no longer exists: " .. tostring(unitName))
                 return
             end
-            
+
             local pos = u:getPoint()
-            env.info(string.format("[CSAR] Searching for convoy survivors within %dm of position (%.1f, %.1f)", 
+            env.info(string.format("[CSAR] Searching for stranded survivors within %dm of position (%.1f, %.1f)",
                 DGSS_CSAR.CSAR.pickupRadius, pos.x, pos.z))
-            
+
             local nearestName = DGSS_CSAR.getNearestActiveSurvivor(
                 pos,
                 DGSS_CSAR.CSAR.pickupRadius,
-                "convoy"
+                "ambient"
             )
             if nearestName then
-                env.info("[CSAR] Found nearest convoy survivor: " .. nearestName)
+                env.info("[CSAR] Found nearest stranded survivor: " .. nearestName)
                 DGSS_CSAR.pickupSurvivor(u, nearestName)
             else
-                env.info("[CSAR] No convoy survivors found within pickup radius")
-                trigger.action.outTextForUnit(u:getID(), DGSS_CSAR.MESSAGES.noConvoyNearby, 5)
+                env.info("[CSAR] No stranded survivors found within pickup radius")
+                trigger.action.outTextForUnit(u:getID(), DGSS_CSAR.MESSAGES.noAmbientNearby, 5)
             end
         end
     )
 
-    -- Drop off convoy survivors
+    -- Drop off survivors
     missionCommands.addCommandForGroup(
         groupId,
-        "Drop Off Convoy Survivors",
-        convoyMenu,
+        "Drop Off Survivors",
+        survivorsMenu,
         function()
             local u = Unit.getByName(unitName)
             if u and u:isExist() then
@@ -1203,6 +1244,194 @@ if mist and mist.scheduleFunction then
     mist.scheduleFunction(convoyDetectionLoop, {}, timer.getTime() + 5)
 else
     timer.scheduleFunction(convoyDetectionLoop, {}, timer.getTime() + 5)
+end
+
+----------------------------------------------------------------
+-- AMBIENT CSAR SPAWNER
+-- Periodically spawns stranded survivors inside BLUE_ZONE_ / RED_ZONE_ zones.
+-- Completely independent of player lives. Pickupable by any CSAR-capable aircraft.
+-- Every 5 rescues awards the rescue pilot +1 life (if below maxLives).
+----------------------------------------------------------------
+
+-- Discover all zones matching BLUE_ZONE_N / RED_ZONE_N by probing the mission
+function DGSS_CSAR.buildAmbientZoneList()
+    local zones = {}
+    for _, prefix in ipairs(DGSS_CSAR.AMBIENT_CSAR.zonePrefixes) do
+        for i = 1, DGSS_CSAR.AMBIENT_CSAR.zoneScanMax do
+            local zoneName = prefix .. tostring(i)
+            if trigger.misc.getZone(zoneName) then
+                table.insert(zones, zoneName)
+            end
+        end
+    end
+    return zones
+end
+
+-- Pick a random ground position within a trigger zone (stays within 85% of radius)
+function DGSS_CSAR.getRandomPointInZone(zoneName)
+    local z = trigger.misc.getZone(zoneName)
+    if not z then return nil end
+    local angle  = math.random() * 2 * math.pi
+    local radius = math.random() * z.radius * 0.85
+    local x      = z.point.x + radius * math.cos(angle)
+    local zCoord = z.point.z + radius * math.sin(angle)
+    local groundY = land.getHeight({ x = x, y = zCoord }) or 0
+    return { x = x, y = groundY, z = zCoord }
+end
+
+-- Count ambient survivors currently on the map
+function DGSS_CSAR.countAmbientSurvivors()
+    local count = 0
+    for groupName, data in pairs(DGSS_CSAR.SURVIVORS) do
+        if data.isAmbient then
+            local g = Group.getByName(groupName)
+            if g and g:isExist() then
+                count = count + 1
+            end
+        end
+    end
+    return count
+end
+
+-- Award +1 life to the rescue pilot for every N ambient rescues (if below maxLives)
+function DGSS_CSAR.processAmbientRescue(pilotName, count)
+    if not pilotName or not count or count <= 0 then return end
+
+    DGSS_CSAR.AMBIENT_RESCUE_COUNT[pilotName] =
+        (DGSS_CSAR.AMBIENT_RESCUE_COUNT[pilotName] or 0) + count
+
+    local threshold = DGSS_CSAR.AMBIENT_CSAR.rescuesPerLife
+    local total     = DGSS_CSAR.AMBIENT_RESCUE_COUNT[pilotName]
+
+    while total >= threshold do
+        total = total - threshold
+        local currentLives = DGSS_CSAR.getPlayerLives(pilotName)
+        if currentLives and currentLives < DGSS_CSAR.LIVES.maxLives then
+            local newLives = math.min(DGSS_CSAR.LIVES.maxLives, currentLives + 1)
+            DGSS_CSAR.setPlayerLives(pilotName, newLives)
+            trigger.action.outTextForCoalition(
+                DGSS_CSAR.COALITION,
+                string.format("%s has rescued %d stranded survivors and earned +1 life! (%d lives remaining)",
+                    pilotName, threshold, newLives),
+                12
+            )
+            env.info(string.format("[CSAR-AMBIENT] '%s' earned +1 life for %d rescues (now %d lives)",
+                pilotName, threshold, newLives))
+        else
+            env.info(string.format("[CSAR-AMBIENT] '%s' hit rescue threshold but is already at max lives", pilotName))
+        end
+    end
+
+    DGSS_CSAR.AMBIENT_RESCUE_COUNT[pilotName] = total
+end
+
+-- Spawn one ambient survivor in a random qualifying zone
+function DGSS_CSAR.spawnAmbientSurvivorMission()
+    if not DGSS_CSAR.AMBIENT_CSAR.enabled then return end
+
+    local alive = DGSS_CSAR.countAmbientSurvivors()
+    if alive >= DGSS_CSAR.AMBIENT_CSAR.maxAliveSurvivors then
+        env.info(string.format("[CSAR-AMBIENT] Cap reached (%d/%d). Skipping spawn.",
+            alive, DGSS_CSAR.AMBIENT_CSAR.maxAliveSurvivors))
+        return
+    end
+
+    local zones = DGSS_CSAR.buildAmbientZoneList()
+    if #zones == 0 then
+        env.info("[CSAR-AMBIENT] No BLUE_ZONE_ or RED_ZONE_ zones found in mission.")
+        return
+    end
+
+    local zoneName = zones[math.random(#zones)]
+    local pos = DGSS_CSAR.getRandomPointInZone(zoneName)
+    if not pos then
+        env.info("[CSAR-AMBIENT] Could not get position in zone: " .. zoneName)
+        return
+    end
+
+    local id        = math.random(1000, 9999)
+    local groupName = string.format("CSAR_AMBIENT_%d", id)
+    local heading   = math.random() * 2 * math.pi
+
+    local survivorGroup = {
+        visible        = true,
+        lateActivation = false,
+        tasks          = {},
+        task           = "Ground Nothing",
+        x              = pos.x,
+        y              = pos.z,
+        name           = groupName,
+        units = {
+            [1] = {
+                name           = groupName .. "_Unit_1",
+                type           = "Soldier M4",
+                skill          = "Average",
+                x              = pos.x,
+                y              = pos.z,
+                heading        = heading,
+                playerCanDrive = false,
+                immortal       = true,
+                hidden         = true,
+            },
+        },
+    }
+
+    coalition.addGroup(DGSS_CSAR.COUNTRY, Group.Category.GROUND, survivorGroup)
+
+    DGSS_CSAR.SURVIVORS[groupName] = {
+        playerName = string.format("Stranded Survivor #%d", id),
+        spawnTime  = timer.getTime(),
+        isConvoy   = false,
+        isAmbient  = true,
+    }
+
+    -- Broadcast coordinates to coalition
+    local lat, lon = coord.LOtoLL(pos)
+    local mgrs     = coord.LLtoMGRS(lat, lon)
+
+    local latDeg, latMin = toDegMin(math.abs(lat))
+    local lonDeg, lonMin = toDegMin(math.abs(lon))
+    local latHem = (lat >= 0) and "N" or "S"
+    local lonHem = (lon >= 0) and "E" or "W"
+
+    local coordsText = string.format(
+        "CSAR: Stranded survivor located! Rescue needed!\n\n" ..
+        "MGRS: %s %s %05d %05d\n\n" ..
+        "Lat/Lon (DM):\n" ..
+        "%s %02d\xb0 %.3f'\n" ..
+        "%s %03d\xb0 %.3f'",
+        mgrs.UTMZone, mgrs.MGRSDigraph, mgrs.Easting, mgrs.Northing,
+        latHem, latDeg, latMin,
+        lonHem, lonDeg, lonMin
+    )
+    trigger.action.outTextForCoalition(DGSS_CSAR.COALITION, coordsText, 15)
+
+    env.info(string.format("[CSAR-AMBIENT] Spawned '%s' in zone '%s' (alive: %d/%d)",
+        groupName, zoneName, alive + 1, DGSS_CSAR.AMBIENT_CSAR.maxAliveSurvivors))
+end
+
+-- Recurring loop: randomly spaced between spawnIntervalMin and spawnIntervalMax
+local function ambientSurvivorLoop()
+    local ok, err = pcall(DGSS_CSAR.spawnAmbientSurvivorMission)
+    if not ok then
+        env.warning("[CSAR-AMBIENT] Error during spawn: " .. tostring(err))
+    end
+
+    local interval = DGSS_CSAR.AMBIENT_CSAR.spawnIntervalMin
+        + math.random() * (DGSS_CSAR.AMBIENT_CSAR.spawnIntervalMax - DGSS_CSAR.AMBIENT_CSAR.spawnIntervalMin)
+
+    if mist and mist.scheduleFunction then
+        mist.scheduleFunction(ambientSurvivorLoop, {}, timer.getTime() + interval)
+    else
+        timer.scheduleFunction(ambientSurvivorLoop, {}, timer.getTime() + interval)
+    end
+end
+
+-- First spawn fires 3 minutes after mission start (let mission settle), then loops randomly
+if mist and mist.scheduleFunction then
+    mist.scheduleFunction(ambientSurvivorLoop, {}, timer.getTime() + 180)
+else
+    timer.scheduleFunction(ambientSurvivorLoop, {}, timer.getTime() + 180)
 end
 
 ----------------------------------------------------------------

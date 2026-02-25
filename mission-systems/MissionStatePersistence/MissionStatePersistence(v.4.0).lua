@@ -1,8 +1,9 @@
 -- ============================================================
---   MISSION STATE PERSISTENCE (v3.0)
+--   MISSION STATE PERSISTENCE (v4.0)
 --   Based on SWS (Simple Warehouse Saving) & SGS (Simple Group Saving)
 --   MIST-only, no MOOSE dependencies
---   Saves CJTF-BLUE groups and airbase warehouses every 5 minutes
+--   Saves CJTF-BLUE groups and airbase warehouses every 15 minutes
+--   Save-file versioning: mismatched files log a warning on load
 -- ============================================================
 
 MISSIONPERSIST = {}
@@ -12,7 +13,11 @@ MISSIONPERSIST.warehouseFile = MISSIONPERSIST.saveDir .. "MissionWarehouses.lua"
 MISSIONPERSIST.saveInterval = 900  -- 15 minutes
 MISSIONPERSIST.lastSavedState = {}  -- Track last saved state for change detection
 
-local version = "3.0 - Jan 2025"
+-- Save-file format version. Bump this whenever the saved data structure changes
+-- so that stale files from an older format are caught on load.
+MISSIONPERSIST.SAVE_VERSION = "4.0"
+
+local version = "4.0 - Feb 2026"
 
 -- ============================================================
 -- UTILITY: Create Save Directory
@@ -179,8 +184,9 @@ end
 
 function MISSIONPERSIST.saveGroups()
     MISSIONPERSIST.captureGroups()
+    local header = string.format("MISSIONPERSIST.SaveVersion = %q\n", MISSIONPERSIST.SAVE_VERSION)
     local serialized = MISSIONPERSIST.serializeWithCycles("MISSIONPERSIST.SavedGroups", MISSIONPERSIST.SavedGroups)
-    MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.groupFile)
+    MISSIONPERSIST.writeFile(header .. serialized, MISSIONPERSIST.groupFile)
 end
 
 function MISSIONPERSIST.loadGroups()
@@ -206,7 +212,15 @@ function MISSIONPERSIST.loadGroups()
     
     local ok, err = pcall(chunk)
     if ok then
-        env.info("[PERSISTENCE] Loaded saved groups")
+        -- Version check
+        if MISSIONPERSIST.SaveVersion ~= MISSIONPERSIST.SAVE_VERSION then
+            env.warning(string.format(
+                "[PERSISTENCE] Groups save-file version mismatch: file is '%s', expected '%s'. Data may be incompatible.",
+                tostring(MISSIONPERSIST.SaveVersion), MISSIONPERSIST.SAVE_VERSION
+            ))
+        else
+            env.info(string.format("[PERSISTENCE] Loaded saved groups (save version %s)", MISSIONPERSIST.SaveVersion))
+        end
     else
         env.warning("[PERSISTENCE] Error loading groups: " .. tostring(err))
         MISSIONPERSIST.SavedGroups = {}
@@ -322,8 +336,9 @@ end
 
 function MISSIONPERSIST.saveWarehouses()
     MISSIONPERSIST.captureWarehouses()
+    local header = string.format("MISSIONPERSIST.WarehouseSaveVersion = %q\n", MISSIONPERSIST.SAVE_VERSION)
     local serialized = MISSIONPERSIST.serializeWithCycles("MISSIONPERSIST.SavedWarehouses", MISSIONPERSIST.SavedWarehouses)
-    MISSIONPERSIST.writeFile(serialized, MISSIONPERSIST.warehouseFile)
+    MISSIONPERSIST.writeFile(header .. serialized, MISSIONPERSIST.warehouseFile)
 end
 
 function MISSIONPERSIST.loadWarehouses()
@@ -349,7 +364,15 @@ function MISSIONPERSIST.loadWarehouses()
     
     local ok, err = pcall(chunk)
     if ok then
-        env.info("[PERSISTENCE] Loaded saved warehouses")
+        -- Version check
+        if MISSIONPERSIST.WarehouseSaveVersion ~= MISSIONPERSIST.SAVE_VERSION then
+            env.warning(string.format(
+                "[PERSISTENCE] Warehouses save-file version mismatch: file is '%s', expected '%s'. Data may be incompatible.",
+                tostring(MISSIONPERSIST.WarehouseSaveVersion), MISSIONPERSIST.SAVE_VERSION
+            ))
+        else
+            env.info(string.format("[PERSISTENCE] Loaded saved warehouses (save version %s)", MISSIONPERSIST.WarehouseSaveVersion))
+        end
     else
         env.warning("[PERSISTENCE] Error loading warehouses: " .. tostring(err))
         MISSIONPERSIST.SavedWarehouses = {}
@@ -446,7 +469,7 @@ end
 -- INITIALIZATION
 -- ============================================================
 
-env.info("[PERSISTENCE] Loading Mission Persistence v" .. version)
+env.info(string.format("[PERSISTENCE] Loading Mission Persistence v%s (save format v%s)", version, MISSIONPERSIST.SAVE_VERSION))
 
 -- Verify dependencies
 if not lfs then
