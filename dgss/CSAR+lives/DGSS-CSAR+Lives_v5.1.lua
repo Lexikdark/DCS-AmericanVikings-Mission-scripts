@@ -38,6 +38,8 @@ DGSS_CSAR.CSAR = {
         { zoneName = "KIRYAT_SHMONA" },
         { zoneName = "MEGIDDO" },
         { zoneName = "HAIFA" },
+        { zoneName = "BEN_GURION" },
+        { zoneName = "PAHPOS" },
         { zoneName = "FOB_BRAVO" },
         { zoneName = "FOB_DELTA" },
         { zoneName = "FOB_CHARLIE" },
@@ -141,7 +143,8 @@ DGSS_CSAR.MESSAGES = {
 
 DGSS_CSAR.ALLOWED_UNITS = {
     ["UH-1H"]        = true,
-    ["Mi-8MT"]       = true,
+    ["Mi-8MTV"]      = true,   -- Mi-8MT Hip (Belsimtek / older module)
+    ["Mi-8MTV2"]     = true,   -- Mi-8MTV2 Magnificent Eight (Polychop module)
     ["Mi-24P"]       = true,
     ["SA342M"]       = true,
     ["SA342L"]       = true,
@@ -152,7 +155,7 @@ DGSS_CSAR.ALLOWED_UNITS = {
     ["AH-6J"]        = true,
     
     ["C-130J-30"]    = true,
-    ["TF-51D"]    = true,
+    ["TF-51D"]       = true,
 }
 
 ----------------------------------------------------------------
@@ -815,6 +818,14 @@ function DGSS_CSAR.createMenusForUnit(unit)
             local u = Unit.getByName(unitName)
             if u and u:isExist() then
                 DGSS_CSAR.dropOffSurvivors(u)
+            else
+                -- Unit lookup failed — stale menu from a previous slot or reconnect.
+                -- Show an error so the player knows something went wrong.
+                trigger.action.outTextForGroup(
+                    groupId,
+                    "[CSAR] Drop off failed: could not locate your aircraft. Try re-slotting.",
+                    8)
+                env.info("[CSAR] Drop Off Pilots: Unit.getByName('" .. tostring(unitName) .. "') returned nil — stale menu callback.", false)
             end
         end
     )
@@ -902,6 +913,12 @@ function DGSS_CSAR.createMenusForUnit(unit)
             local u = Unit.getByName(unitName)
             if u and u:isExist() then
                 DGSS_CSAR.dropOffSurvivors(u)
+            else
+                trigger.action.outTextForGroup(
+                    groupId,
+                    "[CSAR] Drop off failed: could not locate your aircraft. Try re-slotting.",
+                    8)
+                env.info("[CSAR] Drop Off Survivors: Unit.getByName('" .. tostring(unitName) .. "') returned nil — stale menu callback.", false)
             end
         end
     )
@@ -1252,11 +1269,29 @@ end
 -- Completely independent of player lives. Pickupable by any CSAR-capable aircraft.
 -- Every 5 rescues awards the rescue pilot +1 life (if below maxLives).
 ----------------------------------------------------------------
-
--- Discover all zones matching BLUE_ZONE_N / RED_ZONE_N by probing the mission
+-- Discover all zones whose names START WITH any configured prefix.
+-- Uses the MIST zone DB (all zones in the mission file) so named zones like
+-- BLUE_ZONE_NORTH, RED_ZONE_DAMASCUS etc. are found correctly.
+-- Falls back to the old numeric probe loop if MIST is not available.
 function DGSS_CSAR.buildAmbientZoneList()
     local zones = {}
-    for _, prefix in ipairs(DGSS_CSAR.AMBIENT_CSAR.zonePrefixes) do
+    local prefixes = DGSS_CSAR.AMBIENT_CSAR.zonePrefixes
+
+    -- Primary: MIST zone DB — covers any name, not just "PREFIX_1" … "PREFIX_N"
+    if mist and mist.DBs and mist.DBs.zonesByName then
+        for zoneName, _ in pairs(mist.DBs.zonesByName) do
+            for _, prefix in ipairs(prefixes) do
+                if string.sub(zoneName, 1, #prefix) == prefix then
+                    table.insert(zones, zoneName)
+                    break
+                end
+            end
+        end
+        return zones
+    end
+
+    -- Fallback: numeric probe loop (MIST unavailable)
+    for _, prefix in ipairs(prefixes) do
         for i = 1, DGSS_CSAR.AMBIENT_CSAR.zoneScanMax do
             local zoneName = prefix .. tostring(i)
             if trigger.misc.getZone(zoneName) then

@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWII Marianas Mission — Script Guide</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --bg2: #16213e;
+            --bg3: #0f3460;
+            --accent: #e94560;
+            --accent2: #53a8b6;
+            --text: #e0e0e0;
+            --text-dim: #a0a0b0;
+            --green: #4ec958;
+            --yellow: #f0c040;
+            --red-side: #e94560;
+            --blue-side: #5090e0;
+            --neutral: #a0a0a0;
+            --border: #2a2a4a;
+            --code-bg: #0d1b2a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 0;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--bg2), var(--bg3));
+            border-bottom: 3px solid var(--accent);
+            padding: 2rem 2rem 1.5rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            color: #fff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        header p {
+            color: var(--text-dim);
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        nav {
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        nav a {
+            color: var(--accent2);
+            text-decoration: none;
+            padding: 0.35rem 0.9rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            background: var(--bg3);
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.4rem;
+            margin-bottom: 1.2rem;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            color: var(--accent2);
+            margin: 1.5rem 0 0.6rem;
+        }
+
+        h4 {
+            font-size: 1.05rem;
+            color: var(--yellow);
+            margin: 1.2rem 0 0.5rem;
+        }
+
+        p { margin-bottom: 0.8rem; }
+
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .card.blue { border-left-color: var(--blue-side); }
+        .card.green { border-left-color: var(--green); }
+        .card.yellow { border-left-color: var(--yellow); }
+        .card.neutral { border-left-color: var(--neutral); }
+
+        .card h3 { margin-top: 0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: var(--bg3);
+            color: #fff;
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+        }
+
+        tr:hover td { background: #1c2b4a; }
+
+        code {
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            background: var(--code-bg);
+            padding: 0.15rem 0.45rem;
+            border-radius: 3px;
+            font-size: 0.88rem;
+            color: var(--green);
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem 1.2rem;
+            overflow-x: auto;
+            margin: 0.8rem 0;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        ul, ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+        }
+
+        li { margin-bottom: 0.3rem; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.55rem;
+            border-radius: 3px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-red { background: var(--red-side); color: #fff; }
+        .badge-blue { background: var(--blue-side); color: #fff; }
+        .badge-green { background: var(--green); color: #111; }
+        .badge-yellow { background: var(--yellow); color: #111; }
+        .badge-neutral { background: var(--neutral); color: #111; }
+
+        .load-order {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .load-order .step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.7rem 1.2rem;
+        }
+
+        .load-order .step-num {
+            background: var(--accent);
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .load-order .step-file {
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            color: var(--green);
+        }
+
+        .load-order .step-note {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+
+        .workflow-steps {
+            counter-reset: workflow;
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .workflow-steps li {
+            counter-increment: workflow;
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .workflow-steps li::before {
+            content: counter(workflow);
+            position: absolute;
+            left: 0;
+            background: var(--bg3);
+            color: var(--accent2);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 700px) {
+            .toc-grid { grid-template-columns: 1fr; }
+            nav ul { flex-direction: column; align-items: center; }
+            header h1 { font-size: 1.5rem; }
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        .back-top {
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .back-top a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.82rem;
+        }
+
+        .back-top a:hover { color: var(--accent2); }
+
+        .warning {
+            background: #2a1f00;
+            border: 1px solid var(--yellow);
+            border-radius: 6px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            font-size: 0.92rem;
+        }
+
+        .warning::before {
+            content: "\26A0  ";
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>WWII Marianas Mission</h1>
+    <p>Script Reference Guide &mdash; DCS World Mission Editor Setup</p>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="#load-order">Load Order</a></li>
+        <li><a href="#script1">CAP / CTLD / GCI</a></li>
+        <li><a href="#script2">DGSS</a></li>
+        <li><a href="#script3">Red Convoys</a></li>
+        <li><a href="#script4">Airbase Capture</a></li>
+        <li><a href="#zones">Zone Checklist</a></li>
+        <li><a href="#groups">Group Checklist</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+
+    <!-- ============================================================ -->
+    <section id="load-order">
+        <h2>Global Load Order</h2>
+        <p>In the Mission Editor, add <strong>DO Script File</strong> triggers at mission start (T = 0). Load them in this order:</p>
+
+        <div class="load-order">
+            <div class="step">
+                <div class="step-num">1</div>
+                <span class="step-file">mist_4_5_126.lua</span>
+                <span class="step-note">MIST framework &mdash; required by scripts 2, 3, 4</span>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <span class="step-file">WWII_Marianas_CAP_CTLD_GCI.lua</span>
+                <span class="step-note">Requires MIST</span>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <span class="step-file">WWII_Marianas_DGSS.lua</span>
+                <span class="step-note">Requires MIST</span>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <span class="step-file">WWII_Marianas_RedConvoySpawn.lua</span>
+                <span class="step-note">Requires MIST</span>
+            </div>
+            <div class="step">
+                <div class="step-num">5</div>
+                <span class="step-file">WWII_Marianas_AirbaseCapture.lua</span>
+                <span class="step-note">Standalone &mdash; no MIST needed</span>
+            </div>
+        </div>
+
+        <p style="margin-top:1rem; color: var(--text-dim);">Scripts 2&ndash;5 can be in any order after MIST. They all self-initialise 2&ndash;4 seconds after load.</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="script1">
+        <h2>Script 1 &mdash; CAP / CTLD / GCI</h2>
+        <p><code>WWII_Marianas_CAP_CTLD_GCI.lua</code> &mdash; The main combined script with six sections (A&ndash;F).</p>
+
+        <!-- Section A -->
+        <div class="card" id="s1a">
+            <h3>Section A &mdash; Red CAP Flights <span class="badge badge-red">RED</span></h3>
+            <p><strong>What it does:</strong> Spawns RED combat air patrols that auto-respawn 120 seconds after death. Two groups (<code>CAPNorth2</code>, <code>CAPNorth3</code>) have a 5-minute delayed first-spawn.</p>
+
+            <h4>ME Setup</h4>
+            <ul>
+                <li>Create <strong>RED</strong> air groups named exactly:
+                    <code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>,
+                    <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></li>
+                <li>Set every group to <strong>Late Activation</strong></li>
+                <li>Give each group a full CAP waypoint route &mdash; the script uses <code>mist.respawnGroup</code> so the AI follows whatever route you drew</li>
+            </ul>
+
+            <h4>Tuning</h4>
+            <table>
+                <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td><code>capRespawnDelay</code></td><td>120 s</td><td>Delay before respawning a dead CAP group</td></tr>
+                <tr><td><code>capCheckInterval</code></td><td>60 s</td><td>How often the script checks for dead groups</td></tr>
+                <tr><td><code>capSpawnTimers</code></td><td>300 s</td><td>Delayed first-spawn for specific groups</td></tr>
+            </table>
+        </div>
+
+        <!-- Section B -->
+        <div class="card" id="s1b">
+            <h3>Section B &mdash; Red Fighter-Bombers <span class="badge badge-red">RED</span></h3>
+            <p><strong>What it does:</strong> RED strike aircraft that first appear 15&ndash;20 minutes into the mission, then respawn 30 minutes after being killed or landing.</p>
+
+            <h4>ME Setup</h4>
+            <ul>
+                <li>Create RED air groups: <code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></li>
+                <li><strong>Late Activation</strong> on all</li>
+                <li>Give them attack/bombing waypoint routes in ME</li>
+            </ul>
+
+            <h4>Tuning</h4>
+            <table>
+                <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td><code>bomberRespawnDelay</code></td><td>1800 s (30 min)</td><td>Time before a dead/landed bomber respawns</td></tr>
+                <tr><td><code>bomberCheckInterval</code></td><td>30 s</td><td>Status check frequency</td></tr>
+                <tr><td><code>spawnTime</code> per group</td><td>900&ndash;1200 s</td><td>Initial delay before first appearance</td></tr>
+            </table>
+        </div>
+
+        <!-- Section C -->
+        <div class="card blue" id="s1c">
+            <h3>Section C &mdash; Blue Radio-Call Support (F10 Menu) <span class="badge badge-blue">BLUE</span></h3>
+            <p><strong>What it does:</strong> Blue players open <strong>F10 &rarr; Other &rarr; Support</strong> and spawn friendly CAP or bomber flights on demand. Only one active group per template at a time. A &ldquo;Destroy Active Units&rdquo; sub-menu lets you recall them.</p>
+
+            <h4>ME Setup</h4>
+            <ul>
+                <li>Create BLUE air groups:
+                    <code>NorthCAP</code>, <code>NorthCAP2</code>, <code>HomeCAP</code>,
+                    <code>Bomb_CoastalGun</code>, <code>Bomb_RadioTower</code>, <code>Bomb_RotaAirfield</code></li>
+                <li><strong>Late Activation</strong> on all</li>
+                <li>Route each group in ME to its patrol/strike area &mdash; the script clones the template when spawned</li>
+            </ul>
+        </div>
+
+        <!-- Section D -->
+        <div class="card neutral" id="s1d">
+            <h3>Section D &mdash; Aircraft Cleanup System</h3>
+            <p><strong>What it does:</strong> Monitors all CAP and bomber groups from Sections A &amp; B. Destroys aircraft that are:</p>
+            <ul>
+                <li>&lt; 15% health</li>
+                <li>&lt; 5% fuel</li>
+                <li>Stalling (speed &lt; 15 m/s above 100 m altitude)</li>
+                <li>Airborne &gt; 90 minutes (5400 s)</li>
+            </ul>
+            <p>Destroying a group resets its spawn flag, which triggers respawn from Sections A/B.</p>
+
+            <h4>ME Setup</h4>
+            <p>Nothing extra required &mdash; it reuses group names from Sections A &amp; B automatically.</p>
+        </div>
+
+        <!-- Section E -->
+        <div class="card blue" id="s1e">
+            <h3>Section E &mdash; Lightweight TF-51D CTLD <span class="badge badge-blue">BLUE</span></h3>
+            <p><strong>What it does:</strong> Gives TF-51D players an F10 menu to load/drop infantry (1&ndash;3 soldiers), spawn/pickup/drop cargo crates, and assemble vehicles from multiple crates.</p>
+
+            <h4>Buildable Vehicles</h4>
+            <table>
+                <tr><th>Vehicle</th><th>Crates Required</th></tr>
+                <tr><td>M4 Tractor</td><td>2</td></tr>
+                <tr><td>M2A1 Halftrack</td><td>2</td></tr>
+                <tr><td>M4 Sherman</td><td>3</td></tr>
+            </table>
+
+            <h4>ME Setup</h4>
+            <ul>
+                <li>Create a <strong>trigger zone</strong> named <code>BlueCTLD</code> &mdash; the logistics loading area. Place it at a friendly airfield/FARP.</li>
+                <li>Create a <strong>BLUE air group</strong> whose name <strong>starts with</strong> <code>LogiTF51D</code> (e.g., <code>LogiTF51D</code>, <code>LogiTF51D_2</code>). These are the player TF-51D slots.</li>
+                <li>The group does <strong>NOT</strong> need to be late-activated &mdash; these are player flyable slots.</li>
+            </ul>
+
+            <h4>In-Game Workflow</h4>
+            <ol class="workflow-steps">
+                <li>Land inside the <code>BlueCTLD</code> zone</li>
+                <li>F10 &rarr; CTLD &rarr; Infantry &rarr; "Load 1x/2x/3x Infantry"</li>
+                <li>Fly to the drop zone, F10 &rarr; "Drop Infantry"</li>
+                <li>For vehicles: F10 &rarr; Vehicle &rarr; "Spawn Crate for M4 Sherman" (repeat for required crate count)</li>
+                <li>Pick up crates one at a time, fly them to the build site, drop each one</li>
+                <li>When enough crates of the same type are within 30 m, use "Assemble Vehicle"</li>
+            </ol>
+
+            <div class="warning">Infantry pick-up range is 50 m. Crate pick-up range is 20 m. You cannot carry infantry and a crate at the same time.</div>
+        </div>
+
+        <!-- Section F -->
+        <div class="card" id="s1f">
+            <h3>Section F &mdash; GCI Intercept System <span class="badge badge-red">RED</span> <span class="badge badge-blue">BLUE</span></h3>
+            <p><strong>What it does:</strong> When enemy aircraft enter a defended zone, the GCI system scrambles late-activated interceptor flights. They engage, then RTB when:</p>
+            <ul>
+                <li>Zone is clear for 45+ seconds</li>
+                <li>Fuel drops below 20%</li>
+                <li>They exceed their leash range (zone radius + 60 km)</li>
+            </ul>
+
+            <h4>ME Setup &mdash; Trigger Zones</h4>
+            <table>
+                <tr><th>Zone Name</th><th>Side</th><th>Purpose</th></tr>
+                <tr><td><code>RED_ZONE_ROTA</code></td><td><span class="badge badge-red">RED</span></td><td>Rota defense sector</td></tr>
+                <tr><td><code>RED_ZONE_NORTH</code></td><td><span class="badge badge-red">RED</span></td><td>Northern defense sector</td></tr>
+                <tr><td><code>RED_ZONE_SOUTH</code></td><td><span class="badge badge-red">RED</span></td><td>Southern defense sector</td></tr>
+                <tr><td><code>BLUE_ZONE_AGANA</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Agana defense sector</td></tr>
+                <tr><td><code>BLUE_ZONE_NORTH</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Northern BLUE defense sector</td></tr>
+            </table>
+
+            <h4>ME Setup &mdash; Late-Activated Air Groups</h4>
+            <p>2 aircraft per group recommended. Route doesn't matter &mdash; the script overrides tasking after scramble. Place each group's starting position at/near their assigned airfield.</p>
+            <table>
+                <tr><th>Group Prefix</th><th>Side</th><th>Max Flights</th><th>Home Base</th><th>Callsign</th></tr>
+                <tr><td><code>RED_AIR_ROTA_01</code> &ndash; <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>6</td><td>Rota Intl</td><td>SHIDEN</td></tr>
+                <tr><td><code>RED_AIR_NORTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Antonio B. Won Pat Intl</td><td>HAYATE</td></tr>
+                <tr><td><code>RED_AIR_SOUTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Rota Intl</td><td>RAIDEN</td></tr>
+                <tr><td><code>BLUE_AIR_AGANA_01</code> &ndash; <code>_06</code></td><td><span class="badge badge-blue">BLUE</span></td><td>6</td><td>Olf Orote</td><td>HELLCAT</td></tr>
+                <tr><td><code>BLUE_AIR_NORTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-blue">BLUE</span></td><td>4</td><td>Antonio B. Won Pat Intl</td><td>CORSAIR</td></tr>
+            </table>
+
+            <h4>GCI Config Tuning</h4>
+            <table>
+                <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td><code>UPDATE_INTERVAL</code></td><td>10 s</td><td>Main GCI loop tick rate</td></tr>
+                <tr><td><code>RTB_LOITER_TIME</code></td><td>45 s</td><td>Zone-clear time before RTB order</td></tr>
+                <tr><td><code>SCRAMBLE_THREAT_BUFFER</code></td><td>30,000 m</td><td>Extra radius added to zone for threat detection</td></tr>
+                <tr><td><code>INTERCEPT_LEASH_BUFFER</code></td><td>60,000 m</td><td>Max chase distance beyond zone before RTB</td></tr>
+                <tr><td><code>INTERCEPT_ALTITUDE</code></td><td>3,000 m</td><td>Orbit / intercept altitude</td></tr>
+                <tr><td><code>INTERCEPT_SPEED</code></td><td>450 km/h</td><td>Intercept speed</td></tr>
+                <tr><td><code>GCI_FUEL_RTB_THRESHOLD</code></td><td>20%</td><td>Bingo fuel level triggers RTB</td></tr>
+            </table>
+        </div>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="script2">
+        <h2>Script 2 &mdash; Dynamic Group Spawn System (DGSS)</h2>
+        <p><code>WWII_Marianas_DGSS.lua</code> &mdash; Requires MIST</p>
+
+        <div class="card">
+            <h3>What It Does</h3>
+            <p>Fills 18 zones with random Japanese ground groups (infantry, tanks, AA, trucks) selected from 20 templates. Uses a <strong>shuffle-bag</strong> so you don&rsquo;t see the same template twice in a row. Marks each group on the F10 map; markers auto-clear when the group is killed. Maintains 1&ndash;3 groups per zone.</p>
+
+            <h4>Template Examples (6&ndash;8 units each)</h4>
+            <table>
+                <tr><th>Name</th><th>Composition</th><th>Total</th></tr>
+                <tr><td>IJA Patrol</td><td>6&times; Infantry + 1&times; Truck</td><td>7</td></tr>
+                <tr><td>Ke-Ni Scout</td><td>2&times; Light Tank + 4&times; Infantry + 1&times; Truck</td><td>7</td></tr>
+                <tr><td>I-Go Platoon</td><td>2&times; Medium Tank + 4&times; Infantry + 1&times; Truck</td><td>7</td></tr>
+                <tr><td>AA Position</td><td>3&times; 25mm AA + 4&times; Infantry</td><td>7</td></tr>
+                <tr><td>Supply Column</td><td>4&times; Truck + 3&times; Infantry</td><td>7</td></tr>
+                <tr><td>IJA Squad</td><td>7&times; Infantry + 1&times; AA</td><td>8</td></tr>
+                <tr><td>Mixed Armour</td><td>2&times; I-Go + 2&times; Ke-Ni + 3&times; Infantry</td><td>7</td></tr>
+                <tr><td>Beach Defenders</td><td>4&times; Infantry + 3&times; AA + 1&times; Truck</td><td>8</td></tr>
+                <tr><td>Full Armour Section</td><td>2&times; I-Go + 2&times; Ke-Ni + 3&times; Infantry</td><td>7</td></tr>
+                <tr><td colspan="3" style="text-align:center; color: var(--text-dim);">&hellip; 20 templates total, all 6&ndash;8 units</td></tr>
+            </table>
+        </div>
+
+        <div class="card green">
+            <h3>ME Setup</h3>
+            <ol>
+                <li>Create <strong>circle trigger zones</strong>: <code>ZONE1</code>, <code>ZONE2</code>, <code>ZONE3</code>, &hellip; up to <code>ZONE18</code></li>
+                <li>Place them across the Marianas map wherever you want Japanese ground forces (towns, roads, beaches, jungle clearings)</li>
+                <li>That&rsquo;s it &mdash; no groups to pre-place, everything spawns dynamically</li>
+            </ol>
+        </div>
+
+        <h4>Tuning</h4>
+        <table>
+            <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+            <tr><td><code>DGSS.ZONES["ZONEn"].minGroups</code></td><td>1</td><td>Zone never drops below this</td></tr>
+            <tr><td><code>DGSS.ZONES["ZONEn"].maxGroups</code></td><td>3</td><td>Zone cap</td></tr>
+            <tr><td><code>DGSS.MAX_SPAWNS_PER_CYCLE</code></td><td>3</td><td>Max groups spawned per 5-min check</td></tr>
+            <tr><td><code>DGSS.CHECK_ZONES_INTERVAL</code></td><td>300 s</td><td>Seconds between spawn sweeps</td></tr>
+            <tr><td><code>DGSS.CLEANUP_INTERVAL</code></td><td>120 s</td><td>Dead group cleanup frequency</td></tr>
+        </table>
+
+        <h4>DCS Unit Types Used</h4>
+        <p><code>soldier_mauser98</code> &middot; <code>Type_89_I_Go</code> &middot; <code>Type_98_Ke_Ni</code> &middot; <code>Type_94_Truck</code> &middot; <code>Type_96_25mm_AA</code></p>
+        <div class="warning">Verify exact DCS type strings in your Mission Editor. Open ME &rarr; Add unit &rarr; filter by WWII to see available type names.</div>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="script3">
+        <h2>Script 3 &mdash; Red Convoy Spawn</h2>
+        <p><code>WWII_Marianas_RedConvoySpawn.lua</code> &mdash; Requires MIST</p>
+
+        <div class="card">
+            <h3>What It Does</h3>
+            <p>Automatically spawns Japanese supply convoys (trucks, tanks, infantry) that route between random zone pairs. Convoys use <strong>Off Road &rarr; On Road &rarr; Off Road</strong> waypoints. Stuck convoys are auto-detected and replaced. Convoys self-destruct upon arrival at their destination zone. Up to 12 active simultaneously.</p>
+            <p>RED coalition gets an F10 menu item <strong>"Convoy Status"</strong> showing active count.</p>
+        </div>
+
+        <div class="card green">
+            <h3>ME Setup</h3>
+            <ol>
+                <li>Create <strong>circle trigger zones</strong>: <code>ConvoyZone1</code>, <code>ConvoyZone2</code>, &hellip; up to <code>ConvoyZone20</code></li>
+                <li>Place them along roads and intersections across the map</li>
+                <li>The script picks random start/end pairs with a minimum 32 km separation, so <strong>spread them out</strong></li>
+                <li>No groups to pre-place &mdash; everything spawns dynamically</li>
+            </ol>
+        </div>
+
+        <h4>Convoy Template Examples</h4>
+        <table>
+            <tr><th>#</th><th>Composition</th></tr>
+            <tr><td>1</td><td>3&times; Truck</td></tr>
+            <tr><td>2</td><td>2&times; Truck + 2&times; Infantry</td></tr>
+            <tr><td>3</td><td>2&times; Truck + 1&times; I-Go Tank + 1&times; Truck</td></tr>
+            <tr><td>4</td><td>2&times; I-Go Tank + 1&times; Truck</td></tr>
+            <tr><td>5</td><td>2&times; Ke-Ni Light Tank + 2&times; Truck</td></tr>
+            <tr><td colspan="2" style="text-align:center; color: var(--text-dim);">&hellip; 15 templates total</td></tr>
+        </table>
+
+        <h4>Tuning</h4>
+        <table>
+            <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+            <tr><td><code>CONVOY.MAX_CONVOYS</code></td><td>12</td><td>Max simultaneous convoys</td></tr>
+            <tr><td><code>CONVOY.INITIAL_CONVOYS</code></td><td>3</td><td>Spawned at mission start (staggered 2 min apart)</td></tr>
+            <tr><td><code>CONVOY.CONVOY_SPEED</code></td><td>18 m/s</td><td>~65 km/h</td></tr>
+            <tr><td><code>CONVOY.MIN_TRAVEL_DISTANCE</code></td><td>32,000 m</td><td>Minimum route length</td></tr>
+            <tr><td><code>CONVOY.STALL_TIMEOUT</code></td><td>300 s</td><td>Seconds before stuck convoy is destroyed</td></tr>
+            <tr><td><code>CONVOY.SPAWN_LOOP_INTERVAL</code></td><td>180 s</td><td>Seconds between spawn attempts</td></tr>
+        </table>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="script4">
+        <h2>Script 4 &mdash; Airbase / Objective Capture</h2>
+        <p><code>WWII_Marianas_AirbaseCapture.lua</code> &mdash; <span class="badge badge-green">Standalone</span> (no MIST required)</p>
+
+        <div class="card">
+            <h3>What It Does</h3>
+            <p>Zone-based capture system with a state machine:</p>
+            <p style="text-align:center; font-size: 1.3rem; margin: 0.8rem 0;">
+                <span class="badge badge-red">RED</span> &harr; <span class="badge badge-neutral">NEUTRAL</span> &harr; <span class="badge badge-blue">BLUE</span>
+            </p>
+            <p>Ground units inside a capture zone shift ownership over consecutive scan ticks (<strong>3 scans &times; 180 s = 9 minutes to capture</strong>). Airbases swap coalition when captured. Coloured circle + text markers appear on the F10 map.</p>
+        </div>
+
+        <div class="card green">
+            <h3>ME Setup</h3>
+            <ol>
+                <li>Create <strong>Capture trigger zones</strong> (capturable objectives):
+                    <ul>
+                        <li><code>CAPTURE_ZONE_RotaAirfield</code></li>
+                        <li><code>CAPTURE_ZONE_AganaAirfield</code></li>
+                        <li><code>CAPTURE_ZONE_CharonKanoa</code></li>
+                        <li><code>CAPTURE_ZONE_Ushi</code></li>
+                        <li><code>CAPTURE_ZONE_GurguanPoint</code></li>
+                        <li><code>CAPTURE_ZONE_Pagan</code></li>
+                    </ul>
+                </li>
+                <li>Create <strong>Destroy trigger zones</strong> (destroy-only targets &mdash; start RED, turn black when cleared):
+                    <ul>
+                        <li><code>DESTROY_ZONE_RedEWR1</code>, <code>DESTROY_ZONE_RedEWR2</code>, <code>DESTROY_ZONE_RedEWR3</code>, <code>DESTROY_ZONE_RedEWR4</code></li>
+                        <li><code>DESTROY_ZONE_Factory</code>, <code>DESTROY_ZONE_Factory2</code>, <code>DESTROY_ZONE_Factory3</code></li>
+                        <li><code>DESTROY_ZONE_RadioTower</code>, <code>DESTROY_ZONE_RadioTower2</code>, <code>DESTROY_ZONE_RadioTower3</code></li>
+                        <li><code>DESTROY_ZONE_CoastalGun</code></li>
+                        <li><code>DESTROY_ZONE_Marpi</code>, <code>DESTROY_ZONE_Kagman</code>, <code>DESTROY_ZONE_Isley</code></li>
+                        <li><code>DESTROY_ZONE_Japanese_Fleet</code></li>
+                    </ul>
+                </li>
+                <li>Place RED ground units inside each destroy zone &mdash; when all are killed, the zone permanently turns black</li>
+            </ol>
+        </div>
+
+        <h4>Capture Zone Registry</h4>
+        <table>
+            <tr><th>Key</th><th>Display Name</th><th>Type</th><th>Starting Owner</th><th>DCS Airbase</th></tr>
+            <tr><td><code>RotaAirfield</code></td><td>Rota Airfield</td><td>airbase</td><td><span class="badge badge-red">RED</span></td><td>Rota Intl</td></tr>
+            <tr><td><code>CharonKanoa</code></td><td>Charon Kanoa</td><td>airbase</td><td><span class="badge badge-red">RED</span></td><td>Charon Kanoa</td></tr>
+            <tr><td><code>Ushi</code></td><td>Ushi</td><td>airbase</td><td><span class="badge badge-red">RED</span></td><td>Ushi</td></tr>
+            <tr><td><code>GurguanPoint</code></td><td>Gurguan Point</td><td>airbase</td><td><span class="badge badge-red">RED</span></td><td>Gurguan Point</td></tr>
+            <tr><td><code>Pagan</code></td><td>Pagan</td><td>airbase</td><td><span class="badge badge-red">RED</span></td><td>Pagan</td></tr>
+            <tr><td><code>AganaAirfield</code></td><td>Agana Airfield</td><td>airbase</td><td><span class="badge badge-blue">BLUE</span></td><td>Antonio B. Won Pat Intl</td></tr>
+        </table>
+
+        <h4>Destroy Zone Registry</h4>
+        <p>These zones start as <span class="badge badge-red">RED</span> and permanently turn <strong>black (Destroyed)</strong> when all RED units inside are killed. They <strong>cannot be captured or recaptured</strong> by any coalition.</p>
+        <table>
+            <tr><th>Key</th><th>Display Name</th><th>ME Zone Name</th></tr>
+            <tr><td><code>RedEWR1</code></td><td>EWR Site 1</td><td><code>DESTROY_ZONE_RedEWR1</code></td></tr>
+            <tr><td><code>RedEWR2</code></td><td>EWR Site 2</td><td><code>DESTROY_ZONE_RedEWR2</code></td></tr>
+            <tr><td><code>RedEWR3</code></td><td>EWR Site 3</td><td><code>DESTROY_ZONE_RedEWR3</code></td></tr>
+            <tr><td><code>RedEWR4</code></td><td>EWR Site 4</td><td><code>DESTROY_ZONE_RedEWR4</code></td></tr>
+            <tr><td><code>Factory</code></td><td>Factory</td><td><code>DESTROY_ZONE_Factory</code></td></tr>
+            <tr><td><code>Factory2</code></td><td>Factory 2</td><td><code>DESTROY_ZONE_Factory2</code></td></tr>
+            <tr><td><code>Factory3</code></td><td>Factory 3</td><td><code>DESTROY_ZONE_Factory3</code></td></tr>
+            <tr><td><code>RadioTower</code></td><td>Radio Tower</td><td><code>DESTROY_ZONE_RadioTower</code></td></tr>
+            <tr><td><code>RadioTower2</code></td><td>Radio Tower 2</td><td><code>DESTROY_ZONE_RadioTower2</code></td></tr>
+            <tr><td><code>RadioTower3</code></td><td>Radio Tower 3</td><td><code>DESTROY_ZONE_RadioTower3</code></td></tr>
+            <tr><td><code>CoastalGun</code></td><td>Coastal Gun</td><td><code>DESTROY_ZONE_CoastalGun</code></td></tr>
+            <tr><td><code>Marpi</code></td><td>Marpi</td><td><code>DESTROY_ZONE_Marpi</code></td></tr>
+            <tr><td><code>Kagman</code></td><td>Kagman</td><td><code>DESTROY_ZONE_Kagman</code></td></tr>
+            <tr><td><code>Isley</code></td><td>Isley</td><td><code>DESTROY_ZONE_Isley</code></td></tr>
+            <tr><td><code>Japanese_Fleet</code></td><td>Japanese Fleet</td><td><code>DESTROY_ZONE_Japanese_Fleet</code></td></tr>
+        </table>
+
+        <h4>Public API (for other scripts)</h4>
+        <table>
+            <tr><th>Function</th><th>Returns / Effect</th></tr>
+            <tr><td><code>ABC.getOwner("RotaAirfield")</code></td><td><code>"RED"</code> / <code>"BLUE"</code> / <code>"NEUTRAL"</code></td></tr>
+            <tr><td><code>ABC.forceCoalition("RotaAirfield", "BLUE")</code></td><td>Instant capture (capture zones only)</td></tr>
+            <tr><td><code>ABC.setDestroyed("RotaAirfield")</code></td><td>Force neutralise (capture zones only)</td></tr>
+            <tr><td><code>ABC.redrawAll()</code></td><td>Refresh all capture &amp; destroy zone map markers</td></tr>
+        </table>
+
+        <h4>Tuning</h4>
+        <table>
+            <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+            <tr><td><code>ABC.CHECK_INTERVAL</code></td><td>180 s</td><td>Seconds between capture scans</td></tr>
+            <tr><td><code>ABC.CAPTURE_TICKS</code></td><td>3</td><td>Consecutive scans to capture (&times; 180 s = 9 min)</td></tr>
+            <tr><td><code>ABC.MIN_CAPTURE_UNITS</code></td><td>1</td><td>Minimum ground units inside zone</td></tr>
+        </table>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="zones">
+        <h2>Complete Trigger Zone Checklist</h2>
+        <table>
+            <tr><th>Zone Name(s)</th><th>Used By</th><th>Type</th></tr>
+            <tr><td><code>BlueCTLD</code></td><td>CAP/CTLD/GCI &mdash; logistics load zone</td><td>Circle</td></tr>
+            <tr><td><code>RED_ZONE_ROTA</code>, <code>RED_ZONE_NORTH</code>, <code>RED_ZONE_SOUTH</code></td><td>GCI (RED defense sectors)</td><td>Circle</td></tr>
+            <tr><td><code>BLUE_ZONE_AGANA</code>, <code>BLUE_ZONE_NORTH</code></td><td>GCI (BLUE defense sectors)</td><td>Circle</td></tr>
+            <tr><td><code>ZONE1</code> &ndash; <code>ZONE18</code></td><td>DGSS (ground spawns)</td><td>Circle</td></tr>
+            <tr><td><code>ConvoyZone1</code> &ndash; <code>ConvoyZone20</code></td><td>Red Convoys</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_RotaAirfield</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_AganaAirfield</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_CharonKanoa</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_Ushi</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_GurguanPoint</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>CAPTURE_ZONE_Pagan</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_RedEWR1</code> &ndash; <code>RedEWR4</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_Factory</code>, <code>Factory2</code>, <code>Factory3</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_RadioTower</code>, <code>RadioTower2</code>, <code>RadioTower3</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_CoastalGun</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_Marpi</code>, <code>Kagman</code>, <code>Isley</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+            <tr><td><code>DESTROY_ZONE_Japanese_Fleet</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
+        </table>
+        <p><strong>Total trigger zones needed:</strong> 1 + 3 + 2 + 18 + 20 + 6 (capture) + 15 (destroy) = <strong>65 circle zones</strong></p>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ============================================================ -->
+    <section id="groups">
+        <h2>Complete Group Checklist</h2>
+
+        <h3>Late-Activated Air Groups</h3>
+        <table>
+            <tr><th>Group Name(s)</th><th>Side</th><th>Script / Section</th></tr>
+            <tr><td><code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>, <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></td><td><span class="badge badge-red">RED</span></td><td>CAP (Section A)</td></tr>
+            <tr><td><code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></td><td><span class="badge badge-red">RED</span></td><td>Bombers (Section B)</td></tr>
+            <tr><td><code>NorthCAP</code>, <code>NorthCAP2</code>, <code>HomeCAP</code>, <code>Bomb_CoastalGun</code>, <code>Bomb_RadioTower</code>, <code>Bomb_RotaAirfield</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Support F10 (Section C)</td></tr>
+            <tr><td><code>RED_AIR_ROTA_01</code> through <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
+            <tr><td><code>RED_AIR_NORTH_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
+            <tr><td><code>RED_AIR_SOUTH_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
+            <tr><td><code>BLUE_AIR_AGANA_01</code> through <code>_06</code></td><td><span class="badge badge-blue">BLUE</span></td><td>GCI (Section F)</td></tr>
+            <tr><td><code>BLUE_AIR_NORTH_01</code> through <code>_04</code></td><td><span class="badge badge-blue">BLUE</span></td><td>GCI (Section F)</td></tr>
+        </table>
+
+        <h3>Player Slots (NOT late-activated)</h3>
+        <table>
+            <tr><th>Group Name</th><th>Side</th><th>Script</th></tr>
+            <tr><td><code>LogiTF51D</code> (and any <code>LogiTF51D_*</code> variants)</td><td><span class="badge badge-blue">BLUE</span></td><td>CTLD (Section E) &mdash; player TF-51D</td></tr>
+            <tr><td>Any other player aircraft</td><td>&mdash;</td><td>Not script-managed</td></tr>
+        </table>
+
+        <div class="back-top"><a href="#">&uarr; Back to top</a></div>
+    </section>
+
+</div>
+
+</body>
+</html>

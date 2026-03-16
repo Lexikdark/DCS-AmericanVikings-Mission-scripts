@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCS_DynamicWeatherPreset.lua – Documentation</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #20242f;
+      --border:  #2e3347;
+      --accent:  #4f8ef7;
+      --accent2: #7ec8e3;
+      --text:    #d4d8e8;
+      --muted:   #7a7f99;
+      --good:    #2a9d5c;
+      --warn:    #c97a10;
+      --danger:  #c0392b;
+      --code-bg: #12141c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; flex-wrap: wrap;
+      gap: 4px 16px; padding: 10px 24px;
+    }
+    nav .brand { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; margin-right: 12px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; padding: 3px 6px; border-radius: 4px; transition: color .15s, background .15s; }
+    nav a:hover { color: var(--text); background: var(--border); }
+
+    .page { max-width: 980px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    .hero {
+      background: linear-gradient(135deg, #1a2040 0%, #0f1117 60%);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 36px 32px; margin-bottom: 36px;
+    }
+    .hero h1 { font-size: 26px; color: #fff; }
+    .hero .sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+    .badge {
+      display: inline-block; background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 2px 9px;
+      border-radius: 20px; margin-left: 10px; vertical-align: middle; letter-spacing: .4px;
+    }
+    .badge-warn  { background: var(--warn); }
+    .badge-good  { background: var(--good); }
+    .badge-muted { background: #3a3f55; }
+
+    section { margin-bottom: 48px; scroll-margin-top: 70px; }
+    h2 { font-size: 19px; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 18px; }
+    h3 { font-size: 15px; color: #b8c0d8; margin: 22px 0 8px; }
+    h4 { font-size: 13.5px; color: var(--accent); margin: 16px 0 6px; }
+    p  { margin-bottom: 12px; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 5px; }
+    strong { color: #e0e4f4; }
+    em     { color: var(--accent2); font-style: normal; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; margin-bottom: 18px; }
+    .card-title { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 12px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 18px; }
+    thead th { background: var(--surface); color: var(--accent2); font-weight: 700; text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border); }
+    tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(79,142,247,.05); }
+
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 16px 18px; overflow-x: auto; font-size: 13px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      line-height: 1.55; margin-bottom: 16px; color: #c9d1e9;
+    }
+    code {
+      background: var(--code-bg); border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 4px; font-size: 12.5px;
+      font-family: 'Cascadia Code', 'Consolas', monospace; color: #a8d8f0;
+    }
+    .kw  { color: #c792ea; }
+    .str { color: #c3e88d; }
+    .num { color: #f78c6c; }
+    .cmt { color: #546e7a; font-style: italic; }
+    .fn  { color: #82aaff; }
+    .key { color: #ffcb6b; }
+
+    .box-info, .box-warn, .box-good, .box-danger {
+      border-left: 4px solid; padding: 12px 16px; border-radius: 0 6px 6px 0;
+      margin-bottom: 14px; font-size: 13.5px;
+    }
+    .box-info   { border-color: var(--accent);  background: rgba(79,142,247,.08); }
+    .box-warn   { border-color: var(--warn);    background: rgba(201,122,16,.08); }
+    .box-good   { border-color: var(--good);    background: rgba(42,157,92,.08); }
+    .box-danger { border-color: var(--danger);  background: rgba(192,57,43,.08); }
+    .box-info strong, .box-warn strong, .box-good strong, .box-danger strong { display: block; margin-bottom: 4px; }
+
+    /* Timeline / node display */
+    .node-row {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+    }
+    .node-dot {
+      min-width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .nd-clear   { background: #1a3a2a; border-color: var(--good);    color: var(--good); }
+    .nd-build   { background: #2a2a1a; border-color: var(--warn);    color: var(--warn); }
+    .nd-storm   { background: #2a1a1a; border-color: var(--danger);  color: var(--danger); }
+    .nd-over    { background: #1a1f3a; border-color: var(--accent);  color: var(--accent); }
+    .nd-fog     { background: #22222a; border-color: #8888aa;        color: #8888aa; }
+    .nd-hazy    { background: #2a2010; border-color: #e0a040;        color: #e0a040; }
+    .node-body  { flex: 1; }
+    .node-time  { font-family: 'Cascadia Code','Consolas',monospace; font-size: 12px; color: var(--accent2); }
+    .node-label { font-size: 14px; font-weight: 700; color: #e0e4f4; margin: 3px 0 5px; }
+    .node-desc  { font-size: 13px; color: var(--muted); }
+
+    /* Flow steps */
+    .flow { counter-reset: flow; list-style: none; padding: 0; margin-bottom: 18px; }
+    .flow li { counter-increment: flow; display: flex; gap: 12px; margin-bottom: 14px; font-size: 14px; }
+    .flow li::before {
+      content: counter(flow); min-width: 28px; height: 28px;
+      background: var(--accent); color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    .cfg-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+    .cfg-table th { background: var(--surface); color: var(--accent2); font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); }
+    .cfg-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .cfg-table tr:last-child td { border-bottom: none; }
+    .cfg-table td:first-child { font-family: 'Cascadia Code','Consolas',monospace; font-size: 12.5px; color: var(--accent); white-space: nowrap; }
+    .cfg-table td:nth-child(2) { font-family: 'Cascadia Code','Consolas',monospace; font-size: 12.5px; color: #f78c6c; }
+    .cfg-table td:nth-child(3) { font-size: 13px; color: var(--text); }
+    .cfg-table tr:hover { background: rgba(79,142,247,.05); }
+
+    .me-step {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start;
+    }
+    .me-num {
+      min-width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--accent2); flex-shrink: 0;
+    }
+    .me-body { flex: 1; }
+    .me-title { font-size: 13.5px; font-weight: 700; color: #e0e4f4; margin-bottom: 4px; }
+    .me-desc  { font-size: 13px; color: var(--muted); }
+
+    /* Archetype card grid */
+    .arch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .arch-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .arch-name { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 6px; letter-spacing: .4px; }
+    .arch-cat  { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+    .cat-vfr   { background: rgba(42,157,92,.2);   color: var(--good);   border: 1px solid rgba(42,157,92,.4); }
+    .cat-mvfr  { background: rgba(201,122,16,.2);  color: var(--warn);   border: 1px solid rgba(201,122,16,.4); }
+    .cat-ifr   { background: rgba(79,142,247,.2);  color: var(--accent); border: 1px solid rgba(79,142,247,.4); }
+    .cat-lifr  { background: rgba(192,57,43,.2);   color: var(--danger); border: 1px solid rgba(192,57,43,.4); }
+    .arch-body { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+    .pill {
+      display: inline-block; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; font-size: 11.5px; padding: 2px 10px; margin: 2px 2px 0 0; color: var(--text);
+      font-family: 'Cascadia Code','Consolas',monospace;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">DWP Docs</span>
+  <a href="#overview">Overview</a>
+  <a href="#how-it-works">How It Works</a>
+  <a href="#installation">Installation</a>
+  <a href="#archetypes">Archetypes</a>
+  <a href="#transitions">Transitions</a>
+  <a href="#config">Configuration</a>
+  <a href="#broadcasts">Broadcasts</a>
+  <a href="#customise">Customising</a>
+  <a href="#functions">Functions</a>
+  <a href="#dcs-limits">DCS Limits</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <h1>DCS_DynamicWeatherPreset.lua
+      <span class="badge">American Vikings</span>
+      <span class="badge badge-good">Syria</span>
+      <span class="badge badge-muted">v1.0</span>
+    </h1>
+    <p class="sub">
+      Complete guide to the randomised per‑mission weather preset generator —
+      covering how the 6‑node system works, every configurable value,
+      the 10 weather archetypes, and how to extend or tune the script.
+    </p>
+  </div>
+
+  <!-- ─── OVERVIEW ─── -->
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      <code>DCS_DynamicWeatherPreset.lua</code> generates a unique, realistic weather
+      narrative for every mission run. It does this by defining <strong>6 weather nodes</strong>
+      — anchor points spread across the 12‑hour mission timeline — and randomising
+      the conditions at each one using a seeded RNG that produces different results
+      each time the server restarts.
+    </p>
+    <p>
+      At mission start pilots receive a <strong>full weather plan</strong> — a forecast
+      sheet covering all 6 nodes. Every 5 minutes a live <strong>ATIS broadcast</strong>
+      reads real atmospheric data from DCS (wind at three altitudes, QNH, temperature)
+      and overlays the active‑node forecast and hazard notices. Pilots can also request
+      an immediate update at any time by setting a User Flag in the ME.
+    </p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">What the script does</div>
+        <ul>
+          <li>Seeds a DCS‑safe RNG using <code>atmosphere.getWind()</code> fractional entropy</li>
+          <li>Generates 6 weather nodes using a Markov transition table</li>
+          <li>Broadcasts a full-mission forecast sheet at start</li>
+          <li>Delivers live ATIS broadcasts every 5 minutes</li>
+          <li>Reads real DCS atmosphere data (wind, QNH, temp)</li>
+          <li>Tracks wind trend across the last 6 samples</li>
+          <li>Notifies pilots of hazards for the active node</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">What DCS does</div>
+        <ul>
+          <li>Controls the actual cloud appearance (presets are set in ME)</li>
+          <li>Evolves wind, temperature, and pressure under Dynamic atmosphere</li>
+          <li>Provides real wind/temp/pressure data via <code>atmosphere.*</code> API</li>
+          <li>Interpolates weather conditions over time between ME starting values</li>
+        </ul>
+        <div class="box-info" style="margin-top:12px; margin-bottom:0;">
+          <strong>Key point</strong>
+          This script cannot set or change clouds at runtime.
+          It describes, forecasts, and broadcasts — the sky is DCS's domain.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ─── -->
+  <section id="how-it-works">
+    <h2>How It Works</h2>
+
+    <h3>Step 1 — Seed the RNG</h3>
+    <p>
+      DCS blocks <code>os.time()</code>, and <code>timer.getAbsTime()</code> returns
+      a fixed value when the mission always starts at the same time-of-day. Instead,
+      the script queries <code>atmosphere.getWind()</code> at two altitudes and reads
+      the <em>fractional mantissa bits</em> of the returned floats. These vary slightly
+      on every server restart even with identical Mission Editor settings, providing
+      genuine entropy. Multiple prime multipliers mix the bits before feeding them into
+      <code>math.randomseed()</code>. <code>timer.getAbsTime()</code> is added as a
+      secondary salt.
+    </p>
+    <pre><span class="kw">local</span> wLow  = atmosphere.getWind({ x=ref.x, y=ref.y+<span class="num">10</span>,   z=ref.z })
+<span class="kw">local</span> wHigh = atmosphere.getWind({ x=ref.x, y=ref.y+<span class="num">5000</span>, z=ref.z })
+
+<span class="kw">local</span> e1 = math.abs(wLow.x  * <span class="num">99991</span>) % <span class="num">100000</span>
+<span class="kw">local</span> e2 = math.abs(wLow.z  * <span class="num">49979</span>) % <span class="num">100000</span>
+<span class="kw">local</span> e3 = math.abs(wHigh.x * <span class="num">73867</span>) % <span class="num">100000</span>
+<span class="kw">local</span> e4 = math.abs(wHigh.z * <span class="num">31397</span>) % <span class="num">100000</span>
+
+<span class="kw">local</span> seed = math.floor(e1*<span class="num">1000</span> + e2*<span class="num">100</span> + e3*<span class="num">10</span> + e4 + timer.getAbsTime())
+math.randomseed(seed % <span class="num">2147483647</span>)
+math.random() <span class="cmt">-- discard first value (weak LCG low-bit distribution)</span></pre>
+
+    <h3>Step 2 — Pick an opening archetype</h3>
+    <p>
+      The script chooses the first node's weather state from <strong>OPENING_STATES</strong> —
+      a weighted list of 7 archetypes tuned for the Syria theatre (CLEAR and HAZY are
+      most common; COLD_FRONT is rare). Each archetype is assigned a weight; higher
+      weight means higher probability of being selected.
+    </p>
+
+    <h3>Step 3 — Walk the Markov transition table</h3>
+    <p>
+      For each subsequent node the script looks up the <strong>TRANSITIONS</strong> table
+      for the current archetype, which lists valid next‑states with relative weights.
+      This ensures the weather narrative is physically plausible — a STORMY node
+      is likely to be followed by CLEARING or OVERCAST, not by FOG.
+    </p>
+    <div class="box-good">
+      <strong>Result</strong>
+      Each run produces a different 6‑node sequence — but always a believable one.
+      You will never get FOG at 0:00 followed immediately by THUNDERSTORM at 2:00.
+    </div>
+
+    <h3>Step 4 — Generate concrete values</h3>
+    <p>
+      Once the archetype for a node is chosen, the script draws random parameter
+      values from within that archetype's defined ranges:
+    </p>
+    <ul>
+      <li><strong>Surface wind direction</strong> — 0–360° (fully random)</li>
+      <li><strong>Surface wind speed</strong> — within the archetype's <code>windSpd</code> range (m/s)</li>
+      <li><strong>2 000 m wind</strong> — speed = surface × random shear factor; direction = surface + random veer (°)</li>
+      <li><strong>8 000 m wind</strong> — same logic, higher shear and veer ranges</li>
+      <li><strong>Cloud option</strong> — randomly picked from the archetype's cloud list</li>
+      <li><strong>Visibility</strong> — metres, within archetype range</li>
+      <li><strong>QNH</strong> — hPa, within archetype range</li>
+      <li><strong>Temperature</strong> — °C, within archetype range</li>
+    </ul>
+
+    <h3>Step 5 — Broadcast and run</h3>
+    <p>
+      The full 6‑node forecast is broadcast immediately at mission start.
+      Thirty seconds later, the first live ATIS is sent. After that, ATIS
+      updates fire every <code>ATIS_INTERVAL</code> seconds (default 300 s / 5 min)
+      via a <code>timer.scheduleFunction()</code> loop.
+    </p>
+
+    <!-- Node broadcast example -->
+    <h3>What the weather plan broadcast looks like</h3>
+    <div class="card">
+      <pre style="margin-bottom:0; font-size:12px; color:#9da8c0;">══ AMERICAN VIKINGS — MISSION WEATHER PLAN ══
+PERIOD       STATUS   CAT   SKY / WIND
+──────────────────────────────────────────────────────────────
+T+00:00-02:00  CLEAR           [VFR ]
+  SKY:  Few cumulus 7000 ft, scattered cirrus high above
+  VIS:  52 km
+  WIND: 087°/14 kts sfc  102°/22 kts 2km  117°/31 kts 8km
+  QNH:  1019 hPa  TEMP: +28°C
+
+T+02:00-04:00  BUILDING        [MVFR]
+  SKY:  Broken cumulus 4000 ft, tops to 18 000 ft, organized convection
+  VIS:  19 km
+  WIND: 092°/18 kts sfc  110°/29 kts 2km  122°/42 kts 8km
+  QNH:  1013 hPa  TEMP: +23°C
+  NOTAMs:
+    ⚠ Cloud base lowering — monitor ceiling trend
+    ⚠ Wind speed increasing — forecast: continued building
+
+T+04:00-06:00  THUNDERSTORM    [LIFR]
+  SKY:  Cumulonimbus overcast, base 1800-2500 ft, continuous lightning
+  VIS:  1 km
+  WIND: ...
+...</pre>
+    </div>
+  </section>
+
+  <!-- ─── INSTALLATION ─── -->
+  <section id="installation">
+    <h2>Installation</h2>
+    <p>This script requires exactly <strong>one ME trigger</strong> and one Weather setting.</p>
+
+    <div class="me-step">
+      <div class="me-num">1</div>
+      <div class="me-body">
+        <div class="me-title">ME Trigger — load the script</div>
+        <div class="me-desc">
+          <strong>Triggers → New Trigger</strong><br>
+          Type: <code>ONCE</code> &nbsp;|&nbsp; Event: <code>MISSION START</code> &nbsp;|&nbsp;
+          Action: <code>DO SCRIPT FILE</code> → select <code>DCS_DynamicWeatherPreset.lua</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="me-step">
+      <div class="me-num">2</div>
+      <div class="me-body">
+        <div class="me-title">ME Weather tab — enable Dynamic atmosphere</div>
+        <div class="me-desc">
+          <strong>Weather → Atmosphere Type → DYNAMIC</strong><br>
+          Set your initial conditions (wind, clouds, visibility, pressure).
+          DCS will evolve them across the mission automatically.
+          The script's node descriptions will match whatever starting state
+          you configure here.
+        </div>
+      </div>
+    </div>
+
+    <div class="box-warn">
+      <strong>No extra triggers needed</strong>
+      Unlike cloud‑swap systems from third‑party tools, this script does not require
+      timed triggers or flag-based weather changes. One MISSION START trigger is all
+      it needs.
+    </div>
+
+    <h3>Optional — On‑demand ATIS via User Flag</h3>
+    <p>
+      Set <strong>User Flag #10</strong> (or change <code>CFG.ATIS_FLAG</code>) to
+      <code>true / 1</code> in any ME trigger to force an immediate ATIS broadcast.
+      The script automatically resets the flag to <code>0</code> after reading it.
+    </p>
+    <pre><span class="cmt">-- Example: connect a radio menu item to Flag 10 via a
+-- MENU COMMAND trigger → SET FLAG 10 = TRUE</span></pre>
+  </section>
+
+  <!-- ─── ARCHETYPES ─── -->
+  <section id="archetypes">
+    <h2>Weather Archetypes</h2>
+    <p>
+      An <strong>archetype</strong> is a named weather state — a collection of parameter
+      ranges (not fixed values). When the generator picks an archetype for a node it
+      draws a random value from inside each range, producing different concrete numbers
+      every run while staying within the bounds of that weather type.
+    </p>
+    <p>There are <strong>10 archetypes</strong>:</p>
+
+    <div class="arch-grid">
+
+      <div class="arch-card">
+        <div class="arch-name">CLEAR</div>
+        <span class="arch-cat cat-vfr">VFR</span>
+        <div class="arch-body">
+          Light to moderate winds. Few cumulus at high bases.
+          Excellent visibility 40–65 km. High pressure 1015–1025 hPa.
+          Typical sunny Syria day — no hazards.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">BUILDING</div>
+        <span class="arch-cat cat-mvfr">MVFR</span>
+        <div class="arch-body">
+          Winds picking up. Cumulus towers developing, bases 3 500–6 000 ft.
+          Vis reducing to 12–30 km. Increasing winds and lowering ceiling
+          are the primary hazards — a stormfront is approaching.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">STORMY</div>
+        <span class="arch-cat cat-lifr">LIFR</span>
+        <div class="arch-body">
+          Full CBs overcast, bases 1 500–2 500 ft. Heavy rain, lightning,
+          severe turbulence. Winds 15–38 m/s. Visibility 300 m – 3 km.
+          Multiple hazard NOTAMs generated. Icing above FL050.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">OVERCAST</div>
+        <span class="arch-cat cat-ifr">IFR</span>
+        <div class="arch-body">
+          Solid grey deck, OVC030–OVC080. Light to moderate rain.
+          Winds moderate 8–22 m/s. Ceiling at or near IFR minima.
+          No lightning — just low, flat, oppressive cloud.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">CLEARING</div>
+        <span class="arch-cat cat-mvfr">MVFR</span>
+        <div class="arch-body">
+          Post-frontal — broken SCu lifting, gaps widening.
+          Strong winds from behind the front 10–25 m/s.
+          Conditions improving but residual turbulence and wet runways.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">FOGGY</div>
+        <span class="arch-cat cat-lifr">LIFR</span>
+        <div class="arch-body">
+          Calm winds 0–4 m/s. Radiation or advection fog.
+          Visibility 80–600 m. Ceiling at surface or OVC005.
+          Operations suspended. Strong wind shear above inversion top.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">HAZY</div>
+        <span class="arch-cat cat-vfr">VFR</span>
+        <div class="arch-body">
+          Moderate winds 5–15 m/s. Desert heat haze reducing slant
+          visibility. Vis 8–20 km. High temps 20–38 °C. Density altitude
+          risk and degraded depth perception on approach.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">GUSTY CLEAR</div>
+        <span class="arch-cat cat-vfr">VFR</span>
+        <div class="arch-body">
+          Strong, gusty winds 14–28 m/s but excellent visibility 30–60 km.
+          Few towering cumulus, sharply-defined. Crosswind, turbulence
+          over ridgelines, and windshear on approach are the hazards.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">FRONTAL PASSAGE</div>
+        <span class="arch-cat cat-lifr">LIFR</span>
+        <div class="arch-body">
+          The worst possible condition. Violent, erratic winds 22–42 m/s.
+          Extreme turbulence, hail, wind shifts of 60–90°.
+          Pressure collapses to 990–1005 hPa. Rare — only reachable
+          from GUSTY or BUILDING states.
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-name">DUST HAZE</div>
+        <span class="arch-cat cat-mvfr">MVFR</span>
+        <div class="arch-body">
+          Hot 24–42 °C. Winds 12–26 m/s carry suspended mineral dust.
+          Visibility 2–12 km, brownish horizon. FOD risk, engine wash
+          required. High density altitude. Common in summer Syria.
+        </div>
+      </div>
+
+    </div>
+
+    <h3>Archetype parameter structure</h3>
+    <p>Each archetype in the Lua source contains these fields:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>label</code></td><td>string</td><td>Displayed name in ATIS and forecast</td></tr>
+        <tr><td><code>category</code></td><td>string</td><td>Flight category: VFR / MVFR / IFR / LIFR</td></tr>
+        <tr><td><code>clouds</code></td><td>list of pairs</td><td>Each pair: { DCS preset name, ATIS text description }</td></tr>
+        <tr><td><code>windSpd</code></td><td>{ min, max } m/s</td><td>Surface wind speed range</td></tr>
+        <tr><td><code>shear2k</code></td><td>{ min, max } multiplier</td><td>How much faster wind is at 2 000 m vs surface</td></tr>
+        <tr><td><code>shear8k</code></td><td>{ min, max } multiplier</td><td>How much faster wind is at 8 000 m vs surface</td></tr>
+        <tr><td><code>dirDelta2k</code></td><td>{ min, max } degrees</td><td>Right-veer of wind from surface to 2 000 m</td></tr>
+        <tr><td><code>dirDelta8k</code></td><td>{ min, max } degrees</td><td>Right-veer from surface to 8 000 m</td></tr>
+        <tr><td><code>vis</code></td><td>{ min, max } metres</td><td>Horizontal visibility range</td></tr>
+        <tr><td><code>qnh</code></td><td>{ min, max } hPa</td><td>Surface pressure range</td></tr>
+        <tr><td><code>temp</code></td><td>{ min, max } °C</td><td>Temperature range</td></tr>
+        <tr><td><code>hazards</code></td><td>list of strings</td><td>NOTAM lines broadcast at each ATIS when this archetype is active</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── TRANSITIONS ─── -->
+  <section id="transitions">
+    <h2>Transition Table (Markov Chain)</h2>
+    <p>
+      The <code>TRANSITIONS</code> table is what turns a random set of archetypes
+      into a <em>plausible weather story</em>. Each archetype lists the states it
+      can evolve into, with a weight indicating how likely each successor is.
+    </p>
+
+    <table>
+      <thead><tr><th>Current state</th><th>Can be followed by (approx. probability)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>CLEAR</code></td>
+          <td>BUILDING ★★★★ &nbsp;|&nbsp; CLEAR ★★★ &nbsp;|&nbsp; HAZY ★★★ &nbsp;|&nbsp; GUSTY ★★</td>
+        </tr>
+        <tr>
+          <td><code>BUILDING</code></td>
+          <td>STORMY ★★★★ &nbsp;|&nbsp; OVERCAST ★★★ &nbsp;|&nbsp; BUILDING ★★ &nbsp;|&nbsp; HAZY ★</td>
+        </tr>
+        <tr>
+          <td><code>STORMY</code></td>
+          <td>CLEARING ★★★★ &nbsp;|&nbsp; OVERCAST ★★★ &nbsp;|&nbsp; STORMY ★★ &nbsp;|&nbsp; COLD_FRONT ★</td>
+        </tr>
+        <tr>
+          <td><code>OVERCAST</code></td>
+          <td>CLEARING ★★★ &nbsp;|&nbsp; FOGGY ★★ &nbsp;|&nbsp; STORMY ★★ &nbsp;|&nbsp; OVERCAST ★★ &nbsp;|&nbsp; BUILDING ★</td>
+        </tr>
+        <tr>
+          <td><code>CLEARING</code></td>
+          <td>CLEAR ★★★ &nbsp;|&nbsp; GUSTY ★★★ &nbsp;|&nbsp; OVERCAST ★★ &nbsp;|&nbsp; HAZY ★★</td>
+        </tr>
+        <tr>
+          <td><code>FOGGY</code></td>
+          <td>OVERCAST ★★★ &nbsp;|&nbsp; CLEARING ★★★ &nbsp;|&nbsp; HAZY ★★ &nbsp;|&nbsp; FOGGY ★★</td>
+        </tr>
+        <tr>
+          <td><code>HAZY</code></td>
+          <td>DUST ★★★ &nbsp;|&nbsp; CLEAR ★★ &nbsp;|&nbsp; BUILDING ★★ &nbsp;|&nbsp; HAZY ★★ &nbsp;|&nbsp; OVERCAST ★</td>
+        </tr>
+        <tr>
+          <td><code>GUSTY</code></td>
+          <td>CLEAR ★★★ &nbsp;|&nbsp; BUILDING ★★ &nbsp;|&nbsp; COLD_FRONT ★★ &nbsp;|&nbsp; GUSTY ★★ &nbsp;|&nbsp; CLEARING ★</td>
+        </tr>
+        <tr>
+          <td><code>COLD_FRONT</code></td>
+          <td>CLEARING ★★★★ &nbsp;|&nbsp; GUSTY ★★★ &nbsp;|&nbsp; OVERCAST ★★ &nbsp;|&nbsp; CLEAR ★</td>
+        </tr>
+        <tr>
+          <td><code>DUST</code></td>
+          <td>HAZY ★★★ &nbsp;|&nbsp; CLEAR ★★ &nbsp;|&nbsp; BUILDING ★★ &nbsp;|&nbsp; DUST ★★ &nbsp;|&nbsp; STORMY ★</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="box-info">
+      <strong>Reading the table</strong>
+      ★ = relative probability weight. More stars = more likely to be chosen.
+      These weights are configurable directly in the <code>TRANSITIONS</code> table in
+      the Lua source — change the <code>w =</code> values to tune the frequency of any
+      weather progression you want.
+    </div>
+
+    <h3>Example generated arcs</h3>
+    <div class="node-row">
+      <div class="node-dot nd-clear">N1</div>
+      <div class="node-body">
+        <div class="node-time">T+00:00 – 02:00</div>
+        <div class="node-label">CLEAR</div>
+        <div class="node-desc">Blue skies, light SE wind, moderate thermals</div>
+      </div>
+    </div>
+    <div class="node-row">
+      <div class="node-dot nd-build">N2</div>
+      <div class="node-body">
+        <div class="node-time">T+02:00 – 04:00</div>
+        <div class="node-label">BUILDING</div>
+        <div class="node-desc">Cu towers developing, base lowering, winds picking up</div>
+      </div>
+    </div>
+    <div class="node-row">
+      <div class="node-dot nd-storm">N3</div>
+      <div class="node-body">
+        <div class="node-time">T+04:00 – 06:00</div>
+        <div class="node-label">THUNDERSTORM</div>
+        <div class="node-desc">CBs overcast, lightning, severe turbulence, vis &lt; 1 km</div>
+      </div>
+    </div>
+    <div class="node-row">
+      <div class="node-dot nd-over">N4</div>
+      <div class="node-body">
+        <div class="node-time">T+06:00 – 08:00</div>
+        <div class="node-label">OVERCAST</div>
+        <div class="node-desc">Storm weakening, overcast nimbostratus, light rain</div>
+      </div>
+    </div>
+    <div class="node-row">
+      <div class="node-dot nd-build">N5</div>
+      <div class="node-body">
+        <div class="node-time">T+08:00 – 10:00</div>
+        <div class="node-label">CLEARING</div>
+        <div class="node-desc">Cloud base lifting, gaps widening, post-frontal turbulence</div>
+      </div>
+    </div>
+    <div class="node-row">
+      <div class="node-dot nd-clear">N6</div>
+      <div class="node-body">
+        <div class="node-time">T+10:00 – 12:00</div>
+        <div class="node-label">GUSTY CLEAR</div>
+        <div class="node-desc">Clear above, strong gusty winds, excellent visibility</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CONFIGURATION ─── -->
+  <section id="config">
+    <h2>Configuration (CFG block)</h2>
+    <p>
+      All user-editable settings live in the <code>CFG</code> table at the top of the script.
+      No other part of the file needs to be changed for normal operation.
+    </p>
+
+    <table class="cfg-table">
+      <thead>
+        <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AIRFIELD_REF</td>
+          <td>{ x=-35000, y=0, z=75000 }</td>
+          <td>
+            World coordinate used for atmosphere queries. Set this to a point near your main
+            operating airfield. <code>y</code> is altitude above sea level (0 = sea level).
+            The script samples wind at <code>y+10</code> and <code>y+5000</code> relative to
+            this point for entropy seeding.
+          </td>
+        </tr>
+        <tr>
+          <td>NODE_DURATION_HOURS</td>
+          <td>2</td>
+          <td>
+            How many mission hours each node represents. Default gives a 12-hour full cycle
+            (6 nodes × 2 hours). Reducing to 1 gives a 6-hour cycle; increasing to 3 gives
+            an 18-hour cycle.
+          </td>
+        </tr>
+        <tr>
+          <td>NODE_COUNT</td>
+          <td>6</td>
+          <td>
+            Total number of weather nodes. Should match DCS's 6 interpolation points in the
+            ME Weather tab. Can be changed but <code>TRANSITIONS</code> table may need review
+            if dramatically reduced.
+          </td>
+        </tr>
+        <tr>
+          <td>ATIS_INTERVAL</td>
+          <td>300</td>
+          <td>
+            Seconds between automatic ATIS broadcasts. 300 s = every 5 minutes. Set higher
+            (e.g. 600) to reduce chat noise during quiet periods.
+          </td>
+        </tr>
+        <tr>
+          <td>ATIS_FLAG</td>
+          <td>10</td>
+          <td>
+            ME User Flag number. Set this flag to 1/true in any ME trigger to force an
+            immediate ATIS update. The script resets it to 0 automatically within one tick.
+          </td>
+        </tr>
+        <tr>
+          <td>BROADCAST_COALITION</td>
+          <td>2</td>
+          <td>
+            Who receives ATIS and forecast messages.<br>
+            <code>0</code> = everyone &nbsp;|&nbsp; <code>1</code> = Red &nbsp;|&nbsp; <code>2</code> = Blue
+          </td>
+        </tr>
+        <tr>
+          <td>MSG_SHORT</td>
+          <td>15</td>
+          <td>Display duration (seconds) for short notifications.</td>
+        </tr>
+        <tr>
+          <td>MSG_LONG</td>
+          <td>30</td>
+          <td>Display duration (seconds) for the ATIS and forecast sheet. Increase if pilots need more reading time.</td>
+        </tr>
+        <tr>
+          <td>WIND_HISTORY</td>
+          <td>6</td>
+          <td>
+            Number of wind samples retained for trend analysis. Each sample is taken every
+            30 seconds, so the default covers the last 3 minutes. Increase for a smoother/
+            longer trend window; decrease for a more reactive trend.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── BROADCASTS ─── -->
+  <section id="broadcasts">
+    <h2>Broadcasts in Detail</h2>
+
+    <h3>Weather Plan (mission start)</h3>
+    <p>
+      Sent once at mission start — a full forecast sheet for all 6 nodes displayed as
+      a table in the coalition text overlay. Each node entry shows:
+    </p>
+    <ul>
+      <li>Period (e.g. T+04:00–06:00)</li>
+      <li>Weather label and flight category (LIFR / IFR / MVFR / VFR)</li>
+      <li>Sky description (the cloud text drawn from the archetype's cloud list)</li>
+      <li>Visibility in whole kilometres</li>
+      <li>Wind at surface, 2 000 m, and 8 000 m (heading/speed in knots)</li>
+      <li>QNH in hPa and temperature in °C</li>
+      <li>NOTAM lines if any hazards apply to that archetype</li>
+    </ul>
+    <div class="box-info">
+      <strong>Re-requesting the plan</strong>
+      There is currently no flag to re-send the full plan mid-mission. If needed,
+      call <code>broadcastWeatherPlan()</code> from a DO SCRIPT trigger.
+    </div>
+
+    <h3>Live ATIS (every 5 minutes)</h3>
+    <p>
+      Uses <strong>real DCS atmosphere data</strong> — not the generated node values —
+      for the actual wind, QNH, and temperature readings. The generated node forecast
+      provides the sky description, category, and in-text outlook for the next period.
+    </p>
+    <p>The ATIS includes:</p>
+    <ul>
+      <li>Current mission time</li>
+      <li>Active node label and flight category</li>
+      <li>Live surface wind (direction and speed in knots)</li>
+      <li>Live 2 000 m wind</li>
+      <li>Live 8 000 m wind</li>
+      <li>Wind trend over the last ~3 minutes (rising/falling/steady, backing/veering/steady)</li>
+      <li>QNH in hPa and inHg (live from DCS)</li>
+      <li>Temperature (live from DCS)</li>
+      <li>Sky condition text from the active node</li>
+      <li>Visibility from the active node</li>
+      <li>Outlook — next period label and category</li>
+      <li>NOTAM hazards for the active archetype</li>
+    </ul>
+
+    <h3>Wind trend</h3>
+    <p>
+      Compares the oldest and newest samples in the wind history buffer and outputs
+      a simple human-readable trend string, e.g.:
+    </p>
+    <pre>TREND: speed RISING +6 kts | veering 12°</pre>
+    <p>Possible states for each component:</p>
+    <ul>
+      <li><strong>Speed:</strong> "speed steady" / "speed RISING +N kts" / "speed falling N kts"</li>
+      <li><strong>Direction:</strong> "direction steady" / "backing N°" / "veering N°"</li>
+    </ul>
+  </section>
+
+  <!-- ─── CUSTOMISING ─── -->
+  <section id="customise">
+    <h2>Customising the Script</h2>
+
+    <h3>Changing wind speed ranges for an archetype</h3>
+    <p>
+      Find the archetype in <code>ARCHETYPES</code> and edit its <code>windSpd</code> field.
+      Values are in <strong>metres per second</strong> (multiply by 1.94 to get knots).
+    </p>
+    <pre><span class="cmt">-- Make CLEAR winds lighter (was 2-9 m/s, Syria summer is calmer)</span>
+<span class="key">windSpd</span> = { <span class="num">1</span>, <span class="num">6</span> },   <span class="cmt">-- ~2-12 kts</span></pre>
+
+    <h3>Adding a cloud option to an archetype</h3>
+    <p>
+      Each archetype has a <code>clouds</code> list. Each entry is a two-element table:
+      element 1 is a DCS cloud preset name (informational only — DCS sets the actual sky);
+      element 2 is the ATIS text description. Add new entries to give more variety within
+      that weather state.
+    </p>
+    <pre><span class="key">clouds</span> = {
+  { <span class="str">"Preset1"</span>,  <span class="str">"Few cumulus 7000 ft, scattered cirrus high above"</span> },
+  { <span class="str">"Preset4"</span>,  <span class="str">"Scattered fair-weather cumulus 8000 ft, CAVOK"</span> },
+  <span class="cmt">-- Add a new entry:</span>
+  { <span class="str">"Preset12"</span>, <span class="str">"Thin cirrus only above FL250, surface CAVOK"</span> },
+},</pre>
+
+    <h3>Adding a new archetype</h3>
+    <ol>
+      <li>
+        Add a new entry to the <code>ARCHETYPES</code> table, following the same structure
+        as the existing 10. Give it a unique key in SCREAMING_SNAKE_CASE.
+      </li>
+      <li>
+        Add a <code>TRANSITIONS</code> entry for your new archetype — list the states it
+        can evolve into with their weights.
+      </li>
+      <li>
+        Add your new key to the <code>TRANSITIONS</code> entries of any existing archetypes
+        that should be able to transition into it.
+      </li>
+      <li>
+        Optionally add it to <code>OPENING_STATES</code> if it should be a valid first node.
+      </li>
+    </ol>
+    <pre><span class="cmt">-- Example: a new "SANDSTORM" archetype</span>
+<span class="key">SANDSTORM</span> = {
+  <span class="key">label</span>    = <span class="str">"SANDSTORM"</span>,
+  <span class="key">category</span> = <span class="str">"LIFR"</span>,
+  <span class="key">clouds</span>   = { { <span class="str">"Overcast7"</span>, <span class="str">"Zero-zero, wall of sand, nil horizon"</span> } },
+  <span class="key">windSpd</span>  = { <span class="num">20</span>, <span class="num">40</span> },
+  <span class="key">shear2k</span>  = { <span class="num">1.0</span>, <span class="num">1.3</span> },
+  <span class="key">shear8k</span>  = { <span class="num">1.1</span>, <span class="num">1.5</span> },
+  <span class="key">dirDelta2k</span> = { <span class="num">-10</span>, <span class="num">10</span> },
+  <span class="key">dirDelta8k</span> = { <span class="num">-5</span>,  <span class="num">15</span> },
+  <span class="key">vis</span>      = { <span class="num">50</span>,  <span class="num">400</span> },
+  <span class="key">qnh</span>      = { <span class="num">1000</span>, <span class="num">1012</span> },
+  <span class="key">temp</span>     = { <span class="num">28</span>, <span class="num">46</span> },
+  <span class="key">hazards</span>  = {
+    <span class="str">"SANDSTORM: all ops suspended"</span>,
+    <span class="str">"Engine intake screens required"</span>,
+  },
+},</pre>
+
+    <h3>Tuning transition weights</h3>
+    <p>
+      Each entry in <code>TRANSITIONS</code> is a list of <code>{ k="KEY", w=N }</code> pairs.
+      Increase <code>w</code> to make that successor more likely; set it to 1 to make it rare.
+      The generator performs a weighted random draw so the relative ratios matter, not the
+      absolute values.
+    </p>
+    <pre><span class="cmt">-- Make storms much rarer after BUILDING (great for chill evenings)</span>
+<span class="key">BUILDING</span> = {
+  {<span class="key">k</span>=<span class="str">"BUILDING"</span>, <span class="key">w</span>=<span class="num">2</span>},
+  {<span class="key">k</span>=<span class="str">"STORMY"</span>,   <span class="key">w</span>=<span class="num">1</span>},   <span class="cmt">-- was 4, now 1 — storms much less likely</span>
+  {<span class="key">k</span>=<span class="str">"OVERCAST"</span>, <span class="key">w</span>=<span class="num">5</span>},   <span class="cmt">-- overcast is now the dominant outcome</span>
+  {<span class="key">k</span>=<span class="str">"HAZY"</span>,     <span class="key">w</span>=<span class="num">2</span>},
+},</pre>
+
+    <h3>Changing the coalition that receives broadcasts</h3>
+    <p>Edit <code>CFG.BROADCAST_COALITION</code> in the <code>CFG</code> block:</p>
+    <pre>BROADCAST_COALITION = <span class="num">0</span>,   <span class="cmt">-- 0=all, 1=red, 2=blue</span></pre>
+
+    <h3>Changing the ATIS interval</h3>
+    <pre>ATIS_INTERVAL = <span class="num">600</span>,   <span class="cmt">-- now every 10 minutes instead of 5</span></pre>
+  </section>
+
+  <!-- ─── FUNCTIONS ─── -->
+  <section id="functions">
+    <h2>Function Reference</h2>
+    <table>
+      <thead><tr><th>Function</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>seedRNG()</code></td>
+          <td>
+            Reads <code>atmosphere.getWind()</code> at two altitudes, extracts fractional
+            entropy, mixes with prime multipliers and mission time, calls
+            <code>math.randomseed()</code>, discards first value.
+            Called once in <code>init()</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>generateNodes()</code></td>
+          <td>
+            Picks opening archetype from <code>OPENING_STATES</code>, then calls
+            <code>buildNode()</code> six times, advancing through <code>TRANSITIONS</code>
+            between each call. Returns the complete node list.
+          </td>
+        </tr>
+        <tr>
+          <td><code>buildNode(key, index)</code></td>
+          <td>
+            Draws random concrete values from the named archetype's ranges.
+            Returns a node table with all weather parameters and time window fields.
+          </td>
+        </tr>
+        <tr>
+          <td><code>getActiveNode(mTime)</code></td>
+          <td>
+            Given the current mission time in seconds, returns the node whose time
+            window is active. Wraps at the end of the full cycle.
+          </td>
+        </tr>
+        <tr>
+          <td><code>broadcastWeatherPlan()</code></td>
+          <td>
+            Formats and sends the full 6-node forecast sheet to the coalition.
+            Called once at init; can be called again from a DO SCRIPT trigger.
+          </td>
+        </tr>
+        <tr>
+          <td><code>broadcastATIS(mTime)</code></td>
+          <td>
+            Reads live <code>atmosphere.*</code> data, formats the ATIS message with
+            live conditions + active-node forecast + wind trend, and sends it.
+            Updates <code>State.lastAtisTime</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>recordWindSample(speed, dir, time)</code></td>
+          <td>
+            Appends a wind data point to the rolling history buffer.
+            Trims the buffer to <code>CFG.WIND_HISTORY</code> samples.
+          </td>
+        </tr>
+        <tr>
+          <td><code>windTrend()</code></td>
+          <td>
+            Compares oldest and newest samples in the history buffer, returns
+            a human-readable trend string (speed rising/falling/steady +
+            direction backing/veering/steady).
+          </td>
+        </tr>
+        <tr>
+          <td><code>tick(_, time)</code></td>
+          <td>
+            30-second scheduler function. Checks ATIS interval and User Flag.
+            Self-reschedules by returning <code>time + 30</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>init()</code></td>
+          <td>
+            Entry point. Calls <code>seedRNG()</code>, <code>generateNodes()</code>,
+            <code>broadcastWeatherPlan()</code>, schedules the first ATIS and the
+            tick loop, logs the node sequence to <code>dcs.log</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>weightedPick(list)</code></td>
+          <td>
+            Utility — performs a weighted random selection from a list of
+            <code>{ k=key, w=weight }</code> entries. Used by opening-state and
+            transition picks.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── DCS LIMITS ─── -->
+  <section id="dcs-limits">
+    <h2>DCS API Limitations</h2>
+    <div class="box-danger">
+      <strong>DCS cannot set weather at runtime via scripts</strong>
+      There is no <code>setWeather()</code>, <code>setCloudPreset()</code>,
+      <code>setVisibility()</code>, or any equivalent write function in the DCS SSE
+      (Scripting Engine) API. All <code>atmosphere.*</code> calls are read-only.
+      This is a hard engine limitation — not something that can be worked around.
+    </div>
+    <p>What this means in practice:</p>
+    <ul>
+      <li>The <strong>cloud preset names</strong> in each archetype's <code>clouds</code> table are informational
+          labels — they tell pilots what kind of sky to expect but do not control what DCS renders.</li>
+      <li>The <strong>actual sky</strong> you see in-game is driven by DCS's Dynamic Atmosphere engine
+          evolving the initial conditions you set in the ME Weather tab.</li>
+      <li>The script's job is <strong>prediction and communication</strong> — giving pilots a structured
+          forecast that describes the likely conditions at each mission phase.</li>
+    </ul>
+    <div class="box-info">
+      <strong>Best practice</strong>
+      Set your ME initial conditions to match the first node's archetype —
+      e.g. if CLEAR is likely to be the first node, set a clear sky, light winds, and
+      high QNH as your starting weather. DCS will evolve from there.
+    </div>
+
+    <h3>Other DCS scripting constraints</h3>
+    <table>
+      <thead><tr><th>Broken / unavailable</th><th>Safe replacement used in this script</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>os.time()</code> — blocked in DCS</td>
+          <td><code>atmosphere.getWind()</code> float entropy + <code>timer.getAbsTime()</code></td>
+        </tr>
+        <tr>
+          <td><code>timer.getAbsTime()</code> alone — fixed when mission always starts at the same time</td>
+          <td>Used as secondary salt only; primary entropy is atmosphere float mantissa bits</td>
+        </tr>
+        <tr>
+          <td>No coroutines / async in DCS Lua</td>
+          <td><code>timer.scheduleFunction()</code> self-rescheduling loop (the standard DCS pattern)</td>
+        </tr>
+        <tr>
+          <td>No <code>print()</code> to a console</td>
+          <td><code>env.info()</code> writes to <code>Logs\dcs.log</code> — useful for debugging</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── TROUBLESHOOTING ─── -->
+  <section id="troubleshoot">
+    <h2>Troubleshooting</h2>
+
+    <h3>No broadcast appears at mission start</h3>
+    <ul>
+      <li>Check the ME trigger is <strong>ONCE / MISSION START / DO SCRIPT FILE</strong> (not DO SCRIPT).</li>
+      <li>Make sure the file path points to the correct <code>.lua</code> file.</li>
+      <li>Check <code>Logs\dcs.log</code> for <code>[DWP]</code> lines — if there are none, the script is not loading.</li>
+      <li>Verify <code>CFG.BROADCAST_COALITION</code> matches the side you are flying for.</li>
+    </ul>
+
+    <h3>Weather plan always looks the same</h3>
+    <p>
+      The RNG seed is derived from <code>atmosphere.getWind()</code> float variance.
+      If you are running DCS in a completely static, non-Dynamic atmosphere configuration
+      the floats may not vary between runs. Ensure <strong>Atmosphere Type = DYNAMIC</strong>
+      is set in the ME Weather tab.
+    </p>
+
+    <h3>ATIS wind is wildly different from the forecast</h3>
+    <p>
+      This is expected and realistic. The live ATIS reads <em>actual</em> DCS atmosphere
+      data — which is what DCS's engine is doing to the weather. The node forecast is a
+      <em>predicted</em> text description generated at mission start. As DCS evolves the
+      atmosphere dynamically they will diverge, exactly as real weather forecasts diverge
+      from observations. This is a feature.
+    </p>
+
+    <h3>All 6 nodes are the same archetype</h3>
+    <p>
+      Each transition table entry includes a weight for the archetype staying in the same
+      state (e.g. <code>CLEAR → CLEAR w=3</code>). With only 6 nodes it is statistically
+      possible (though unlikely) to stay in one state. If this bothers you, reduce the
+      self-loop weight (the first entry in each <code>TRANSITIONS</code> list) to 1
+      and increase the weights of dissimilar states.
+    </p>
+
+    <h3>Finding the node sequence after the mission starts</h3>
+    <p>
+      The script logs the full node sequence at startup:
+    </p>
+    <pre>grep "[DWP]" dcs.log
+<span class="cmt">[DWP] Node sequence: T+00h:CLEAR → T+02h:BUILDING → T+04h:STORMY → ...</span></pre>
+
+    <h3>Script errors in dcs.log</h3>
+    <ul>
+      <li>
+        <strong>"attempt to index a nil value"</strong> in <code>buildNode</code> —
+        an archetype key in <code>TRANSITIONS</code> does not match any key in
+        <code>ARCHETYPES</code>. Check spelling (keys are case-sensitive).
+      </li>
+      <li>
+        <strong>"attempt to perform arithmetic on a nil value"</strong> —
+        an archetype is missing one of its required numeric range fields.
+        Compare your custom archetype against an existing one.
+      </li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RedAutomatedConvoySystem v4.0 – Documentation</title>
+<title>RedAutomatedConvoySystem v5.0 – Documentation</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -176,6 +176,23 @@
     display: inline-block; background: rgba(232,112,112,0.2); color: var(--accent);
     border-radius: 4px; padding: 1px 8px; font-size: 11px; font-weight: 700; margin-right: 6px;
   }
+  .template-card.wagner {
+    background: rgba(232,112,112,0.07);
+    border: 1px solid rgba(232,112,112,0.4);
+  }
+  .wagner-badge {
+    display: inline-block;
+    background: rgba(232,112,112,0.2); color: var(--accent);
+    border: 1px solid rgba(232,112,112,0.4);
+    border-radius: 4px; padding: 1px 8px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; margin-left: 6px; vertical-align: middle;
+  }
+  .tank-pill {
+    background: rgba(232,112,112,0.12); border: 1px solid rgba(232,112,112,0.35);
+    border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; font-family: 'Cascadia Code', monospace; color: var(--accent);
+  }
   .unit-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .unit-pill {
     background: var(--code-bg); border: 1px solid var(--border);
@@ -196,7 +213,7 @@
 <body>
 
 <nav>
-  <div class="nav-title">RED Convoys v4.0</div>
+  <div class="nav-title">RED Convoys v5.0</div>
   <a href="#overview">Overview</a>
   <a href="#requirements">Requirements</a>
   <a href="#config">Configuration</a>
@@ -213,8 +230,7 @@
   <a href="#stall">Stall Detection</a>
   <a href="#ai">AI Behavior</a>
   <a href="#loop">Update Loop</a>
-  <div class="nav-section">Integration</div>
-  <a href="#jtac">JTAC Manager</a>
+  <div class="nav-section">Reference</div>
   <a href="#me-setup">ME Checklist</a>
   <a href="#troubleshooting">Troubleshooting</a>
 </nav>
@@ -223,10 +239,10 @@
 
   <h1>RedAutomatedConvoySystem</h1>
   <div class="subtitle">
-    <span class="badge badge-red">v4.0</span>
+    <span class="badge badge-red">v5.0</span>
     <span class="badge badge-red">RED Coalition</span>
     <span class="badge badge-orange">MIST Required</span>
-    461 lines · Fully automated · Self-perpetuating · No player input required
+    Fully automated · Self-perpetuating · On-Road routing · No player input required
   </div>
 
   <!-- OVERVIEW -->
@@ -240,12 +256,13 @@
   </p>
   <div class="info-box">
     <strong>Key facts</strong> &nbsp;|&nbsp;
-    Max convoys: <strong>15</strong> &nbsp;|&nbsp;
+    Max convoys: <strong>6</strong> &nbsp;|&nbsp;
     Initial convoys: <strong>3</strong> &nbsp;|&nbsp;
-    Spawn stagger: <strong>120 s</strong> &nbsp;|&nbsp;
+    Spawn stagger: <strong>600 s (10 min)</strong> &nbsp;|&nbsp;
     Speed: <strong>22 m/s (~79 km/h)</strong> &nbsp;|&nbsp;
     Min route distance: <strong>35 nm (64 820 m)</strong> &nbsp;|&nbsp;
-    Update cycle: <strong>10 s</strong>
+    Routing: <strong>On Road</strong> &nbsp;|&nbsp;
+    Update cycle: <strong>30 s</strong>
   </div>
 
   <!-- REQUIREMENTS -->
@@ -263,19 +280,13 @@
         <td>Node network for spawn &amp; destination selection</td>
         <td>Missing zones are skipped with a warning; system uses whatever zones are found. If 0 zones load, spawning is blocked entirely.</td>
       </tr>
-      <tr>
-        <td><code>JTAC_Manager</code> (optional)</td>
-        <td>Auto-registers spawned groups for JTAC targeting</td>
-        <td>Silently skipped if not present.</td>
-      </tr>
     </tbody>
   </table>
 
   <h3>Load Order</h3>
   <pre>-- Recommended DO SCRIPT FILE order (Mission Start trigger)
 1. MIST (e.g. mist_4_5_122.lua)
-2. JTAC_Manager (optional, if used)
-3. RedAutomatedConvoySystem(v4.0).lua   ← auto-starts immediately on load</pre>
+2. RedAutomatedConvoySystem(v5.0).lua   ← auto-starts immediately on load</pre>
   <div class="warn-box">
     The script calls <code>loadConvoyNodes()</code>, sets <code>nextSpawnTime</code>, and schedules
     the main loop all at load time. Load it <em>after</em> MIST.
@@ -296,17 +307,17 @@
     </div>
     <div class="cfg-item">
       <div class="cfg-key">MAX_CONVOYS</div>
-      <div class="cfg-val">20</div>
+      <div class="cfg-val">6</div>
       <div class="cfg-desc">Hard cap on simultaneously active convoys in the <code>activeConvoys</code> table.</div>
     </div>
     <div class="cfg-item">
       <div class="cfg-key">INITIAL_CONVOYS</div>
-      <div class="cfg-val">5</div>
+      <div class="cfg-val">3</div>
       <div class="cfg-desc">Burst-spawned on first manager tick until this count is reached.</div>
     </div>
     <div class="cfg-item">
       <div class="cfg-key">STAGGER_DELAY</div>
-      <div class="cfg-val">120 s (2 min)</div>
+      <div class="cfg-val">600 s (10 min)</div>
       <div class="cfg-desc">Minimum gap between consecutive spawns after initial burst.</div>
     </div>
     <div class="cfg-item">
@@ -322,115 +333,122 @@
     <div class="cfg-item">
       <div class="cfg-key">MIN_TRAVEL_DISTANCE</div>
       <div class="cfg-val">64 820 m (35 nm)</div>
-      <div class="cfg-desc">Preferred minimum distance between origin and destination nodes. Falls back to farthest available zone if no zone qualifies.</div>
+      <div class="cfg-desc">Minimum straight-line distance between origin and destination nodes. There is no upper cap — any zone ≥ 35 nm away is valid. If no zone qualifies, spawning is blocked and an error is logged.</div>
     </div>
   </div>
 
   <!-- VEHICLE TYPES -->
   <h2 id="vehicles">Vehicle Types</h2>
-  <p>All 20 templates are composed from the following 9 DCS unit types (insurgent / militia mix):</p>
+  <p>All 20 templates draw from the following 14 DCS unit types — a mix of insurgent/militia and Wagner Group equipment:</p>
   <table>
-    <thead><tr><th>DCS Type</th><th>Role</th></tr></thead>
+    <thead><tr><th>DCS Type</th><th>Role</th><th>Used In</th></tr></thead>
     <tbody>
-      <tr><td><code>BRDM-2</code></td><td>Light armoured recon vehicle — primary fire support</td></tr>
-      <tr><td><code>BTR-60</code></td><td>Armoured personnel carrier</td></tr>
-      <tr><td><code>Ural-375</code></td><td>Military cargo truck</td></tr>
-      <tr><td><code>ural_4230_civil_t</code></td><td>Civilian-style cargo truck (insurgent logistics)</td></tr>
-      <tr><td><code>Ural-375 ZU-23 Insurgent</code></td><td>Truck with ZU-23 AA/ground gun (insurgent variant)</td></tr>
-      <tr><td><code>HL_DSHK</code></td><td>Pickup / technical with DShK 12.7mm HMG</td></tr>
-      <tr><td><code>HL_KORD</code></td><td>Pickup / technical with Kord 12.7mm HMG</td></tr>
-      <tr><td><code>HL_ZU-23</code></td><td>Technical with ZU-23-2 twin AA autocannon</td></tr>
-      <tr><td><code>tt_ZU-23</code></td><td>Towed ZU-23-2 variant</td></tr>
+      <tr><td><code>T-90M</code></td><td>Main battle tank — Wagner Group frontline armour</td><td>Wagner (5, 10, 15)</td></tr>
+      <tr><td><code>T-72B</code></td><td>Main battle tank — standard insurgent heavy armour</td><td>Standard (all others)</td></tr>
+      <tr><td><code>BMPT</code></td><td>Terminator fire support vehicle — Wagner Group</td><td>Wagner (5, 10, 15)</td></tr>
+      <tr><td><code>BTR-82A</code></td><td>Modernised APC with 30mm autocannon — Wagner Group</td><td>Wagner (5, 10, 15)</td></tr>
+      <tr><td><code>BTR-80</code></td><td>Armoured personnel carrier</td><td>Wagner (5, 10, 15)</td></tr>
+      <tr><td><code>BRDM-2</code></td><td>Light armoured recon vehicle</td><td>Standard</td></tr>
+      <tr><td><code>BTR-60</code></td><td>Armoured personnel carrier (older)</td><td>Standard</td></tr>
+      <tr><td><code>Ural-375</code></td><td>Military cargo truck</td><td>Standard</td></tr>
+      <tr><td><code>Ural-375 ZU-23 Insurgent</code></td><td>Truck with ZU-23 AA/ground gun (insurgent variant)</td><td>Standard</td></tr>
+      <tr><td><code>Osa 9A33 ln</code></td><td>SA-8 Gecko mobile SAM — short-range air defence</td><td>All</td></tr>
+      <tr><td><code>HL_DSHK</code></td><td>Pickup / technical with DShK 12.7mm HMG</td><td>Standard</td></tr>
+      <tr><td><code>HL_KORD</code></td><td>Pickup / technical with Kord 12.7mm HMG</td><td>Standard</td></tr>
+      <tr><td><code>HL_ZU-23</code></td><td>Technical with ZU-23-2 twin AA autocannon</td><td>Standard</td></tr>
+      <tr><td><code>tt_ZU-23</code></td><td>Towed ZU-23-2 variant (technical mount)</td><td>Standard</td></tr>
     </tbody>
   </table>
 
   <!-- TEMPLATES -->
   <h2 id="templates">Convoy Templates (20)</h2>
   <p>
-    A template is randomly selected from all 20 on each spawn. Templates are referenced by name from 
+    A template is randomly selected from all 20 on each spawn. Templates are referenced by name from
     the global <code>CONVOY_TEMPLATES</code> string array and resolved via <code>_G[templateName]</code>.
     All units spawn at skill level <strong>Excellent</strong>.
+    <span class="wagner-badge">Wagner</span> templates (5, 10, 15) use T-90M / BMPT / BTR-82A heavy equipment.
+    All other templates lead with 1 or 2 <strong>T-72B</strong> tanks.
   </p>
   <div class="template-grid">
     <div class="template-card">
       <span class="template-num">1</span>
-      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">2</span>
-      <div class="unit-row"><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_ZU-23</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Osa 9A33 ln</span><span class="unit-pill">HL_ZU-23</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">3</span>
-      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">4</span>
-      <div class="unit-row"><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span></div>
     </div>
-    <div class="template-card">
-      <span class="template-num">5</span>
-      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BRDM-2</span></div>
+    <div class="template-card wagner">
+      <span class="template-num">5</span><span class="wagner-badge">Wagner</span>
+      <div class="unit-row"><span class="tank-pill">T-90M</span><span class="unit-pill">BMPT</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">BTR-80</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">Osa 9A33 ln</span><span class="tank-pill">T-90M</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">6</span>
-      <div class="unit-row"><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">ural_4230_civil_t</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Osa 9A33 ln</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">7</span>
-      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Ural-375</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Ural-375</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">8</span>
-      <div class="unit-row"><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">9</span>
-      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">Osa 9A33 ln</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span></div>
     </div>
-    <div class="template-card">
-      <span class="template-num">10</span>
-      <div class="unit-row"><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BTR-60</span></div>
+    <div class="template-card wagner">
+      <span class="template-num">10</span><span class="wagner-badge">Wagner</span>
+      <div class="unit-row"><span class="tank-pill">T-90M</span><span class="tank-pill">T-90M</span><span class="unit-pill">BMPT</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">BTR-80</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">Osa 9A33 ln</span><span class="tank-pill">T-90M</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">11</span>
-      <div class="unit-row"><span class="unit-pill">HL_KORD</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">Osa 9A33 ln</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">12</span>
-      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BTR-60</span><span class="unit-pill">HL_KORD</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BTR-60</span><span class="unit-pill">HL_KORD</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">13</span>
-      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">ural_4230_civil_t</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">Osa 9A33 ln</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">14</span>
-      <div class="unit-row"><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BTR-60</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
     </div>
-    <div class="template-card">
-      <span class="template-num">15</span>
-      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">Ural-375</span></div>
+    <div class="template-card wagner">
+      <span class="template-num">15</span><span class="wagner-badge">Wagner</span>
+      <div class="unit-row"><span class="tank-pill">T-90M</span><span class="unit-pill">BMPT</span><span class="unit-pill">BMPT</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">BTR-80</span><span class="unit-pill">BTR-82A</span><span class="unit-pill">Osa 9A33 ln</span><span class="tank-pill">T-90M</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">16</span>
-      <div class="unit-row"><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">17</span>
-      <div class="unit-row"><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">Osa 9A33 ln</span><span class="unit-pill">HL_KORD</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">18</span>
-      <div class="unit-row"><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BRDM-2</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">tt_ZU-23</span><span class="unit-pill">BRDM-2</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">19</span>
-      <div class="unit-row"><span class="unit-pill">ural_4230_civil_t</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="tank-pill">T-72B</span><span class="unit-pill">Osa 9A33 ln</span><span class="unit-pill">HL_KORD</span><span class="unit-pill">HL_DSHK</span><span class="unit-pill">Ural-375 ZU-23 Ins.</span><span class="unit-pill">BTR-60</span></div>
     </div>
     <div class="template-card">
       <span class="template-num">20</span>
-      <div class="unit-row"><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
+      <div class="unit-row"><span class="tank-pill">T-72B</span><span class="unit-pill">HL_ZU-23</span><span class="unit-pill">BRDM-2</span><span class="unit-pill">Ural-375</span><span class="unit-pill">HL_KORD</span></div>
     </div>
   </div>
 
@@ -462,8 +480,8 @@
     <div class="flow-step">
       <div class="flow-num">1</div>
       <div class="flow-body">
-        <strong>Manager tick (every 10 s)</strong>
-        <p>Counts active convoys. If below INITIAL_CONVOYS (5), spawns immediately in a burst. If below MAX_CONVOYS (20) and stagger delay has elapsed, spawns one convoy.</p>
+        <strong>Manager tick (every 30 s)</strong>
+        <p>Counts active convoys. If below INITIAL_CONVOYS (3), spawns immediately in a burst. If below MAX_CONVOYS (6) and stagger delay (600 s) has elapsed, spawns one convoy.</p>
       </div>
     </div>
     <div class="flow-step">
@@ -477,7 +495,7 @@
       <div class="flow-num">3</div>
       <div class="flow-body">
         <strong>Select destination node</strong>
-        <p>Finds all zones ≥ 35 nm from start, picks one randomly. If none qualify, uses the farthest zone overall and logs a warning.</p>
+        <p>Finds all zones ≥ 35 nm from start, picks one randomly. There is no upper distance cap. If no zone is ≥ 35 nm away, spawning is aborted and an error is logged.</p>
       </div>
     </div>
     <div class="flow-step">
@@ -504,19 +522,12 @@
     <div class="flow-step">
       <div class="flow-num">7</div>
       <div class="flow-body">
-        <strong>JTAC registration hook</strong>
-        <p>Immediately after spawn: calls <code>JTAC_Manager.registerSpawnedGroup(groupName)</code> if JTAC_Manager is available.</p>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-num">8</div>
-      <div class="flow-body">
         <strong>Route activation (3 s delay)</strong>
         <p>After 3 seconds, calls <code>buildRoute()</code> and <code>applyRouteToGroup()</code>. The delay gives DCS time to fully initialise the spawned group before assigning tasks.</p>
       </div>
     </div>
     <div class="flow-step">
-      <div class="flow-num">9</div>
+      <div class="flow-num">8</div>
       <div class="flow-body">
         <strong>Register in activeConvoys</strong>
         <p>Stored with: <code>id</code>, <code>name</code>, <code>group</code>, <code>startNode</code>, <code>endNode</code>, <code>lastPos</code>, <code>lastPosUpdateTime</code>. Stall timer begins implicitly.</p>
@@ -536,13 +547,13 @@
       </tr>
       <tr>
         <td><strong>Destination node</strong></td>
-        <td>Random from zones ≥ 64 820 m (35 nm) from start</td>
-        <td>The single farthest zone if no zone meets the 35 nm threshold</td>
+        <td>Random from zones ≥ 64 820 m (35 nm) from start — no upper distance limit</td>
+        <td>None — if no zone is ≥ 35 nm away, spawn is aborted entirely</td>
       </tr>
       <tr>
         <td><strong>Re-route on arrival</strong></td>
         <td>New destination ≥ 35 nm from <em>current</em> position (old destination becomes new start)</td>
-        <td>Logs a warning if no valid next destination found; convoy stays at destination indefinitely</td>
+        <td>Logs a warning if no valid next destination found; convoy idles at destination</td>
       </tr>
     </tbody>
   </table>
@@ -555,12 +566,17 @@
   <table>
     <thead><tr><th>WP</th><th>Action</th><th>Position</th><th>Speed</th></tr></thead>
     <tbody>
-      <tr><td>1 — Start</td><td>Off Road</td><td>Zone centre (a.x, a.y)</td><td>22 m/s</td></tr>
-      <tr><td>2 — Get on road</td><td>On Road</td><td>10 % of the way toward destination (max 100 m)</td><td>22 m/s</td></tr>
-      <tr><td>3 — Approach</td><td>On Road</td><td>50 m before destination</td><td>22 m/s</td></tr>
-      <tr><td>4 — Destination</td><td>Off Road</td><td>Zone centre (b.x, b.y)</td><td>22 m/s</td></tr>
+      <tr><td>1 — Start</td><td>Off Road</td><td>Zone centre (a.x, a.y) — spawns off-road</td><td>22 m/s</td></tr>
+      <tr><td>2 — Get on road</td><td><strong>On Road</strong></td><td>~100 m toward destination — DCS picks up nearest road</td><td>22 m/s</td></tr>
+      <tr><td>3 — Leave road</td><td><strong>On Road</strong></td><td>100 m before destination — travels via road network</td><td>22 m/s</td></tr>
+      <tr><td>4 — Destination</td><td>Off Road</td><td>Zone centre (b.x, b.y) — final off-road approach</td><td>22 m/s</td></tr>
     </tbody>
   </table>
+  <div class="info-box">
+    Convoys travel <strong>on roads</strong> between WP2 and WP3. WP1 and WP4 are <code>Off Road</code> because
+    the spawn and destination zones may be positioned away from the road network. DCS will path-find to the
+    nearest road automatically when the <code>On Road</code> action triggers.
+  </div>
   <div class="warn-box">
     Unlike the BLUE convoy system, there is <strong>no speed deceleration</strong> approaching the destination.
     All four waypoints run at the same 22 m/s. The convoy will drive straight through the destination zone
@@ -652,7 +668,7 @@
   <!-- UPDATE LOOP -->
   <h2 id="loop">Update Loop</h2>
   <p>A single self-rescheduling timer drives the entire system:</p>
-  <pre>convoyLoop()  ← called every 10 seconds
+  <pre>convoyLoop()  ← called every 30 seconds
   ├─ updateConvoys()   -- checks each active convoy:
   │    ├─ Group dead?        → remove from activeConvoys
   │    ├─ Lead unit gone?    → remove from activeConvoys
@@ -660,25 +676,11 @@
   │    └─ Arrival check      → re-route if within 75 m
   └─ convoyManager()   -- capacity management:
        ├─ Count active convoys
-       ├─ Burst-spawn if count < INITIAL_CONVOYS (5)
-       └─ Spawn 1 if count < MAX_CONVOYS (20) and stagger delay elapsed</pre>
+       ├─ Burst-spawn if count < INITIAL_CONVOYS (3)
+       └─ Spawn 1 if count < MAX_CONVOYS (6) and stagger delay elapsed (600 s)</pre>
   <p style="color:var(--muted);font-size:12px;">
-    The loop uses <code>return timer.getTime() + 10</code> to self-reschedule. All convoy management
-    (stall, arrival, spawn) occurs within this single 10-second tick.
-  </p>
-
-  <!-- JTAC INTEGRATION -->
-  <h2 id="jtac">JTAC Manager Integration</h2>
-  <p>
-    Immediately after a successful <code>mist.dynAdd()</code>, the script calls:
-  </p>
-  <pre>if JTAC_Manager and JTAC_Manager.registerSpawnedGroup then
-    JTAC_Manager.registerSpawnedGroup(result.name)
-end</pre>
-  <p>
-    This registers the convoy's group name with the JTAC target pool, allowing JTAC aircraft to be 
-    assigned these groups as 9-line targets. There is no de-registration call when a convoy is 
-    destroyed — the JTAC Manager is expected to handle stale group names itself.
+    The loop uses <code>return timer.getTime() + 30</code> to self-reschedule. All convoy management
+    (stall, arrival, spawn) occurs within this single 30-second tick.
   </p>
 
   <!-- ME CHECKLIST -->
@@ -689,7 +691,6 @@ end</pre>
     <li><strong>Zone spacing</strong> — at least some zones should be &gt; 35 nm apart. If all zones are within 35 nm of each other, every convoy uses the "farthest zone" fallback and logs a warning every spawn.</li>
     <li><strong>MIST</strong> — load before this script, no exceptions.</li>
     <li><strong>Country</strong> — convoys spawn as <code>country.id.CJTF_RED</code>. This must be enabled for the mission coalition.</li>
-    <li><strong>JTAC Manager</strong> — load before this script if used.</li>
     <li><strong>No ME groups needed</strong> — all groups are spawned dynamically. No RED ground groups need to be pre-placed in the mission.</li>
   </ul>
 
@@ -709,9 +710,9 @@ end</pre>
         <td>Move <code>ConvoyZone</code> trigger zones to road junctions. The Off Road → On Road WP transition requires a road within ~100 m.</td>
       </tr>
       <tr>
-        <td>All convoys use the same nearby zone pair, log shows "No zones 35nm+ away"</td>
-        <td>All zones are clustered within 35 nm of each other</td>
-        <td>Spread zones across the map, or reduce <code>MIN_TRAVEL_DISTANCE</code> in the config section.</td>
+        <td>All convoys log "Could not find ANY destination", no convoys spawn</td>
+        <td>All zones are within 35 nm of each other — no destination qualifies</td>
+        <td>Spread zones further across the map, or reduce <code>MIN_TRAVEL_DISTANCE</code> in the config section.</td>
       </tr>
       <tr>
         <td>Convoy spawns but drives in the wrong direction</td>
@@ -719,14 +720,9 @@ end</pre>
         <td>No fix needed. If persistent misdirection: verify DCS road network connectivity between zone pairs.</td>
       </tr>
       <tr>
-        <td>Active convoy count never reaches 15</td>
-        <td>Convoys are being destroyed (by players or stall timeout) faster than the 2-minute stagger allows respawning</td>
+        <td>Active convoy count never reaches 6</td>
+        <td>Convoys are being destroyed (by players or stall timeout) faster than the 10-minute stagger allows respawning</td>
         <td>Reduce <code>STAGGER_DELAY</code> or increase <code>MAX_CONVOYS</code> in the config.</td>
-      </tr>
-      <tr>
-        <td>JTAC targets not appearing for spawned convoys</td>
-        <td>JTAC_Manager loaded after this script, or <code>registerSpawnedGroup</code> function name mismatch</td>
-        <td>Ensure JTAC_Manager is loaded before this script. Confirm the function name matches exactly.</td>
       </tr>
       <tr>
         <td>dynAdd fails (log: "dynAdd failed for convoy")</td>
@@ -742,7 +738,7 @@ end</pre>
   </table>
 
   <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;">
-    RedAutomatedConvoySystem v4.0 · DCS World · RED Coalition · Auto-generated documentation
+    RedAutomatedConvoySystem v5.0 · DCS World · RED Coalition · Syria · On-Road routing
   </div>
 
 </main>

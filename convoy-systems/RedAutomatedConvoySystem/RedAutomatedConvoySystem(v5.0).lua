@@ -2,26 +2,46 @@
 -- CONVOY TEMPLATES
 ---------------------------------------------------------------------
 
-ConvoyTemplate1  = { units = { {type="BRDM-2"},{type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"}, } }
-ConvoyTemplate2  = { units = { {type="BTR-60"},{type="Ural-375 ZU-23 Insurgent"},{type="HL_KORD"},{type="Osa 9A33 ln"},{type="HL_ZU-23"}, } }
-ConvoyTemplate3  = { units = { {type="Ural-375"},{type="HL_DSHK"},{type="BRDM-2"},{type="HL_KORD"}, } }
-ConvoyTemplate4  = { units = { {type="BTR-60"},{type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="HL_DSHK"}, } }
-ConvoyTemplate5  = { units = { {type="Osa 9A33 ln"},{type="HL_KORD"},{type="Ural-375 ZU-23 Insurgent"},{type="BRDM-2"}, } }
-ConvoyTemplate6  = { units = { {type="HL_ZU-23"},{type="Ural-375"},{type="HL_DSHK"},{type="BTR-60"},{type="Osa 9A33 ln"}, } }
-ConvoyTemplate7  = { units = { {type="BRDM-2"},{type="HL_KORD"},{type="Ural-375"},{type="Ural-375 ZU-23 Insurgent"}, } }
-ConvoyTemplate8  = { units = { {type="tt_ZU-23"},{type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"}, } }
-ConvoyTemplate9  = { units = { {type="Osa 9A33 ln"},{type="HL_ZU-23"},{type="HL_KORD"},{type="BRDM-2"},{type="Ural-375"}, } }
-ConvoyTemplate10 = { units = { {type="Ural-375 ZU-23 Insurgent"},{type="HL_DSHK"},{type="tt_ZU-23"},{type="BTR-60"}, } }
-ConvoyTemplate11 = { units = { {type="HL_KORD"},{type="Osa 9A33 ln"},{type="BRDM-2"},{type="HL_ZU-23"}, } }
-ConvoyTemplate12 = { units = { {type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"},{type="BTR-60"},{type="HL_KORD"}, } }
-ConvoyTemplate13 = { units = { {type="BRDM-2"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="Osa 9A33 ln"}, } }
-ConvoyTemplate14 = { units = { {type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"},{type="HL_KORD"}, } }
-ConvoyTemplate15 = { units = { {type="Osa 9A33 ln"},{type="HL_DSHK"},{type="BRDM-2"},{type="tt_ZU-23"},{type="Ural-375"}, } }
-ConvoyTemplate16 = { units = { {type="HL_KORD"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
-ConvoyTemplate17 = { units = { {type="BRDM-2"},{type="HL_DSHK"},{type="Osa 9A33 ln"},{type="HL_KORD"}, } }
-ConvoyTemplate18 = { units = { {type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="BRDM-2"}, } }
-ConvoyTemplate19 = { units = { {type="Osa 9A33 ln"},{type="HL_KORD"},{type="HL_DSHK"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
-ConvoyTemplate20 = { units = { {type="HL_ZU-23"},{type="BRDM-2"},{type="Ural-375"},{type="HL_KORD"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate1  = { units = { {type="T-72B"},{type="BRDM-2"},{type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate2  = { units = { {type="T-72B"},{type="T-72B"},{type="BTR-60"},{type="Ural-375 ZU-23 Insurgent"},{type="HL_KORD"},{type="Osa 9A33 ln"},{type="HL_ZU-23"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate3  = { units = { {type="T-72B"},{type="Ural-375"},{type="HL_DSHK"},{type="BRDM-2"},{type="HL_KORD"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate4  = { units = { {type="T-72B"},{type="T-72B"},{type="BTR-60"},{type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="HL_DSHK"}, } }
+-- Wagner Group template
+ConvoyTemplate5  = { units = { {type="T-90M"},{type="BMPT"},{type="BTR-82A"},{type="BTR-82A"},{type="BTR-80"},{type="BTR-82A"},{type="Osa 9A33 ln"},{type="T-90M"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate6  = { units = { {type="T-72B"},{type="HL_ZU-23"},{type="Ural-375"},{type="HL_DSHK"},{type="BTR-60"},{type="Osa 9A33 ln"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate7  = { units = { {type="T-72B"},{type="T-72B"},{type="BRDM-2"},{type="HL_KORD"},{type="Ural-375"},{type="Ural-375 ZU-23 Insurgent"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate8  = { units = { {type="T-72B"},{type="tt_ZU-23"},{type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate9  = { units = { {type="T-72B"},{type="T-72B"},{type="Osa 9A33 ln"},{type="HL_ZU-23"},{type="HL_KORD"},{type="BRDM-2"},{type="Ural-375"}, } }
+-- Wagner Group template
+ConvoyTemplate10 = { units = { {type="T-90M"},{type="T-90M"},{type="BMPT"},{type="BTR-82A"},{type="BTR-80"},{type="BTR-82A"},{type="Osa 9A33 ln"},{type="T-90M"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate11 = { units = { {type="T-72B"},{type="HL_KORD"},{type="Osa 9A33 ln"},{type="BRDM-2"},{type="HL_ZU-23"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate12 = { units = { {type="T-72B"},{type="T-72B"},{type="Ural-375"},{type="HL_DSHK"},{type="tt_ZU-23"},{type="BTR-60"},{type="HL_KORD"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate13 = { units = { {type="T-72B"},{type="BRDM-2"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="Osa 9A33 ln"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate14 = { units = { {type="T-72B"},{type="T-72B"},{type="HL_DSHK"},{type="BTR-60"},{type="Ural-375"},{type="HL_KORD"}, } }
+-- Wagner Group template
+ConvoyTemplate15 = { units = { {type="T-90M"},{type="BMPT"},{type="BMPT"},{type="BTR-82A"},{type="BTR-80"},{type="BTR-82A"},{type="Osa 9A33 ln"},{type="T-90M"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate16 = { units = { {type="T-72B"},{type="HL_KORD"},{type="HL_ZU-23"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate17 = { units = { {type="T-72B"},{type="T-72B"},{type="BRDM-2"},{type="HL_DSHK"},{type="Osa 9A33 ln"},{type="HL_KORD"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate18 = { units = { {type="T-72B"},{type="Ural-375"},{type="HL_ZU-23"},{type="tt_ZU-23"},{type="BRDM-2"}, } }
+-- Standard insurgent templates (2 T-72B)
+ConvoyTemplate19 = { units = { {type="T-72B"},{type="T-72B"},{type="Osa 9A33 ln"},{type="HL_KORD"},{type="HL_DSHK"},{type="Ural-375 ZU-23 Insurgent"},{type="BTR-60"}, } }
+-- Standard insurgent templates (1 T-72B)
+ConvoyTemplate20 = { units = { {type="T-72B"},{type="HL_ZU-23"},{type="BRDM-2"},{type="Ural-375"},{type="HL_KORD"}, } }
 
 CONVOY_TEMPLATES = {
     "ConvoyTemplate1","ConvoyTemplate2","ConvoyTemplate3","ConvoyTemplate4","ConvoyTemplate5",
@@ -51,7 +71,6 @@ local activeConvoys = {}
 local convoyID      = 0
 local nextSpawnTime = 0
 local MIN_TRAVEL_DISTANCE = 64820  -- 35nm in meters
-local MAX_TRAVEL_DISTANCE = 148160 -- 80nm in meters (avoids pathfinding stalls)
 
 ---------------------------------------------------------------------
 -- LOAD NODES ConvoyZone1..N
@@ -111,34 +130,21 @@ local function getRandomStartNode()
     end
 end
 
--- Get random destination node (35-80 nm away, capped to avoid pathfinding stalls)
+-- Get random destination node (35nm+ away)
 local function getRandomDestNode(startNode)
     local validDests = {}
-    local closest = nil
-    local closestDist = math.huge
     
     for _, n in ipairs(convoyNodes) do
         if n.name ~= startNode.name then
             local dist = getDistance(startNode, n)
-            if dist >= MIN_TRAVEL_DISTANCE and dist <= MAX_TRAVEL_DISTANCE then
+            if dist >= MIN_TRAVEL_DISTANCE then
                 table.insert(validDests, n)
-            end
-            -- Track closest valid (>= min) as fallback
-            if dist >= MIN_TRAVEL_DISTANCE and dist < closestDist then
-                closestDist = dist
-                closest = n
             end
         end
     end
     
-    -- Prefer 35-80 nm zones; fallback to closest qualifying zone
     if #validDests > 0 then
         return validDests[math.random(1, #validDests)]
-    elseif closest then
-        env.info("[CONVOY][WARN] No zones within 35-80 nm from " .. startNode.name ..
-                 ", using closest qualifying: " .. closest.name ..
-                 " (" .. string.format("%.1f", closestDist / 1852) .. " nm)")
-        return closest
     else
         return nil
     end
@@ -154,24 +160,25 @@ local function getRandomNode(exclude)
 end
 
 local function buildRoute(a, b)
-    -- Calculate intermediate waypoint (50m before destination)
     local routeDistance = math.sqrt((b.x - a.x)^2 + (b.y - a.y)^2)
-    local approachDistance = 50
+
+    -- WP2: 100m toward destination - convoy moves off-road to get close to a road
+    local onRoadRatio = math.min(100 / routeDistance, 0.05)
+    local wp2X = a.x + (b.x - a.x) * onRoadRatio
+    local wp2Y = a.y + (b.y - a.y) * onRoadRatio
+
+    -- WP3: 100m before destination - convoy leaves the road and approaches the zone off-road
+    local approachDistance = 100
     local ratio = math.max(0, (routeDistance - approachDistance) / routeDistance)
     local wp3X = a.x + (b.x - a.x) * ratio
     local wp3Y = a.y + (b.y - a.y) * ratio
-    
-    -- Calculate a point 100m toward destination for getting on road
-    local onRoadRatio = math.min(100 / routeDistance, 0.1)
-    local wp2X = a.x + (b.x - a.x) * onRoadRatio
-    local wp2Y = a.y + (b.y - a.y) * onRoadRatio
-    
+
     return {
         ["points"] = {
             [1] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "Off Road",
+                ["action"] = "Off Road",   -- Spawn is off-road, move clear of spawn zone
                 ["x"] = a.x,
                 ["y"] = a.y,
                 ["speed"] = CONVOY_SPEED,
@@ -180,7 +187,7 @@ local function buildRoute(a, b)
             [2] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "Off Road",  -- Off Road avoids DCS road pathfinder (no CREATING PATH TOO LONG stalls)
+                ["action"] = "On Road",    -- Pick up the road network from near the spawn zone
                 ["x"] = wp2X,
                 ["y"] = wp2Y,
                 ["speed"] = CONVOY_SPEED,
@@ -189,7 +196,7 @@ local function buildRoute(a, b)
             [3] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "Off Road",  -- Off Road avoids DCS road pathfinder
+                ["action"] = "On Road",    -- Travel on roads for the main journey
                 ["x"] = wp3X,
                 ["y"] = wp3Y,
                 ["speed"] = CONVOY_SPEED,
@@ -198,7 +205,7 @@ local function buildRoute(a, b)
             [4] = {
                 ["alt"] = 0,
                 ["type"] = "Turning Point",
-                ["action"] = "Off Road",
+                ["action"] = "Off Road",   -- Leave road for final off-road approach to destination zone
                 ["x"] = b.x,
                 ["y"] = b.y,
                 ["speed"] = CONVOY_SPEED,
@@ -261,7 +268,7 @@ local function spawnConvoy()
         return
     end
 
-    -- Get destination (35nm+ preferred, falls back to farthest)
+    -- Get destination (35nm+ away)
     local dest = getRandomDestNode(start)
     if not dest then
         env.info("[CONVOY][ERROR] Could not find ANY destination from " .. start.name)

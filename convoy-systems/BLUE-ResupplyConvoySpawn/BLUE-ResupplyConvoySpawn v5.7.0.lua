@@ -45,8 +45,9 @@ local ConvoySystem = {}
 ConvoySystem.spawnedConvoys = {}
 ConvoySystem.despawnTimers = {}  -- Track scheduled despawn timers by convoyId
 
--- Leaderboard integration - track convoy requesters
-ConvoySystem.convoyRequesters = {}  -- convoyId -> playerName
+-- Leaderboard integration - track convoy requesters (commented out - no leaderboard script loaded)
+-- ConvoySystem.convoyRequesters = {}  -- convoyId -> playerName
+ConvoySystem.convoyRequesters = {}  -- kept as empty table to avoid nil errors
 
 -- Cooldown and limit settings
 ConvoySystem.maxActiveConvoys = 10  -- Maximum convoys on map at once
@@ -1499,27 +1500,28 @@ local function spawnConvoyGroup(templateIndex, playerCountry, spawnZoneName, des
         status = "traveling",
         createdAt = timer.getAbsTime(),
         resupplied = false,
-        -- Leaderboard tracking
-        initialUnitCount = 0,
-        initialTotalHealth = 0,
+        -- Leaderboard tracking (commented out - no leaderboard script loaded)
+        -- initialUnitCount = 0,
+        -- initialTotalHealth = 0,
     }
     
-    -- Record initial convoy state for leaderboard scoring
+    --[[ Leaderboard: Record initial convoy state for scoring (commented out - no leaderboard script loaded)
     local group = Group.getByName(groupName)
     if group and group:isExist() then
         for _, unit in ipairs(group:getUnits()) do
             if unit and unit:isExist() then
-                ConvoySystem.spawnedConvoys[convoyId].initialUnitCount = 
+                ConvoySystem.spawnedConvoys[convoyId].initialUnitCount =
                     ConvoySystem.spawnedConvoys[convoyId].initialUnitCount + 1
                 local life0 = unit:getLife0()
                 if life0 then
-                    ConvoySystem.spawnedConvoys[convoyId].initialTotalHealth = 
+                    ConvoySystem.spawnedConvoys[convoyId].initialTotalHealth =
                         ConvoySystem.spawnedConvoys[convoyId].initialTotalHealth + life0
                 end
             end
         end
     end
-    
+    --]]
+
     env.info(string.format("ConvoySystem: Convoy %s stored - Zone center: x=%.0f, z=%.0f | Waypoint dest: x=%.0f, z=%.0f",
         convoyId, zoneCenterPos.x, zoneCenterPos.z, destPos.x, destPos.z))
     
@@ -1849,52 +1851,44 @@ local function updateConvoys()
                         
                         -- Perform resupply only once
                         if not convoy.resupplied then
-                            convoy.resupplied = true
+                            convoy.resupplied = true  -- set before call to prevent duplicate attempts
                             env.info("ConvoySystem: Calling performWarehouseResupply for " .. convoy.destinationZone)
-                            performWarehouseResupply(convoy.destinationZone)
+                            local _resupplyOk, _resupplyErr = pcall(performWarehouseResupply, convoy.destinationZone)
+                            if not _resupplyOk then
+                                env.error("ConvoySystem: Resupply error for " .. convoy.destinationZone .. ": " .. tostring(_resupplyErr))
+                            end
                             
-                            -- LEADERBOARD INTEGRATION: Track convoy completion
+                            --[[ LEADERBOARD INTEGRATION: Track convoy completion (commented out - no leaderboard script loaded)
                             local requesterName = ConvoySystem.convoyRequesters[convoyId]
                             if requesterName and DGSS_LEADERBOARD and DGSS_LEADERBOARD.addConvoyCompletion then
-                                -- Calculate convoy health/survival for scoring
                                 local survivingUnits = 0
                                 local currentTotalHealth = 0
-                                
                                 local convoyGroup = Group.getByName(convoy.groupName)
                                 if convoyGroup and convoyGroup:isExist() then
                                     for _, unit in ipairs(convoyGroup:getUnits()) do
                                         if unit and unit:isExist() then
                                             survivingUnits = survivingUnits + 1
                                             local life = unit:getLife()
-                                            if life then
-                                                currentTotalHealth = currentTotalHealth + life
-                                            end
+                                            if life then currentTotalHealth = currentTotalHealth + life end
                                         end
                                     end
                                 end
-                                
                                 local initialUnits = convoy.initialUnitCount or 1
                                 local initialHealth = convoy.initialTotalHealth or 1
                                 local survivalRate = (survivingUnits / initialUnits) * 100
                                 local healthRate = (currentTotalHealth / initialHealth) * 100
                                 local overallScore = (survivalRate + healthRate) / 2
-                                
                                 local successState = "failed"
-                                if overallScore >= 85 then
-                                    successState = "full"
-                                elseif overallScore >= 50 then
-                                    successState = "partial"
-                                else
-                                    successState = "failed"
-                                end
-                                
+                                if overallScore >= 85 then successState = "full"
+                                elseif overallScore >= 50 then successState = "partial" end
                                 pcall(function()
                                     DGSS_LEADERBOARD.addConvoyCompletion(requesterName, successState)
                                     env.info(string.format("[ConvoySystem] Leaderboard: %s convoy for '%s' (%.0f%% score)",
                                         successState, requesterName, overallScore))
                                 end)
                             end
-                            
+                            --]]
+
                             -- Schedule destruction of ALL convoy units (they made it to destination)
                             local capturedConvoyId = convoyId
                             local capturedGroupName = convoy.groupName
@@ -1924,7 +1918,7 @@ local function updateConvoys()
                                 
                                 -- Remove convoy from tracking regardless
                                 ConvoySystem.spawnedConvoys[capturedConvoyId] = nil
-                                ConvoySystem.convoyRequesters[capturedConvoyId] = nil
+                                -- ConvoySystem.convoyRequesters[capturedConvoyId] = nil  -- leaderboard (disabled)
                                 ConvoySystem.despawnTimers[capturedConvoyId] = nil
                                 env.info("ConvoySystem: Removed convoy " .. capturedConvoyId .. " from tracking")
                             end, nil, timer.getTime() + 10)  -- Use timer.getTime() for scheduleFunction!
@@ -1953,7 +1947,7 @@ local function updateConvoys()
     
     -- Clean up destroyed convoys
     for _, convoyId in ipairs(convoysToRemove) do
-        -- LEADERBOARD INTEGRATION: Track failed convoys
+        --[[ LEADERBOARD INTEGRATION: Track failed convoys (commented out - no leaderboard script loaded)
         local requesterName = ConvoySystem.convoyRequesters[convoyId]
         if requesterName and DGSS_LEADERBOARD and DGSS_LEADERBOARD.addConvoyCompletion then
             pcall(function()
@@ -1961,18 +1955,19 @@ local function updateConvoys()
                 env.info(string.format("[ConvoySystem] Leaderboard: failed convoy for '%s' (destroyed/timeout)", requesterName))
             end)
         end
-        
+        --]]
+
         -- Cancel any pending despawn timer
         if ConvoySystem.despawnTimers[convoyId] then
             timer.removeFunction(ConvoySystem.despawnTimers[convoyId])
             ConvoySystem.despawnTimers[convoyId] = nil
         end
-        
+
         ConvoySystem.spawnedConvoys[convoyId] = nil
-        ConvoySystem.convoyRequesters[convoyId] = nil
+        -- ConvoySystem.convoyRequesters[convoyId] = nil  -- leaderboard (disabled)
     end
-    
-    -- Clean up stale convoy requester entries
+
+    --[[ Clean up stale convoy requester entries (commented out - no leaderboard script loaded)
     local requestersToClean = {}
     for convoyId, _ in pairs(ConvoySystem.convoyRequesters) do
         if not ConvoySystem.spawnedConvoys[convoyId] then
@@ -1982,6 +1977,7 @@ local function updateConvoys()
     for _, convoyId in ipairs(requestersToClean) do
         ConvoySystem.convoyRequesters[convoyId] = nil
     end
+    --]]
     
     -- Clean up stale despawn timers
     local timersToClean = {}
@@ -2042,10 +2038,106 @@ performWarehouseResupply = function(zoneName)
     env.info("ConvoySystem: Looking for DCS airbase with name: '" .. airbaseName .. "'")
     
     local airbase = Airbase.getByName(airbaseName)
+    
+    -- Fallback 1: Airbase.getByName() can fail for FARP types like Single Helipad.
+    -- Iterate all coalition airbases with exact, then case-insensitive, then substring match.
+    if not airbase then
+        env.warning("ConvoySystem: Airbase.getByName() returned nil for '" .. airbaseName .. "' - scanning all coalition airbases")
+        local sides = { coalition.side.BLUE, coalition.side.RED, coalition.side.NEUTRAL }
+        local allAirbases = {}
+        local lowerTarget = string.lower(airbaseName)
+        
+        -- Collect all airbases and log them for diagnostics
+        for _, side in ipairs(sides) do
+            local abs = coalition.getAirbases(side)
+            if abs then
+                for _, ab in ipairs(abs) do
+                    local abName = ab:getName()
+                    table.insert(allAirbases, {ab = ab, name = abName, side = side})
+                    env.info("ConvoySystem: [SCAN] Found airbase: '" .. abName .. "' (side=" .. side .. ")")
+                end
+            end
+        end
+        
+        -- Pass 1: Exact name match
+        for _, entry in ipairs(allAirbases) do
+            if entry.name == airbaseName then
+                airbase = entry.ab
+                env.info("ConvoySystem: Found FARP/airbase via exact match (side=" .. entry.side .. "): " .. airbaseName)
+                break
+            end
+        end
+        
+        -- Pass 2: Case-insensitive match
+        if not airbase then
+            for _, entry in ipairs(allAirbases) do
+                if string.lower(entry.name) == lowerTarget then
+                    airbase = entry.ab
+                    env.info("ConvoySystem: Found FARP/airbase via case-insensitive match: '" .. entry.name .. "' (side=" .. entry.side .. ")")
+                    break
+                end
+            end
+        end
+        
+        -- Pass 3: Substring match (FARP name contains our target or vice versa)
+        if not airbase then
+            for _, entry in ipairs(allAirbases) do
+                local lowerName = string.lower(entry.name)
+                if string.find(lowerName, lowerTarget, 1, true) or string.find(lowerTarget, lowerName, 1, true) then
+                    airbase = entry.ab
+                    env.info("ConvoySystem: Found FARP/airbase via substring match: '" .. entry.name .. "' for target '" .. airbaseName .. "' (side=" .. entry.side .. ")")
+                    break
+                end
+            end
+        end
+        
+        -- Pass 4: Proximity-based fallback - find nearest FARP/airbase to the destination zone center
+        if not airbase then
+            env.warning("ConvoySystem: Name-based search failed - trying proximity search near destination zone")
+            local zoneCenter = nil
+            -- Try to get destination zone center position
+            local destZoneNames = {zoneName, cleanZoneName .. "_Dest", cleanZoneName}
+            for _, zn in ipairs(destZoneNames) do
+                pcall(function()
+                    if mist and mist.DBs and mist.DBs.zonesByName and mist.DBs.zonesByName[zn] then
+                        zoneCenter = mist.DBs.zonesByName[zn].point
+                    elseif trigger.misc.getZone then
+                        local z = trigger.misc.getZone(zn)
+                        if z then zoneCenter = z.point end
+                    end
+                end)
+                if zoneCenter then break end
+            end
+            
+            if zoneCenter then
+                local closestDist = 5000  -- Max 5km search radius
+                for _, entry in ipairs(allAirbases) do
+                    local abPos = nil
+                    pcall(function() abPos = entry.ab:getPoint() end)
+                    if abPos then
+                        local dx = abPos.x - zoneCenter.x
+                        local dz = abPos.z - zoneCenter.z
+                        local dist = math.sqrt(dx*dx + dz*dz)
+                        if dist < closestDist then
+                            closestDist = dist
+                            airbase = entry.ab
+                            env.info("ConvoySystem: Proximity match: '" .. entry.name .. "' at " .. string.format("%.0f", dist) .. "m from zone center")
+                        end
+                    end
+                end
+                if airbase then
+                    env.info("ConvoySystem: Found FARP/airbase via proximity: '" .. airbase:getName() .. "' (" .. string.format("%.0f", closestDist) .. "m from zone)")
+                end
+            else
+                env.warning("ConvoySystem: Could not find zone center for proximity search")
+            end
+        end
+    end
+    
     if not airbase then
         env.error("ConvoySystem: FAILED - Could not find airbase with name: '" .. airbaseName .. "'")
         env.error("ConvoySystem: Zone: '" .. zoneName .. "' -> Clean: '" .. cleanZoneName .. "' -> Airbase: '" .. airbaseName .. "'")
-        trigger.action.outText("Convoy Arrival Failed!\nNo airbase found for " .. airbaseName, 15)
+        trigger.action.outText("Convoy Arrival Failed!\nNo airbase found for " .. airbaseName .. "\nCheck DCS log for available airbases.", 15)
         return
     end
     
@@ -2059,93 +2151,46 @@ performWarehouseResupply = function(zoneName)
         return
     end
     
-    env.info("ConvoySystem: SUCCESS - Found warehouse at " .. airbaseName .. " - querying existing inventory")
+    env.info("ConvoySystem: Found warehouse at " .. airbaseName .. " - adding inventory")
     
-    -- Get existing inventory and top it up
     local inventory = warehouse:getInventory()
     local itemsAdded = 0
     local itemsProcessed = 0
     
-    -- OPTION B: Top up whatever is already in the warehouse
-    if inventory then
-        -- Process weapons
-        if inventory.weapon then
-            for key, value in pairs(inventory.weapon) do
-                -- Handle both formats: {name = count} or array-style {[1] = name, ...}
-                local itemName, currentCount
-                if type(key) == "number" then
-                    -- Array-style: skip, we need name = count format
-                    if type(value) == "string" then
-                        itemName = value
-                        currentCount = warehouse:getItemCount(value) or 0
-                    end
-                else
-                    -- Key-value style: key is item name
-                    itemName = key
-                    currentCount = value
-                end
-                
-                if itemName and type(itemName) == "string" and currentCount and currentCount > 0 then
-                    local addAmount = ConvoySystem.resupplyQuantity
-                    warehouse:addItem(itemName, addAmount)
-                    
-                    local afterCount = warehouse:getItemCount(itemName) or 0
-                    local actualAdded = afterCount - currentCount
-                    
-                    if actualAdded > 0 then
-                        itemsAdded = itemsAdded + actualAdded
-                        env.info("ConvoySystem: Topped up " .. itemName .. ": " .. currentCount .. " -> " .. afterCount .. " (+" .. actualAdded .. ")")
-                    end
+    -- Top up items that already exist in the warehouse.
+    -- DCS getInventory() returns { weapon = {[name]=count}, aircraft = {[name]=count}, liquids = {[name]=count} }
+    if inventory and inventory.weapon then
+        for itemName, currentCount in pairs(inventory.weapon) do
+            if type(itemName) == "string" and type(currentCount) == "number" and currentCount > 0 then
+                local addAmount = ConvoySystem.resupplyQuantity
+                local ok, err = pcall(function() warehouse:addItem(itemName, addAmount) end)
+                if ok then
+                    itemsAdded = itemsAdded + addAmount
                     itemsProcessed = itemsProcessed + 1
-                end
-            end
-        end
-        
-        -- Process liquids (except fuel - that's usually infinite)
-        if inventory.liquids then
-            for key, value in pairs(inventory.liquids) do
-                -- Handle both formats: {name = count} or array-style
-                local itemName, currentCount
-                if type(key) == "number" then
-                    if type(value) == "string" then
-                        itemName = value
-                        currentCount = warehouse:getItemCount(value) or 0
-                    end
+                    env.info("ConvoySystem: Topped up " .. itemName .. " +" .. addAmount)
                 else
-                    itemName = key
-                    currentCount = value
-                end
-                
-                -- Skip fuel items
-                if itemName and type(itemName) == "string" and not string.match(itemName:lower(), "fuel") and currentCount and currentCount > 0 then
-                    local addAmount = ConvoySystem.resupplyQuantity * 100  -- Liquids are in larger quantities
-                    warehouse:addItem(itemName, addAmount)
-                    itemsProcessed = itemsProcessed + 1
+                    env.warning("ConvoySystem: addItem failed for " .. itemName .. ": " .. tostring(err))
                 end
             end
         end
     end
     
-    -- If no items were found in warehouse, use fallback list
+    -- For warehouses with no existing inventory (empty FOBs/FARPs), use the comprehensive fallback list.
+    -- NOTE: warehouse:getItemCount() is NOT a DCS API method - never call it; use getInventory() only.
     if itemsProcessed == 0 then
-        env.info("ConvoySystem: No existing inventory found, using fallback list")
+        env.info("ConvoySystem: Warehouse empty or new - using fallback inventory list for " .. airbaseName)
         for itemName, quantity in pairs(ConvoySystem.fallbackInventory) do
-            local beforeCount = warehouse:getItemCount(itemName) or 0
-            warehouse:addItem(itemName, quantity)
-            local afterCount = warehouse:getItemCount(itemName) or 0
-            local actualAdded = afterCount - beforeCount
-            
-            if actualAdded > 0 then
-                itemsAdded = itemsAdded + actualAdded
+            local ok = pcall(function() warehouse:addItem(itemName, quantity) end)
+            if ok then
+                itemsAdded = itemsAdded + quantity
             end
         end
     end
     
-    env.info("ConvoySystem: Added " .. itemsAdded .. " total items to " .. airbaseName .. " warehouse (" .. itemsProcessed .. " existing items topped up)")
+    env.info("ConvoySystem: Warehouse " .. airbaseName .. " resupply complete: ~" .. itemsAdded .. " items added")
     
-    -- Increment all aircraft in warehouse by convoy aircraft increment
+    -- Increment all aircraft in warehouse
     local aircraftAdded = incrementWarehouseAircraft(warehouse, airbaseName, ConvoySystem.aircraftIncrementPerConvoy)
-    env.info("ConvoySystem: Warehouse " .. airbaseName .. " resupply complete: " .. itemsAdded .. " items + " .. aircraftAdded .. " aircraft")
     
     -- Notify players
     trigger.action.outText(airbaseName .. " resupplied!\n+" .. itemsAdded .. " munitions\n+" .. aircraftAdded .. " aircraft", 8)
@@ -2189,21 +2234,12 @@ incrementWarehouseAircraft = function(warehouse, locationName, increment)
         end
         
         if aircraftName and type(aircraftName) == "string" then
-            -- Get aircraft count before adding
-            local beforeCount = warehouse:getItemCount(aircraftName) or 0
-            
-            -- Add aircraft
-            warehouse:addItem(aircraftName, increment)
-            
-            -- Get aircraft count after adding to verify
-            local afterCount = warehouse:getItemCount(aircraftName) or 0
-            local actualAdded = afterCount - beforeCount
-            
-            if actualAdded > 0 then
-                totalAircraftAdded = totalAircraftAdded + actualAdded
-                env.info("ConvoySystem: Added " .. actualAdded .. " x " .. aircraftName .. " to warehouse at " .. locationName .. " (now have " .. afterCount .. ")")
+            local ok, err = pcall(function() warehouse:addItem(aircraftName, increment) end)
+            if ok then
+                totalAircraftAdded = totalAircraftAdded + increment
+                env.info("ConvoySystem: Added " .. increment .. " x " .. aircraftName .. " to warehouse at " .. locationName)
             else
-                env.info("ConvoySystem: Could not add aircraft " .. tostring(aircraftName) .. " - may already be at max")
+                env.info("ConvoySystem: Could not add aircraft " .. tostring(aircraftName) .. ": " .. tostring(err))
             end
         end
     end
@@ -2302,7 +2338,7 @@ local function startConvoySystem()
         return ABC.getOwner(dcsName) == "RED"
     end
 
-    -- Find a player name across airplane + helicopter groups (for requester tracking)
+    --[[ Leaderboard: Find player name for requester tracking (commented out - no leaderboard script loaded)
     local function findRequesterName()
         local cats = { Group.Category.AIRPLANE, Group.Category.HELICOPTER }
         for _, cat in ipairs(cats) do
@@ -2318,6 +2354,7 @@ local function startConvoySystem()
         end
         return "Unknown"
     end
+    --]]
 
     local zonePages = makePages(allZones)
     local numZonePages = #zonePages
@@ -2451,10 +2488,10 @@ local function startConvoySystem()
                                     local convoyId = result
 
                                     if convoyId then
-                                        local requesterName = findRequesterName()
-                                        ConvoySystem.convoyRequesters[convoyId] = requesterName
-                                        env.info("ConvoySystem: Convoy " .. convoyId ..
-                                                 " requested by: " .. requesterName)
+                                        -- Leaderboard requester tracking (commented out - no leaderboard script loaded)
+                                        -- local requesterName = findRequesterName()
+                                        -- ConvoySystem.convoyRequesters[convoyId] = requesterName
+                                        -- env.info("ConvoySystem: Convoy " .. convoyId .. " requested by: " .. requesterName)
 
                                         local msg = "Convoy Dispatched!\n" .. capTplName ..
                                                     "\nFrom: " .. capOriginFull ..

@@ -157,20 +157,20 @@ ABC.REGISTRY = {
     -- or simply add them here and let init() handle them via AIRBASE lookup
     -- if they have a proper DCS Airbase/FARP object.
     --
-    -- activateGroup (optional) — set to the exact ME group name of a
-    -- Late-Activated BLUE unit group.  When Blue captures the FOB, the
-    -- script calls Group:activate() on that group automatically.
-    -- Leave as nil if you do not need a garrison group for that FOB.
+    -- activateGroups (optional) — list of exact ME group names for Late-Activated
+    -- BLUE unit groups.  When Blue captures the FOB every group in the list is
+    -- activated automatically (garrison, HIMARS, mortars, etc.).
+    -- Leave as nil or an empty table if no groups are needed for that FOB.
     -- ═══════════════════════════════════════════════════════════════════
-    { name = "FOB_Alpha",   zone = "CAPTURE_ZONE_FOB_Alpha",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Alpha"
-    { name = "FOB_Bravo",   zone = "CAPTURE_ZONE_FOB_Bravo",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Bravo"
-    { name = "FOB_Charlie", zone = "CAPTURE_ZONE_FOB_Charlie", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Charlie"
-    { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Delta"
-    { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Echo"
-    { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Foxtrot"
-    { name = "FOB_Hotel",   zone = "CAPTURE_ZONE_FOB_Hotel",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Hotel"
-    { name = "FOB_Golf",    zone = "CAPTURE_ZONE_FOB_Golf",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_Golf"
-    { name = "FOB_India",   zone = "CAPTURE_ZONE_FOB_India",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroup = nil },  -- e.g. activateGroup = "GARRISON_FOB_India"
+    { name = "FOB_Alpha",   zone = "CAPTURE_ZONE_FOB_Alpha",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Alpha",   "HIMARS_FOB_Alpha",   "MORTAR_FOB_Alpha"}   },
+    { name = "FOB_Bravo",   zone = "CAPTURE_ZONE_FOB_Bravo",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Bravo",   "HIMARS_FOB_Bravo",   "MORTAR_FOB_Bravo"}   },
+    { name = "FOB_Charlie", zone = "CAPTURE_ZONE_FOB_Charlie", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Charlie", "HIMARS_FOB_Charlie", "MORTAR_FOB_Charlie"} },
+    { name = "FOB_Delta",   zone = "CAPTURE_ZONE_FOB_Delta",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Delta",   "HIMARS_FOB_Delta",   "MORTAR_FOB_Delta"}   },
+    { name = "FOB_Echo",    zone = "CAPTURE_ZONE_FOB_Echo",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Echo",    "HIMARS_FOB_Echo",    "MORTAR_FOB_Echo"}    },
+    { name = "FOB_Foxtrot", zone = "CAPTURE_ZONE_FOB_Foxtrot", coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Foxtrot", "HIMARS_FOB_Foxtrot", "MORTAR_FOB_Foxtrot"} },
+    { name = "FOB_Hotel",   zone = "CAPTURE_ZONE_FOB_Hotel",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Hotel",   "HIMARS_FOB_Hotel",   "MORTAR_FOB_Hotel"}   },
+    { name = "FOB_Golf",    zone = "CAPTURE_ZONE_FOB_Golf",    coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_Golf",    "HIMARS_FOB_Golf",    "MORTAR_FOB_Golf"}    },
+    { name = "FOB_India",   zone = "CAPTURE_ZONE_FOB_India",   coalition = "NEUTRAL", type = "FARP", capturable = true, activateGroups = {"GARRISON_FOB_India",   "HIMARS_FOB_India",   "MORTAR_FOB_India"}   },
 
     -- ═══════════════════════════════════════════════════════════════════
     -- FARP SLOTS  — leave blank here; use ABC.registerFARP() at runtime
@@ -219,7 +219,8 @@ ABC.DESTROY_REGISTRY = {
     { name = "SAM Site Hotel",    zone = "DESTROY_ZONE_SAM_HOTEL"    },
     { name = "SAM Site India",    zone = "DESTROY_ZONE_SAM_INDIA"    },
     { name = "SAM Site Juliet",   zone = "DESTROY_ZONE_SAM_JULIET"   },
-    { name = "Wagner-Missile-Site",  zone = "DESTROY_ZONE_Wagner-Missile-Site"   },
+    { name = "Wagner-Missile-Site",zone = "DESTROY_ZONE_Wagner-Missile-Site"},
+    { name = "Wagner-Oil-Refinery",zone = "DESTROY_ZONE_Wagner-Oil-Refinery"},
     { name = "Tiyas",             zone = "DESTROY_ZONE_TIYAS" },
 }
 
@@ -683,23 +684,25 @@ local function applyCoalition(entry, st, newCoal, announce)
         pcall(ABC.onCapture, entry.name, prev, newCoal)
     end
 
-    -- ── Activate late-activated garrison group on Blue capture ───────
-    -- If the registry entry has an activateGroup field and Blue just
-    -- captured this base, wake up the pre-placed Late-Activated group.
-    -- The group must be placed in the ME as Late Activation = ON so it
-    -- sits dormant until this call.  Safe to call on every coalition
-    -- change — only fires when newCoal is "BLUE".
-    if newCoal == "BLUE" and entry.activateGroup then
-        local grp = Group.getByName(entry.activateGroup)
-        if grp and grp:isExist() then
-            grp:activate()
-            env.info(string.format(
-                "[ABC] Activated garrison group '%s' for %s → BLUE.",
-                entry.activateGroup, entry.name), false)
-        else
-            env.info(string.format(
-                "[ABC] activateGroup: group '%s' not found for %s — check the ME group name.",
-                entry.activateGroup, entry.name), false)
+    -- ── Activate late-activated groups on Blue capture ─────────────
+    -- activateGroups is an array of ME group names (garrison, HIMARS,
+    -- mortars, etc.).  Every group in the list is activated when Blue
+    -- captures this FOB.  Groups must have Late Activation = ON in the ME.
+    -- NOTE: Do NOT call grp:isExist() on a late-activated group — it always
+    -- returns false until activated.  Group.getByName() non-nil is enough.
+    if newCoal == "BLUE" and entry.activateGroups then
+        for _, groupName in ipairs(entry.activateGroups) do
+            local grp = Group.getByName(groupName)
+            if grp then
+                grp:activate()
+                env.info(string.format(
+                    "[ABC] Activated group '%s' for %s → BLUE.",
+                    groupName, entry.name), false)
+            else
+                env.info(string.format(
+                    "[ABC] activateGroups: group '%s' not found for %s — check the ME group name.",
+                    groupName, entry.name), false)
+            end
         end
     end
 
@@ -1090,6 +1093,173 @@ end
 ABC.onCapture = nil
 
 ------------------------------------------------------------------------
+-- SECTION 9b : PERSISTENCE  (save / restore capture state across restarts)
+------------------------------------------------------------------------
+-- Saves ABC._state (airbases / FARPs) and ABC._destroyState (destroy zones)
+-- every PERSIST.saveInterval seconds to:
+--   <DCS Saved Games>\Mission Saves\AirbaseCapture.lua
+--
+-- On mission start ABC.init() calls PERSIST.load().  If a file exists the
+-- restore is scheduled 15 s later (mission fully settled) and silently
+-- replays all coalition changes — activating BLUE FOB garrison groups as
+-- normal via applyCoalition().  No messages are shown during restore.
+------------------------------------------------------------------------
+ABC.PERSIST = {
+    saveDir      = lfs.writedir() .. "Mission Saves\\",
+    saveFile     = lfs.writedir() .. "Mission Saves\\AirbaseCapture.lua",
+    saveInterval = 900,   -- 15 minutes
+    SAVE_VERSION = "1.0",
+}
+
+-- Serialise current state to the save file.
+function ABC.PERSIST.save()
+    if not ABC._initialized then return end
+
+    -- Ensure save directory exists (safe to call even when it already exists)
+    lfs.mkdir(ABC.PERSIST.saveDir)
+
+    local lines = {
+        "-- AirbaseCapture State Save  (auto-generated — do not edit manually)",
+        string.format("-- Version: %s  Mission-time: T+%ds",
+            ABC.PERSIST.SAVE_VERSION, math.floor(timer.getTime())),  -- os.date unavailable in DCS sandbox
+        "local data = {",
+        string.format("    version = %q,", ABC.PERSIST.SAVE_VERSION),
+        "    bases = {",
+    }
+
+    for name, st in pairs(ABC._state) do
+        lines[#lines+1] = string.format(
+            "        [%q] = { coalition = %q, captureTicks = %d },",
+            name, st.coalition or "NEUTRAL", st.captureTicks or 0)
+    end
+
+    lines[#lines+1] = "    },"
+    lines[#lines+1] = "    destroyZones = {"
+
+    for name, dst in pairs(ABC._destroyState) do
+        lines[#lines+1] = string.format(
+            "        [%q] = { coalition = %q, active = %s },",
+            name, dst.coalition or "RED", tostring(dst.active ~= false))
+    end
+
+    lines[#lines+1] = "    },"
+    lines[#lines+1] = "}"
+    lines[#lines+1] = "return data"
+
+    local content = table.concat(lines, "\n")
+    local f = io.open(ABC.PERSIST.saveFile, "w")
+    if f then
+        f:write(content)
+        f:close()
+        env.info("[ABC] PERSIST: state saved to " .. ABC.PERSIST.saveFile, false)
+    else
+        env.info("[ABC] PERSIST: ERROR — could not open save file for writing: "
+                 .. ABC.PERSIST.saveFile, false)
+    end
+end
+
+-- Load the save file and return the parsed data table, or nil if absent/invalid.
+function ABC.PERSIST.load()
+    local f = io.open(ABC.PERSIST.saveFile, "r")
+    if not f then
+        env.info("[ABC] PERSIST: no save file at " .. ABC.PERSIST.saveFile, false)
+        return nil
+    end
+    local content = f:read("*a")
+    f:close()
+
+    if not content or content == "" then
+        env.info("[ABC] PERSIST: save file is empty — ignoring.", false)
+        return nil
+    end
+
+    local chunk, parseErr = loadstring(content)
+    if not chunk then
+        env.info("[ABC] PERSIST: save file parse error: " .. tostring(parseErr), false)
+        return nil
+    end
+
+    local ok, data = pcall(chunk)
+    if not ok or type(data) ~= "table" then
+        env.info("[ABC] PERSIST: save file execution error or bad format — ignoring.", false)
+        return nil
+    end
+
+    if data.version ~= ABC.PERSIST.SAVE_VERSION then
+        env.info(string.format(
+            "[ABC] PERSIST: WARNING — save version %q differs from expected %q. Restoring anyway.",
+            tostring(data.version), ABC.PERSIST.SAVE_VERSION), false)
+    end
+
+    env.info("[ABC] PERSIST: save file loaded (version=" .. tostring(data.version) .. ").", false)
+    return data
+end
+
+-- Apply saved state.  Called via a T+15 s timer so the mission is settled.
+-- applyCoalition() with announce=false silently restores state and
+-- automatically activates BLUE FOB garrison groups (activateGroups list).
+-- ABC.onCapture is temporarily suppressed so callbacks don't double-fire.
+function ABC.PERSIST.restore(data)
+    if not data then return end
+
+    -- Suppress onCapture callback during restore to avoid double-counting
+    local savedCallback = ABC.onCapture
+    ABC.onCapture = nil
+
+    -- ── Airbase / FARP states ────────────────────────────────────────
+    for name, saved in pairs(data.bases or {}) do
+        local st = ABC._state[name]
+        if not st then
+            env.info("[ABC] PERSIST restore: unknown base '" .. name .. "' — skipped.", false)
+        else
+            local coal = saved.coalition or "NEUTRAL"
+            if coal ~= st.coalition then
+                local entry = nil
+                for _, e in ipairs(ABC.REGISTRY) do
+                    if e.name == name then entry = e; break end
+                end
+                if entry then
+                    applyCoalition(entry, st, coal, false)
+                    env.info(string.format(
+                        "[ABC] PERSIST: restored '%s' → %s", name, coal), false)
+                end
+            end
+        end
+    end
+
+    -- ── Destroy zone states ──────────────────────────────────────────
+    for name, saved in pairs(data.destroyZones or {}) do
+        local dst = ABC._destroyState[name]
+        if not dst then
+            env.info("[ABC] PERSIST restore: unknown destroy zone '" .. name .. "' — skipped.", false)
+        elseif saved.coalition == "DESTROYED" and dst.coalition ~= "DESTROYED" then
+            dst.coalition = "DESTROYED"
+            dst.active    = false
+            for _, entry in ipairs(ABC.DESTROY_REGISTRY) do
+                if entry.name == name then
+                    pcall(drawBase, entry, dst)
+                    env.info("[ABC] PERSIST: destroy zone '" .. name .. "' → DESTROYED", false)
+                    break
+                end
+            end
+        end
+    end
+
+    -- Restore callback
+    ABC.onCapture = savedCallback
+    env.info("[ABC] PERSIST: restore complete.", false)
+end
+
+-- Self-rescheduling periodic save timer callback.
+function ABC.PERSIST.periodicSave(_, time)
+    local ok, err = pcall(ABC.PERSIST.save)
+    if not ok then
+        env.info("[ABC] PERSIST: periodic save error: " .. tostring(err), false)
+    end
+    return time + ABC.PERSIST.saveInterval
+end
+
+------------------------------------------------------------------------
 -- SECTION 10 : INITIALISATION
 ------------------------------------------------------------------------
 
@@ -1269,6 +1439,24 @@ function ABC.init()
     timer.scheduleFunction(scanAll, nil, timer.getTime() + 10)
 
     ABC._initialized = true
+
+    -- ── Persistence: load save file and schedule restore ─────────────
+    local savedData = ABC.PERSIST.load()
+    if savedData then
+        timer.scheduleFunction(function(_, t)
+            ABC.PERSIST.restore(savedData)
+            timer.scheduleFunction(ABC.PERSIST.periodicSave, nil,
+                timer.getTime() + ABC.PERSIST.saveInterval)
+            env.info("[ABC] PERSIST: periodic save armed (interval="
+                     .. ABC.PERSIST.saveInterval .. "s).", false)
+        end, nil, timer.getTime() + 15)
+        env.info("[ABC] PERSIST: save file found — restore scheduled at T+15 s.", false)
+    else
+        timer.scheduleFunction(ABC.PERSIST.periodicSave, nil,
+            timer.getTime() + ABC.PERSIST.saveInterval)
+        env.info("[ABC] PERSIST: no save file — fresh start, periodic save armed.", false)
+    end
+
     env.info(string.format(
         "[ABC] Initialised. %d bases tracked, %d destroy zones. Scan interval: %ds. Capture ticks: %d.",
         #ABC.REGISTRY, #ABC.DESTROY_REGISTRY, ABC.CFG.CHECK_INTERVAL, ABC.CFG.CAPTURE_TICKS

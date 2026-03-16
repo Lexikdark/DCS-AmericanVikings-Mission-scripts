@@ -108,6 +108,24 @@ end
 JTAC_Manager = {}
 JTAC_Manager.active = {}  -- Legacy reference, not used
 
+-- Remove a JTAC from the registry (called when loading into transport or on destroy)
+function JTAC_Manager.unregisterJTAC(groupName)
+    if not groupName then return end
+    DGSS_CTLD.JTAC_REGISTRY[groupName] = nil
+    ctld.destroyLaser(groupName)
+    env.info("[JTAC_Manager] Unregistered JTAC: " .. tostring(groupName))
+end
+
+-- Update the laser code for a registered JTAC
+function JTAC_Manager.updateLaserCode(groupName, code)
+    if not groupName or not code then return end
+    local jtac = DGSS_CTLD.JTAC_REGISTRY[groupName]
+    if jtac then
+        jtac.laser = code
+        env.info(string.format("[JTAC_Manager] Laser code for %s updated to %d", groupName, code))
+    end
+end
+
 -- Static JTAC team and vehicle names
 DGSS_CTLD.STATIC_JTAC_TEAMS = {
     "JTAC_Team_1", "JTAC_Team_2", "JTAC_Team_3", "JTAC_Team_4", "JTAC_Team_5",
@@ -700,6 +718,7 @@ DGSS_CTLD.ZONES = {
     { name = "KIRYAT_SHMONA" },
     { name = "MEGIDDO" },
     { name = "HAIFA" },
+    { name = "PAHPOS" },
     { name = "FOB_BRAVO" },
     { name = "FOB_DELTA" },
     { name = "FOB_CHARLIE" },
@@ -709,6 +728,7 @@ DGSS_CTLD.ZONES = {
     { name = "FOB_HOTEL" },
     { name = "FOB_GOLF" },
     { name = "FOB_INDIA" },
+
 }
 
 -- Transport capacity (by unit type) for troops
@@ -998,6 +1018,34 @@ DGSS_CTLD.VEHICLE_TEMPLATES = {
         category    = "Artillery",
         units = { "CHAP_M142_GMLRS_M30" }
     },
+
+    ["Gepard"] = {
+        namePrefix  = "GEPARD",
+        displayName = "Gepard SPAAG",
+        category    = "Air Defense",
+        units = { "Gepard" }
+    },
+
+    -- -------------------------------------------------------
+    -- NASAMS SITE (full battery: C2 + Sentinel radar + 5x launchers)
+    -- Unit types require the DCS NASAMS asset pack
+    -- -------------------------------------------------------
+    ["NASAMS Site Full"] = {
+        namePrefix  = "NASAMS_SITE",
+        displayName = "NASAMS SAM Site (5 Launchers)",
+        category    = "SAM Systems",
+        units = {
+            "NASAMS_Command_Post",        -- NASAMS C2 Command Post
+            "NASAMS_Radar_MPQ64F1",       -- MPQ-64F1 Sentinel Search Radar
+            "NASAMS_LN_C",               -- NASAMS Launcher 1
+            "NASAMS_LN_C",               -- NASAMS Launcher 2
+            "NASAMS_LN_C",               -- NASAMS Launcher 3
+            "NASAMS_LN_C",               -- NASAMS Launcher 4
+            "NASAMS_LN_C",               -- NASAMS Launcher 5
+            "CHAP_M1083",               -- HEMTT truck for ammo resupply (not part of NASAMS but added for logistics flavor)
+            "CHAP_M1083",               -- Additional HEMTT truck for ammo resupply
+        },
+    },
 }
 
 ----------------------------------------------------------------
@@ -1037,6 +1085,15 @@ DGSS_CTLD.MENU_CACHE = {
 function DGSS_CTLD.generateGroupName(prefix)
     DGSS_CTLD.GROUP_COUNTER = DGSS_CTLD.GROUP_COUNTER + 1
     return string.format("%s_%04d", prefix or "DGSS", DGSS_CTLD.GROUP_COUNTER)
+end
+
+-- Count entries in a table (generic utility)
+local function countTable(t)
+    local n = 0
+    if type(t) == "table" then
+        for _ in pairs(t) do n = n + 1 end
+    end
+    return n
 end
 
 ----------------------------------------------------------------
@@ -1198,45 +1255,49 @@ function DGSS_CTLD.countActiveJtacVehicles()
     return count
 end
 
--- Convert DCS coordinates to simplified MGRS/lat-lon format
+-- Convert DCS position to MGRS coordinate string
 function DGSS_CTLD.coordinatesToMGRS(point)
     if not point then return "UNKNOWN" end
     
-    -- Safely handle coordinate conversion
     local lat, lon = 0, 0
-    pcall(function()
-        -- DCS uses x,z for horizontal plane; simple conversion
-        lat = (point.x or 0) / 111000  -- rough conversion to degrees
-        lon = (point.z or 0) / 111000
+    local ok = pcall(function()
+        lat, lon = coord.LOtoLL(point)
     end)
+    if not ok or (lat == 0 and lon == 0) then return "UNKNOWN" end
     
-    return string.format("%.2fÂ°N %.2fÂ°E", math.abs(lat), math.abs(lon))
+    local mgrs = coord.LLtoMGRS(lat, lon)
+    return string.format("%s %s %05d %05d",
+        mgrs.UTMZone,
+        mgrs.MGRSDigraph,
+        mgrs.Easting,
+        mgrs.Northing
+    )
 end
 
--- Convert to Decimal Minutes format (DDÂ°MM.MMM'N/S, DDÂ°MM.MMM'E/W)
+-- Convert DCS position to DD MM.MMM format (Degrees Decimal Minutes)
 function DGSS_CTLD.coordinatesToDecimalMinutes(point)
     if not point then return "UNKNOWN" end
     
     local lat, lon = 0, 0
-    pcall(function()
-        lat = (point.x or 0) / 111000  -- rough conversion
-        lon = (point.z or 0) / 111000
+    local ok = pcall(function()
+        lat, lon = coord.LOtoLL(point)
     end)
+    if not ok or (lat == 0 and lon == 0) then return "UNKNOWN" end
     
-    -- Convert latitude
+    -- Convert latitude to DD MM.MMM
     local latDeg = math.floor(math.abs(lat))
     local latMin = (math.abs(lat) - latDeg) * 60
     local latDir = lat >= 0 and "N" or "S"
     
-    -- Convert longitude
+    -- Convert longitude to DD MM.MMM
     local lonDeg = math.floor(math.abs(lon))
     local lonMin = (math.abs(lon) - lonDeg) * 60
     local lonDir = lon >= 0 and "E" or "W"
     
-    return string.format("%02dÂ°%06.3f'%s %03dÂ°%06.3f'%s", latDeg, latMin, latDir, lonDeg, lonMin, lonDir)
+    return string.format("%s %02d %06.3f  %s %03d %06.3f", latDir, latDeg, latMin, lonDir, lonDeg, lonMin)
 end
 
--- Generate 9-line CAS callout with robust error handling
+-- Generate 9-line CAS briefing with robust error handling
 function DGSS_CTLD.generate9LineCallout(jtacName, targetUnit, jtacUnit)
     if not targetUnit or not jtacUnit then return nil end
     
@@ -1246,11 +1307,13 @@ function DGSS_CTLD.generate9LineCallout(jtacName, targetUnit, jtacUnit)
     
     if not jtacPos or not targetPos then return nil end
     
-    -- Calculate bearing and distance with safe math
+    -- Calculate bearing from JTAC to target (DCS: x=North, z=East)
     local dx = (targetPos.x or 0) - (jtacPos.x or 0)
     local dz = (targetPos.z or 0) - (jtacPos.z or 0)
-    local distance = math.sqrt(dx*dx + dz*dz)
-    local bearing = math.deg(math.atan2(dx, dz))
+    local distMeters = math.sqrt(dx*dx + dz*dz)
+    local distNM = distMeters / 1852
+    -- Compass bearing: atan2(east, north) for CW-from-north
+    local bearing = math.deg(math.atan2(dz, dx))
     if bearing < 0 then bearing = bearing + 360 end
     
     -- Target info with null safety
@@ -1265,8 +1328,9 @@ function DGSS_CTLD.generate9LineCallout(jtacName, targetUnit, jtacUnit)
         end
     end)
     
-    -- Elevation with safety
-    local elevation = math.floor((targetPos.y or 0))
+    -- Elevation in feet MSL
+    local elevMeters = math.floor((targetPos.y or 0))
+    local elevFeet = math.floor(elevMeters * 3.281)
     
     -- Get laser code safely
     local laserCode = 1688
@@ -1274,22 +1338,33 @@ function DGSS_CTLD.generate9LineCallout(jtacName, targetUnit, jtacUnit)
         laserCode = DGSS_CTLD.JTAC_REGISTRY[jtacName].laser or 1688
     end
     
-    -- Build 9-line callout
+    -- Get formatted coordinates
+    local mgrsStr = DGSS_CTLD.coordinatesToMGRS(targetPos)
+    local dmStr = DGSS_CTLD.coordinatesToDecimalMinutes(targetPos)
+    
+    -- Build standard 9-line CAS briefing
     local callout = string.format(
-        "[9-LINE CALLOUT] %s\n" ..
-        "1. IP: CURRENT\n" ..
-        "2. HEADING: %03d degrees\n" ..
-        "3. DISTANCE: %.1f meters\n" ..
-        "4. ELEVATION: %d meters\n" ..
-        "5. TARGET: %s (%s)\n" ..
-        "6. LOCATION: %s (MGRS)\n" ..
-        "         or: %s (Dec Min)\n" ..
-        "7. MARK: LASE - Code %d\n" ..
-        "8. FRIENDLIES: CLEAR\n" ..
-        "9. REMARKS: AUTO-DETECTED ENEMY",
-        jtacName, bearing, distance, elevation, targetType, targetGroupName,
-        DGSS_CTLD.coordinatesToMGRS(targetPos),
-        DGSS_CTLD.coordinatesToDecimalMinutes(targetPos),
+        "========= 9-LINE CAS =========\n" ..
+        "JTAC: %s  |  Laser: %d\n" ..
+        "---------------------------------\n" ..
+        "1. IP/BP:        CURRENT POS\n" ..
+        "2. HDG:          %03d\n" ..
+        "3. DISTANCE:     %.1f NM\n" ..
+        "4. ELEVATION:    %d ft MSL\n" ..
+        "5. TGT DESC:     %s\n" ..
+        "6. TGT LOC:      %s\n" ..
+        "                 %s\n" ..
+        "7. MARK:         LASER %d\n" ..
+        "8. FRIENDLIES:   JTAC POS\n" ..
+        "9. EGRESS:       PILOT DISCRETION\n" ..
+        "=================================",
+        jtacName, laserCode,
+        bearing,
+        distNM,
+        elevFeet,
+        targetType,
+        mgrsStr,
+        dmStr,
         laserCode
     )
     
@@ -2244,15 +2319,26 @@ function DGSS_CTLD.checkActiveJTACs()
                 local pos = unit:getPoint()
                 if pos then
                     local laserCode = jtacData.laser or 1688
+                    local dmStr = DGSS_CTLD.coordinatesToDecimalMinutes(pos)
+                    local mgrsStr = DGSS_CTLD.coordinatesToMGRS(pos)
+                    
+                    -- Target info
+                    local tgtInfo = "No target"
+                    if jtacData.target and jtacData.target:isExist() then
+                        local tgtType = "Unknown"
+                        pcall(function() tgtType = jtacData.target:getTypeName() end)
+                        tgtInfo = "Lasing: " .. tgtType
+                    end
                     
                     output = output .. string.format(
-                        "%d. %s\n   Units: %d | Laser: %d | Pos: (%.1f, %.1f)\n\n",
+                        "%d. %s\n   Units: %d | Laser: %d | %s\n   Pos: %s\n   MGRS: %s\n\n",
                         activeCount,
                         jtacGroupName,
                         unitCount,
                         laserCode,
-                        pos.x,
-                        pos.z
+                        tgtInfo,
+                        dmStr,
+                        mgrsStr
                     )
                 end
             end
@@ -2455,6 +2541,7 @@ function DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId)
     if hasLiveTeams then
         env.info("[JTAC Menu] Creating Teams submenu...")
         local teamsMenu = missionCommands.addSubMenuForGroup(groupId, "JTAC Teams", jtacRoot)
+        menus.teamsMenu = teamsMenu  -- persist so it can be removed on next rebuild
         
         if not teamsMenu then
             env.warning("[JTAC Menu] FAILED to create Teams submenu")
@@ -2501,16 +2588,28 @@ function DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId)
                     function()
                         local g = Group.getByName(teamNameCopy)
                         local status = "OFFLINE"
+                        local posStr = ""
+                        local tgtStr = "None"
                         if g and g:isExist() then
                             status = "ACTIVE"
+                            local u = g:getUnit(1)
+                            if u and u:isExist() then
+                                local pos = u:getPoint()
+                                if pos then
+                                    posStr = "\nPos: " .. DGSS_CTLD.coordinatesToDecimalMinutes(pos)
+                                end
+                            end
                         end
 
                         local jtac = DGSS_CTLD.JTAC_REGISTRY[teamNameCopy]
                         local laserCode = jtac and jtac.laser or 1688
+                        if jtac and jtac.target and jtac.target:isExist() then
+                            pcall(function() tgtStr = jtac.target:getTypeName() end)
+                        end
 
                         trigger.action.outText(
-                            string.format("[JTAC %s] Status: %s | Laser: %d",
-                                teamNameCopy, status, laserCode),
+                            string.format("[JTAC %s] Status: %s | Laser: %d | Target: %s%s",
+                                teamNameCopy, status, laserCode, tgtStr, posStr),
                             8
                         )
                     end
@@ -2650,7 +2749,7 @@ function DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId)
 
                         local targetList = string.format("[JTAC %s] Targets in range (%d):\n", teamNameCopy, #jtacData.availableTargets)
                         for i, tgtData in ipairs(jtacData.availableTargets) do
-                            local marker = (jtacData.targetIndex == i and jtacData.manualOverride) and "â–º" or " "
+                            local marker = (jtacData.targetIndex == i and jtacData.manualOverride) and ">" or " "
                             targetList = targetList .. string.format("%s%d. %s - %.0f m\n", marker, i, tgtData.typeName, tgtData.dist)
                         end
                         trigger.action.outText(targetList, 10)
@@ -2660,7 +2759,7 @@ function DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId)
                 -- Next Target
                 missionCommands.addCommandForGroup(
                     groupId,
-                    "Next Target (â†“)",
+                    "Next Target >>",
                     targetMenu,
                     function()
                         local jtacData = DGSS_CTLD.JTAC_REGISTRY[teamNameCopy]
@@ -2690,7 +2789,7 @@ function DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId)
                 -- Previous Target
                 missionCommands.addCommandForGroup(
                     groupId,
-                    "Previous Target (â†‘)",
+                    "<< Previous Target",
                     targetMenu,
                     function()
                         local jtacData = DGSS_CTLD.JTAC_REGISTRY[teamNameCopy]
@@ -2786,8 +2885,46 @@ function DGSS_CTLD.createMenusForUnit(unit)
         DGSS_CTLD.UNIT_MENUS[unitName] = { groupId = groupId }
     end
     
-    -- Skip if CTLD menu already created
+    -- Skip if CTLD menu already created, BUT still check if Vehicles submenu
+    -- needs to be added (player may have entered a CTLD zone since last build).
     if DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
+        local existingMenus = DGSS_CTLD.UNIT_MENUS[unitName]
+        if not existingMenus.vehiclesMenu and DGSS_CTLD.isValidVehicleTransport(unit) then
+            -- Player is now in a CTLD zone – add the Vehicles submenu retroactively
+            local ctldRoot = existingMenus.ctldRoot
+            local vehiclesMenu = missionCommands.addSubMenuForGroup(groupId, "Vehicles", ctldRoot)
+            existingMenus.vehiclesMenu = vehiclesMenu
+            if vehiclesMenu then
+                local categories = {}
+                for key, tpl in pairs(DGSS_CTLD.VEHICLE_TEMPLATES) do
+                    local cat = tpl.category or "Other"
+                    categories[cat] = categories[cat] or {}
+                    table.insert(categories[cat], { key = key, tpl = tpl })
+                end
+                local sortedCats = {}
+                for cat,_ in pairs(categories) do table.insert(sortedCats, cat) end
+                table.sort(sortedCats)
+                for _, cat in ipairs(sortedCats) do
+                    local catMenu = missionCommands.addSubMenuForGroup(groupId, cat, vehiclesMenu)
+                    table.sort(categories[cat], function(a,b) return a.tpl.displayName < b.tpl.displayName end)
+                    for _, entry in ipairs(categories[cat]) do
+                        local tpl = entry.tpl
+                        local label = "Spawn " .. tpl.displayName
+                        local vehicleTypeCopy = entry.key
+                        missionCommands.addCommandForGroup(groupId, label, catMenu,
+                            function()
+                                local u = Unit.getByName(unitName)
+                                if u and u:isExist() then
+                                    trigger.action.outTextForUnit(u:getID(), "[DEBUG] Spawn menu triggered for " .. (tpl.displayName or vehicleTypeCopy), 3)
+                                    DGSS_CTLD.spawnVehicleNearUnit(u, vehicleTypeCopy)
+                                end
+                            end
+                        )
+                    end
+                end
+                env.info("[CTLD] Vehicles submenu added retroactively for " .. unitName .. " (now inside CTLD zone)")
+            end
+        end
         return
     end
 
@@ -2901,6 +3038,55 @@ function DGSS_CTLD.createMenusForUnit(unit)
                     end
                 )
             end
+        end
+    end
+
+    ------------------------------------------------------------
+    -- NASAMS CRATE OPERATIONS
+    -- Spawn/assemble available to all players.
+    -- Pick-up/drop available to valid troop transports (helos + C-130J).
+    ------------------------------------------------------------
+    do
+        local nasamsMenu = missionCommands.addSubMenuForGroup(groupId, "NASAMS Crates", ctldRoot)
+
+        -- Spawn 1-5 crates at once (player chooses, must be in CTLD zone)
+        local spawnSubMenu = missionCommands.addSubMenuForGroup(groupId, "Spawn Crates", nasamsMenu)
+        for _n = 1, 5 do
+            local n = _n
+            local label = (n == 1) and "Spawn 1 Crate" or ("Spawn " .. n .. " Crates")
+            missionCommands.addCommandForGroup(groupId, label, spawnSubMenu,
+                function()
+                    local u = Unit.getByName(unitName)
+                    if u and u:isExist() then DGSS_CTLD.spawnNASAMSCrate(u, n) end
+                end)
+        end
+
+        -- Assemble the site once all 5 crates are in position
+        missionCommands.addCommandForGroup(groupId, "Assemble NASAMS Site", nasamsMenu,
+            function()
+                local u = Unit.getByName(unitName)
+                if u and u:isExist() then DGSS_CTLD.assembleNASAMSSite(u) end
+            end)
+
+        -- Status readout (coalition-wide)
+        missionCommands.addCommandForGroup(groupId, "Check Crate Status", nasamsMenu,
+            function()
+                DGSS_CTLD.nasamsStatus()
+            end)
+
+        -- Pick-up and drop only for valid transport aircraft
+        if DGSS_CTLD.VALID_TROOP_TRANSPORT[unit:getTypeName()] then
+            missionCommands.addCommandForGroup(groupId, "Pick Up Nearest Crate", nasamsMenu,
+                function()
+                    local u = Unit.getByName(unitName)
+                    if u and u:isExist() then DGSS_CTLD.pickupNASAMSCrate(u) end
+                end)
+
+            missionCommands.addCommandForGroup(groupId, "Drop NASAMS Crate", nasamsMenu,
+                function()
+                    local u = Unit.getByName(unitName)
+                    if u and u:isExist() then DGSS_CTLD.dropNASAMSCrate(u) end
+                end)
         end
     end
 
@@ -3097,6 +3283,49 @@ function PLAYER_LEAVE_HANDLER_CTLD:onEvent(event)
 end
 world.addEventHandler(PLAYER_LEAVE_HANDLER_CTLD)
 
+-- Immediately create menus when a player enters any aircraft/unit
+local PLAYER_ENTER_HANDLER_CTLD = {}
+function PLAYER_ENTER_HANDLER_CTLD:onEvent(event)
+    if not event or not event.id then return end
+    if event.id ~= world.event.S_EVENT_PLAYER_ENTER_UNIT then return end
+    local _ok, _err = pcall(function()
+        local unit = event.initiator
+        if not unit then return end
+        if not unit:isExist() then return end
+        if not unit:getPlayerName() then return end
+        
+        local unitName = unit:getName()
+        local group = unit:getGroup()
+        if not group or not group:isExist() then return end
+        local groupId = group:getID()
+        
+        env.info("[CTLD] Player entered unit: " .. unitName .. " (groupId " .. groupId .. ") - creating menus")
+        
+        -- Stale menu check: if groupId changed, clear old menus
+        if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].groupId ~= groupId then
+            env.info("[CTLD] GroupId changed for " .. unitName .. " - clearing stale menus")
+            DGSS_CTLD.cleanupMenusForUnit(unitName)
+        end
+        
+        -- Create CTLD menu
+        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
+            pcall(function() DGSS_CTLD.createMenusForUnit(unit) end)
+        end
+        
+        -- Create JTAC menu for ALL players regardless of aircraft type
+        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
+            pcall(function() DGSS_CTLD.createUniversalJtacMenuForUnit(unit) end)
+        end
+        
+        -- Build JTAC teams submenu immediately
+        if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
+            pcall(function() DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId) end)
+        end
+    end)
+    if not _ok then env.warning("[CTLD] Player enter event error: " .. tostring(_err)) end
+end
+world.addEventHandler(PLAYER_ENTER_HANDLER_CTLD)
+
 local function safeCreateMenusForUnit_CTLD(unit)
     if not unit or not unit:isExist() then return end
     if not unit:getPlayerName() then return end
@@ -3263,6 +3492,7 @@ end
 ----------------------------------------------------------------
 
 local function staticJtacMenuBuilder()
+    local ok, err = pcall(function()
     -- Get all blue players
     local bluePlanes = coalition.getGroups(DGSS_CTLD.COALITION, Group.Category.AIRPLANE) or {}
     local blueHelos = coalition.getGroups(DGSS_CTLD.COALITION, Group.Category.HELICOPTER) or {}
@@ -3276,8 +3506,7 @@ local function staticJtacMenuBuilder()
         end
     end
     
-    -- Create CTLD menus for valid transports (every cycle)
-    -- Create JTAC menus only if JTAC count changed
+    -- Always rebuild JTAC teams menus if count changed
     local rebuildJtacMenus = (currentJtacCount ~= DGSS_CTLD.LAST_MENU_JTAC_COUNT)
     
     if rebuildJtacMenus then
@@ -3285,34 +3514,46 @@ local function staticJtacMenuBuilder()
         env.info("[Static Menu Builder] JTAC count changed to " .. currentJtacCount .. ", rebuilding menus")
     end
     
-    -- Process all players
+    -- Helper to process a single player unit
+    local function processPlayerUnit(unit)
+        if not unit or not unit:isExist() then return end
+        if not unit:getPlayerName() then return end
+        
+        local unitName = unit:getName()
+        local unitGroup = unit:getGroup()
+        if not unitGroup or not unitGroup:isExist() then return end
+        local groupId = unitGroup:getID()
+        
+        -- Stale groupId detection: if groupId changed, clear old menus
+        if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].groupId 
+           and DGSS_CTLD.UNIT_MENUS[unitName].groupId ~= groupId then
+            env.info("[Static Menu Builder] GroupId changed for " .. unitName .. " - clearing stale menus")
+            pcall(function() DGSS_CTLD.cleanupMenusForUnit(unitName) end)
+        end
+        
+        -- Create CTLD menu
+        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
+            pcall(function() DGSS_CTLD.createMenusForUnit(unit) end)
+        end
+        
+        -- Create JTAC root menu for ALL players (regardless of aircraft type)
+        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
+            pcall(function() DGSS_CTLD.createUniversalJtacMenuForUnit(unit) end)
+        end
+        
+        -- Update JTAC teams submenu if count changed
+        if rebuildJtacMenus then
+            if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
+                pcall(function() DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId) end)
+            end
+        end
+    end
+    
+    -- Process all player aircraft
     for _, group in ipairs(bluePlanes) do
         if group and group:isExist() then
             for _, unit in ipairs(group:getUnits()) do
-                if unit and unit:isExist() and unit:getPlayerName() then
-                    local unitName = unit:getName()
-                    local unitGroup = unit:getGroup()
-                    if not unitGroup then
-                        -- Skip if group not ready
-                    else
-                        local groupId = unitGroup:getID()
-                    
-                        -- Create CTLD menu for valid transports
-                        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
-                            pcall(function() DGSS_CTLD.createMenusForUnit(unit) end)
-                        end
-                    
-                        -- Create JTAC menu for ALL players (regardless of aircraft type)
-                        pcall(function() createJtacMenuForAllPlayers(unit) end)
-                    
-                        -- Update JTAC menu if count changed
-                        if rebuildJtacMenus then
-                            if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
-                                pcall(function() DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId) end)
-                            end
-                        end
-                    end
-                end
+                pcall(processPlayerUnit, unit)
             end
         end
     end
@@ -3320,30 +3561,7 @@ local function staticJtacMenuBuilder()
     for _, group in ipairs(blueHelos) do
         if group and group:isExist() then
             for _, unit in ipairs(group:getUnits()) do
-                if unit and unit:isExist() and unit:getPlayerName() then
-                    local unitName = unit:getName()
-                    local unitGroup = unit:getGroup()
-                    if not unitGroup then
-                        -- Skip if group not ready
-                    else
-                        local groupId = unitGroup:getID()
-                    
-                        -- Create CTLD menu for valid transports
-                        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
-                            pcall(function() DGSS_CTLD.createMenusForUnit(unit) end)
-                        end
-                    
-                        -- Create JTAC menu for ALL players (regardless of aircraft type)
-                        pcall(function() createJtacMenuForAllPlayers(unit) end)
-                    
-                        -- Update JTAC menu if count changed
-                        if rebuildJtacMenus then
-                            if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
-                                pcall(function() DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId) end)
-                            end
-                        end
-                    end
-                end
+                pcall(processPlayerUnit, unit)
             end
         end
     end
@@ -3357,49 +3575,439 @@ local function staticJtacMenuBuilder()
     for _, group in ipairs(blueGround) do
         if group and group:isExist() then
             for _, unit in ipairs(group:getUnits()) do
-                if unit and unit:isExist() and unit:getPlayerName() then
-                    local unitName = unit:getName()
-                    local unitGroup = unit:getGroup()
-                    if not unitGroup then
-                        -- Skip if group not ready
-                    else
-                        local groupId = unitGroup:getID()
-
-                        -- Create CTLD menu for CA ground units (spawn support)
-                        if not DGSS_CTLD.UNIT_MENUS[unitName] or not DGSS_CTLD.UNIT_MENUS[unitName].ctldRoot then
-                            pcall(function() DGSS_CTLD.createMenusForUnit(unit) end)
-                        end
-
-                        -- Create JTAC menu for CA ground units
-                        pcall(function() createJtacMenuForAllPlayers(unit) end)
-
-                        -- Update JTAC menu if count changed
-                        if rebuildJtacMenus then
-                            if DGSS_CTLD.UNIT_MENUS[unitName] and DGSS_CTLD.UNIT_MENUS[unitName].jtacUniversalMenu then
-                                pcall(function() DGSS_CTLD.updateJtacTeamsMenu(unitName, groupId) end)
-                            end
-                        end
-                    end
-                end
+                pcall(processPlayerUnit, unit)
             end
         end
     end
     
-    -- Schedule next rebuild
+    end)  -- end pcall body
+    if not ok then
+        env.error("[JTAC Menu Builder] Runtime error: " .. tostring(err))
+    end
+    -- Always reschedule, even if an error occurred above
     if mist and mist.scheduleFunction then
-        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 30)
+        mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
     else
-        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 30)
+        timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
     end
 end
 
--- Start static menu builder (30s interval)
+-- Start static menu builder (15s interval, first run at 10s)
 env.info("[JTAC] Starting static JTAC menu builder")
 if mist and mist.scheduleFunction then
-    mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
+    mist.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 10)
 else
-    timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 15)
+    timer.scheduleFunction(staticJtacMenuBuilder, {}, timer.getTime() + 10)
 end
+
+----------------------------------------------------------------
+-- NASAMS CRATE SYSTEM
+-- 5 component crates are spawned in CTLD zones, then
+-- sling-loaded one-at-a-time by helicopters or bulk-loaded
+-- into a C-130J (up to 5).  Once all 5 crates are on the
+-- ground within the assembly radius of each other, any player
+-- can use CTLD > NASAMS Crates > Assemble NASAMS Site to
+-- build the full SAM battery.
+----------------------------------------------------------------
+
+DGSS_CTLD.NASAMS_CRATES        = {}   -- crateName -> { pos = {x, z} }
+DGSS_CTLD.AIRCRAFT_CRATES      = {}   -- unitName  -> list of crateNames (carried)
+DGSS_CTLD.NASAMS_CRATE_COUNTER = 0    -- unique crate name counter
+
+DGSS_CTLD.NASAMS_CFG = {
+    maxCrates      = 5,        -- crates required to build one site
+    assemblyRadius = 200,      -- metres: all crates must be within this of the centroid
+    pickupRadius   = 75,       -- metres horizontal for aircraft pick-up
+    heloMaxCrates  = 1,        -- helicopters carry 1 (sling-load style)
+    c130MaxCrates  = 5,        -- C-130J carries all 5
+    -- Static object descriptor (mirrors CTLD reference implementation)
+    staticType     = "container_cargo",    -- valid DCS sling-loadable cargo type
+    staticCategory = "Cargos",             -- plural required for canCargo objects
+    staticShape    = "bw_container_cargo", -- shape string used by CTLD
+    staticMass     = 2000,                 -- kg (liftable by Mi-8 / CH-47F)
+    assembleKey    = "NASAMS Site Full",   -- VEHICLE_TEMPLATES key to build
+}
+
+-- Count crates sitting on the ground (not carried)
+local function nasamsCrateCount()
+    local n = 0
+    for _ in pairs(DGSS_CTLD.NASAMS_CRATES) do n = n + 1 end
+    return n
+end
+
+-- Count crates currently in transport
+local function nasamsCarriedCount()
+    local n = 0
+    for _, list in pairs(DGSS_CTLD.AIRCRAFT_CRATES) do n = n + #list end
+    return n
+end
+
+-- Returns "helo", "c130", or nil depending on aircraft type
+local function nasamsCarrierKind(unit)
+    if not unit or not unit:isExist() then return nil end
+    local t = unit:getTypeName()
+    if t == "C-130J-30" then return "c130" end
+    if DGSS_CTLD.VALID_TROOP_TRANSPORT[t] then return "helo" end
+    return nil
+end
+
+-- Silent assembly check – returns true when all 5 crates are within
+-- assemblyRadius of their centroid.  No side effects.
+local function nasamsIsReady()
+    local cfg = DGSS_CTLD.NASAMS_CFG
+    if nasamsCrateCount() < cfg.maxCrates then return false end
+
+    local positions = {}
+    for _, data in pairs(DGSS_CTLD.NASAMS_CRATES) do
+        table.insert(positions, data.pos)
+    end
+
+    -- Compute centroid
+    local sx, sz = 0, 0
+    for _, p in ipairs(positions) do sx = sx + p.x; sz = sz + p.z end
+    local centroid = { x = sx / #positions, z = sz / #positions }
+
+    local rSq = cfg.assemblyRadius * cfg.assemblyRadius
+    for _, p in ipairs(positions) do
+        if DGSS_CTLD.sqrDist(p, centroid) > rSq then return false end
+    end
+    return true
+end
+
+-- Spawn one NASAMS component crate near unit (must be in a CTLD zone)
+-- Spawn `count` NASAMS component crates around the calling aircraft.
+-- Each crate is offset in a different compass direction so they don't overlap.
+function DGSS_CTLD.spawnNASAMSCrate(unit, count)
+    if not unit or not unit:isExist() then return end
+    count = math.max(1, math.min(count or 1, 5))  -- clamp 1-5
+    local pos = unit:getPoint()
+
+    if not DGSS_CTLD.isInsideAnyCTLDZone(pos) then
+        trigger.action.outTextForUnit(unit:getID(),
+            "Must be inside a CTLD zone to spawn NASAMS crates!", 5)
+        return
+    end
+
+    local cfg = DGSS_CTLD.NASAMS_CFG
+    local spawned = 0
+
+    for i = 1, count do
+        -- Distribute crates evenly around the aircraft within 50 m
+        local angle = ((i - 1) / math.max(count, 1)) * 2 * math.pi
+        local radius = 20  -- fixed 20 m from aircraft, well inside 50 m
+        local cx = pos.x + radius * math.cos(angle)
+        local cz = pos.z + radius * math.sin(angle)
+
+        DGSS_CTLD.NASAMS_CRATE_COUNTER = DGSS_CTLD.NASAMS_CRATE_COUNTER + 1
+        local crateName = string.format("NASAMS_CRATE_%04d", DGSS_CTLD.NASAMS_CRATE_COUNTER)
+
+        -- Build the static descriptor the same way CTLD does
+        local crateDesc = {
+            ["category"]   = cfg.staticCategory,
+            ["shape_name"] = cfg.staticShape,
+            ["type"]       = cfg.staticType,
+            ["canCargo"]   = true,
+            ["mass"]       = cfg.staticMass,
+            ["name"]       = crateName,
+            ["x"]          = cx,
+            ["y"]          = cz,   -- mist/DCS static: y = world-Z (northing)
+            ["heading"]    = 0,
+            ["country"]    = DGSS_CTLD.COUNTRY,
+        }
+
+        local ok = false
+        if mist and mist.dynAddStatic then
+            -- Preferred: MIST handles cargo objects reliably
+            ok = pcall(function() mist.dynAddStatic(crateDesc) end)
+        end
+        if not ok then
+            -- Fallback: coalition API (less reliable for cargo types but worth trying)
+            ok = pcall(function()
+                coalition.addStaticObject(DGSS_CTLD.COUNTRY, crateDesc)
+            end)
+        end
+
+        if ok and StaticObject.getByName(crateName) then
+            DGSS_CTLD.NASAMS_CRATES[crateName] = { pos = { x = cx, z = cz } }
+            spawned = spawned + 1
+            env.info("[NASAMS Crates] Spawned " .. crateName .. " at (" .. math.floor(cx) .. ", " .. math.floor(cz) .. ")")
+        else
+            env.warning("[NASAMS Crates] Failed to spawn static object: " .. crateName)
+        end
+    end
+
+    if spawned > 0 then
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format("%d NASAMS crate(s) spawned near your position (%d on field).\n"
+                .. "All %d required crates must be within %d m of each other to assemble.",
+                spawned, nasamsCrateCount(), cfg.maxCrates, cfg.assemblyRadius), 8)
+    else
+        trigger.action.outTextForUnit(unit:getID(), "Failed to spawn NASAMS crates! Check server logs.", 5)
+    end
+end
+
+-- Pick up the nearest NASAMS crate from the ground
+function DGSS_CTLD.pickupNASAMSCrate(unit)
+    if not unit or not unit:isExist() then return end
+
+    local kind = nasamsCarrierKind(unit)
+    if not kind then
+        trigger.action.outTextForUnit(unit:getID(),
+            "This aircraft cannot transport NASAMS crates!", 5)
+        return
+    end
+
+    local condOk, condMsg = DGSS_CTLD.checkLoadUnloadConditions(unit, true)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local cfg      = DGSS_CTLD.NASAMS_CFG
+    local unitName = unit:getName()
+    local maxCarry = (kind == "c130") and cfg.c130MaxCrates or cfg.heloMaxCrates
+    local carrying = #(DGSS_CTLD.AIRCRAFT_CRATES[unitName] or {})
+
+    if carrying >= maxCarry then
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format("Crate capacity full! (%d/%d)", carrying, maxCarry), 5)
+        return
+    end
+
+    local pos    = unit:getPoint()
+    local rSq    = cfg.pickupRadius * cfg.pickupRadius
+    local bestSq = rSq + 1
+    local bestName = nil
+
+    for crateName, data in pairs(DGSS_CTLD.NASAMS_CRATES) do
+        -- Verify the static object still exists in world
+        local exists = false
+        pcall(function()
+            local s = StaticObject.getByName(crateName)
+            exists = s ~= nil and s:isExist()
+        end)
+        if exists then
+            local dSq = DGSS_CTLD.sqrDist(pos, { x = data.pos.x, z = data.pos.z })
+            if dSq < bestSq then bestSq = dSq; bestName = crateName end
+        else
+            DGSS_CTLD.NASAMS_CRATES[crateName] = nil  -- prune stale entry
+        end
+    end
+
+    if not bestName then
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format("No NASAMS crate within %d m!", cfg.pickupRadius), 5)
+        return
+    end
+
+    -- Destroy static, move to aircraft inventory
+    pcall(function()
+        local s = StaticObject.getByName(bestName)
+        if s and s:isExist() then s:destroy() end
+    end)
+    DGSS_CTLD.NASAMS_CRATES[bestName] = nil
+
+    if not DGSS_CTLD.AIRCRAFT_CRATES[unitName] then
+        DGSS_CTLD.AIRCRAFT_CRATES[unitName] = {}
+    end
+    table.insert(DGSS_CTLD.AIRCRAFT_CRATES[unitName], bestName)
+
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("NASAMS crate loaded: %s  (%d/%d carrying).",
+            bestName, carrying + 1, maxCarry), 6)
+    env.info("[NASAMS Crates] " .. unitName .. " picked up " .. bestName)
+end
+
+-- Drop one NASAMS crate at the aircraft's current position
+function DGSS_CTLD.dropNASAMSCrate(unit)
+    if not unit or not unit:isExist() then return end
+
+    local unitName = unit:getName()
+    local list = DGSS_CTLD.AIRCRAFT_CRATES[unitName]
+    if not list or #list == 0 then
+        trigger.action.outTextForUnit(unit:getID(), "No NASAMS crates onboard!", 5)
+        return
+    end
+
+    local condOk, condMsg = DGSS_CTLD.checkLoadUnloadConditions(unit, false)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local pos       = unit:getPoint()
+    local cfg       = DGSS_CTLD.NASAMS_CFG
+    local crateName = table.remove(list)             -- take last crate in list
+    if #list == 0 then DGSS_CTLD.AIRCRAFT_CRATES[unitName] = nil end
+
+    local dx = pos.x + math.random(-8, 8)
+    local dz = pos.z + math.random(-8, 8)
+
+    local crateDesc = {
+        ["category"]   = cfg.staticCategory,
+        ["shape_name"] = cfg.staticShape,
+        ["type"]       = cfg.staticType,
+        ["canCargo"]   = true,
+        ["mass"]       = cfg.staticMass,
+        ["name"]       = crateName,
+        ["x"]          = dx,
+        ["y"]          = dz,
+        ["heading"]    = 0,
+        ["country"]    = DGSS_CTLD.COUNTRY,
+    }
+    local dropOk = false
+    if mist and mist.dynAddStatic then
+        dropOk = pcall(function() mist.dynAddStatic(crateDesc) end)
+    end
+    if not dropOk then
+        dropOk = pcall(function() coalition.addStaticObject(DGSS_CTLD.COUNTRY, crateDesc) end)
+    end
+    DGSS_CTLD.NASAMS_CRATES[crateName] = { pos = { x = dx, z = dz } }
+
+    local onField = nasamsCrateCount()
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("NASAMS crate dropped: %s  (%d/%d on field).",
+            crateName, onField, cfg.maxCrates), 6)
+    env.info("[NASAMS Crates] " .. unitName .. " dropped " .. crateName)
+
+    -- Announce to all blue players if assembly is now possible
+    if onField >= cfg.maxCrates and nasamsIsReady() then
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            string.format(
+                "All %d NASAMS crates are within %.0f m of each other!\n" ..
+                "Use CTLD > NASAMS Crates > Assemble NASAMS Site to build the battery.",
+                cfg.maxCrates, cfg.assemblyRadius), 15)
+    end
+end
+
+-- Public assembly-status check with coalition announcement
+function DGSS_CTLD.checkNASAMSReady()
+    local cfg = DGSS_CTLD.NASAMS_CFG
+    if nasamsIsReady() then
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            string.format(
+                "All %d NASAMS crates are within %.0f m!\n" ..
+                "Use CTLD > NASAMS Crates > Assemble NASAMS Site.",
+                cfg.maxCrates, cfg.assemblyRadius), 12)
+        return true
+    end
+    trigger.action.outTextForCoalition(coalition.side.BLUE,
+        string.format(
+            "NASAMS not assembly-ready.  On field: %d/%d  In transit: %d.\n" ..
+            "All %d crates must be within %.0f m of each other.",
+            nasamsCrateCount(), cfg.maxCrates, nasamsCarriedCount(),
+            cfg.maxCrates, cfg.assemblyRadius), 8)
+    return false
+end
+
+-- Destroy crates and spawn the full NASAMS SAM site group
+function DGSS_CTLD.assembleNASAMSSite(unit)
+    if not unit or not unit:isExist() then return end
+    local cfg = DGSS_CTLD.NASAMS_CFG
+
+    if not nasamsIsReady() then
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format(
+                "Cannot assemble NASAMS site!\n" ..
+                "Need all %d crates on the ground and within %.0f m of each other.\n" ..
+                "Crates on field: %d/%d   In transit: %d",
+                cfg.maxCrates, cfg.assemblyRadius,
+                nasamsCrateCount(), cfg.maxCrates, nasamsCarriedCount()), 10)
+        return
+    end
+
+    -- Compute centroid of all crate positions for group spawn
+    local sx, sz, n = 0, 0, 0
+    for _, data in pairs(DGSS_CTLD.NASAMS_CRATES) do
+        sx = sx + data.pos.x; sz = sz + data.pos.z; n = n + 1
+    end
+    local cx, cz = sx / n, sz / n
+
+    -- Destroy all crate static objects
+    for crateName in pairs(DGSS_CTLD.NASAMS_CRATES) do
+        pcall(function()
+            local s = StaticObject.getByName(crateName)
+            if s and s:isExist() then s:destroy() end
+        end)
+    end
+    DGSS_CTLD.NASAMS_CRATES   = {}
+    DGSS_CTLD.AIRCRAFT_CRATES = {}  -- safety: clear any in-transit crates too
+
+    -- Retrieve NASAMS template
+    local template = DGSS_CTLD.VEHICLE_TEMPLATES[cfg.assembleKey]
+    if not template then
+        trigger.action.outTextForUnit(unit:getID(),
+            "ERROR: NASAMS template '" .. cfg.assembleKey .. "' not found in VEHICLE_TEMPLATES!", 5)
+        env.warning("[NASAMS] assembleKey '" .. cfg.assembleKey .. "' missing from VEHICLE_TEMPLATES")
+        return
+    end
+
+    -- Lay out units in a formation: C2 + Radar clustered at centre,
+    -- 5 launchers fanned around them.
+    local groupName = DGSS_CTLD.generateGroupName("BLUE_SAM_NASAMS_SITE")
+    local unitCount = #template.units
+    local dcsUnits  = {}
+    for i, uType in ipairs(template.units) do
+        local angle  = (i - 1) * (2 * math.pi / unitCount)
+        local spread = (i <= 2) and 25 or 80   -- C2 + Radar close in, launchers in outer ring
+        table.insert(dcsUnits, {
+            type    = uType,
+            x       = cx + spread * math.cos(angle),
+            y       = cz + spread * math.sin(angle),
+            heading = math.random() * 6.28,
+            skill   = "Excellent",
+        })
+    end
+
+    local group = coalition.addGroup(
+        DGSS_CTLD.COUNTRY, Group.Category.GROUND, { name = groupName, units = dcsUnits })
+
+    if group then
+        DGSS_CTLD.SPAWNED_GROUPS[groupName] = {
+            lastActive   = timer.getTime(),
+            kind         = "vehicle",
+            templateName = cfg.assembleKey,
+            id           = groupName,
+            count        = unitCount,
+            spawnedBy    = unit:getPlayerName(),
+        }
+        local pName = unit:getPlayerName()
+        if pName then
+            DGSS_CTLD.SPAWNED_BY_PLAYER[pName] = DGSS_CTLD.SPAWNED_BY_PLAYER[pName] or {}
+            table.insert(DGSS_CTLD.SPAWNED_BY_PLAYER[pName], groupName)
+        end
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            "NASAMS SAM Site assembled and operational!\nGroup: " .. groupName, 15)
+        env.info("[NASAMS] Site assembled: " .. groupName)
+    else
+        trigger.action.outTextForUnit(unit:getID(),
+            "Failed to spawn NASAMS site group! Check the server logs.", 5)
+        env.warning("[NASAMS] Failed to spawn group: " .. groupName)
+    end
+end
+
+-- NASAMS crate status broadcast
+function DGSS_CTLD.nasamsStatus()
+    local cfg       = DGSS_CTLD.NASAMS_CFG
+    local onField   = nasamsCrateCount()
+    local inTransit = nasamsCarriedCount()
+    local readyTxt  = nasamsIsReady()
+        and "YES – use \"Assemble NASAMS Site\"!"
+        or  "NO"
+    trigger.action.outText(
+        string.format(
+            "=== NASAMS Crate Status ===\n" ..
+            "On field   : %d / %d\n" ..
+            "In transit : %d\n" ..
+            "Assembly ready: %s\n" ..
+            "(All crates must be within %.0f m of centroid)",
+            onField, cfg.maxCrates, inTransit, readyTxt, cfg.assemblyRadius),
+        12)
+end
+
+----------------------------------------------------------------
+-- END NASAMS CRATE SYSTEM
+----------------------------------------------------------------
 
 ----------------------------------------------------------------
 -- CLEANUP LOOP (UNIT MENUS FOR DISCONNECTED PLAYERS)

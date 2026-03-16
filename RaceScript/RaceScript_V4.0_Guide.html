@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RaceScript V4.0 — Setup &amp; Configuration Guide</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --accent: #0f3460;
+    --highlight: #e94560;
+    --text: #e0e0e0;
+    --dim: #8a8a9a;
+    --code-bg: #0d1117;
+    --success: #3ddc84;
+    --warn: #ffb74d;
+    --danger: #ef5350;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 0 60px 0;
+  }
+  header {
+    background: linear-gradient(135deg, var(--accent), var(--highlight));
+    padding: 50px 30px 40px;
+    text-align: center;
+  }
+  header h1 { font-size: 2.4em; letter-spacing: 1px; }
+  header p { color: #ccc; margin-top: 8px; font-size: 1.05em; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  nav {
+    background: var(--card);
+    border-bottom: 2px solid var(--accent);
+    padding: 16px 0;
+    position: sticky; top: 0; z-index: 100;
+  }
+  nav ul { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+  nav a { color: var(--highlight); text-decoration: none; font-weight: 600; font-size: .92em; }
+  nav a:hover { text-decoration: underline; }
+  section { margin-top: 44px; }
+  h2 {
+    font-size: 1.55em;
+    border-left: 4px solid var(--highlight);
+    padding-left: 14px;
+    margin-bottom: 18px;
+  }
+  h3 { color: var(--highlight); margin: 22px 0 10px; font-size: 1.15em; }
+  p, li { margin-bottom: 8px; }
+  ul, ol { padding-left: 26px; }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: .92em;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    font-size: .88em;
+    line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; }
+  .card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 18px 0;
+    border: 1px solid #2a2a4a;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: .8em;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .badge-req  { background: var(--highlight); color: #fff; }
+  .badge-opt  { background: var(--accent); color: #ccc; }
+  .badge-info { background: #1e88e5; color: #fff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px;
+    font-size: .93em;
+  }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #2a2a4a; }
+  th { background: var(--accent); font-weight: 600; }
+  tr:hover { background: rgba(255,255,255,.03); }
+  .tip, .warn, .danger {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: .94em;
+  }
+  .tip    { background: rgba(61,220,132,.1);  border-left: 4px solid var(--success); }
+  .warn   { background: rgba(255,183,77,.1);  border-left: 4px solid var(--warn); }
+  .danger { background: rgba(239,83,80,.1);   border-left: 4px solid var(--danger); }
+  .diagram {
+    background: var(--code-bg);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    font-family: 'Cascadia Code', monospace;
+    font-size: .85em;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 14px 0;
+    color: var(--dim);
+  }
+  .diagram .zone { color: var(--success); font-weight: 700; }
+  .diagram .gate { color: var(--warn); }
+  .diagram .arrow { color: var(--highlight); }
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--dim);
+    font-size: .85em;
+    border-top: 1px solid #2a2a4a;
+    margin-top: 50px;
+  }
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.6em; }
+    pre { font-size: .8em; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>RaceScript V4.0</h1>
+  <p>Setup &amp; Configuration Guide &mdash; DCS World</p>
+  <p style="font-size:.85em;color:#aaa;">Created by Lexik&quot;ROBOT&quot;dark &amp; Eilliem&quot;Six'O'Clock&quot; for the American Vikings Server</p>
+</header>
+
+<nav>
+  <div class="container">
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#requirements">Requirements</a></li>
+      <li><a href="#mission-setup">Mission Setup</a></li>
+      <li><a href="#config">Configuration</a></li>
+      <li><a href="#gates">Adding / Removing Gates</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#rules">Race Rules</a></li>
+      <li><a href="#log-file">Log File</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ============================================================ -->
+<div class="container">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p>RaceScript V4.0 is a Lua timing script for DCS World multiplayer servers. It tracks each player independently through a series of trigger zones (gates) placed in the Mission Editor, times them from start to finish with hundredths-of-a-second accuracy, and logs completed runs to a text file.</p>
+
+  <div class="diagram">
+    <span class="zone">[StartingLine]</span>
+    <span class="arrow"> &rarr; </span>
+    <span class="gate">Gate 1</span>
+    <span class="arrow"> &rarr; </span>
+    <span class="gate">Gate 2</span>
+    <span class="arrow"> &rarr; </span>
+    <span class="gate">Gate 3</span>
+    <span class="arrow"> &rarr; ... &rarr; </span>
+    <span class="gate">Gate 20</span>
+    <span class="arrow"> &rarr; </span>
+    <span class="zone">[FinishLine]</span>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="requirements">
+  <h2>Requirements</h2>
+  <div class="card">
+    <ul>
+      <li><span class="badge badge-req">REQUIRED</span> <strong>MIST (Mission Scripting Tools)</strong> &mdash; must be loaded <em>before</em> this script. MIST provides <code>mist.DBs.humansByName</code>, <code>mist.scheduleFunction</code>, and other utilities the script depends on.</li>
+      <li><span class="badge badge-req">REQUIRED</span> <strong>DCS desanitized <code>io</code> and <code>lfs</code></strong> &mdash; the script writes the log file using <code>io.open</code> and reads the Saved Games path using <code>lfs.writedir()</code>. These must be un-commented in <code>MissionScripting.lua</code>.</li>
+      <li><span class="badge badge-opt">OPTIONAL</span> DCS version 2.7+ recommended (older versions untested).</li>
+    </ul>
+  </div>
+
+  <h3>Desanitizing MissionScripting.lua</h3>
+  <p>Open <code>DCS World\Scripts\MissionScripting.lua</code> and comment out (add <code>--</code>) the lines that sanitize <code>io</code> and <code>lfs</code>:</p>
+<pre><code>-- sanitizeModule('io')
+-- sanitizeModule('lfs')</code></pre>
+  <div class="warn">&#9888; This allows any mission script to read/write files on the server. Only do this on servers you control.</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="mission-setup">
+  <h2>Mission Editor Setup</h2>
+  <p>All the script needs from the Mission Editor are <strong>trigger zones</strong>. No units, no triggers panel logic &mdash; just zones and a "DO SCRIPT FILE" action to load the scripts.</p>
+
+  <h3>Step 1 &mdash; Place Trigger Zones</h3>
+  <p>In the Mission Editor, open the trigger zones panel and create circular zones with <em>exactly</em> these names:</p>
+
+  <table>
+    <thead>
+      <tr><th>Zone Name</th><th>Purpose</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>StartingLine</code></td><td>Starts the timer when a player flies through</td><td>Place at the beginning of the course</td></tr>
+      <tr><td><code>Gate 1</code> through <code>Gate 20</code></td><td>Checkpoints along the race course</td><td>Must be flown through <strong>in order</strong></td></tr>
+      <tr><td><code>FinishLine</code></td><td>Stops the timer and logs the result</td><td>Place at the end of the course</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">&#x2714; Zone names are <strong>case-sensitive</strong> and must match exactly &mdash; <code>Gate 1</code> (capital G, space, number). The script validates all zones at startup and will tell you which ones are missing.</div>
+
+  <h3>Step 2 &mdash; Size Your Zones</h3>
+  <p>Zone radius matters! A too-small zone is easy to miss at high speed. Recommendations:</p>
+  <ul>
+    <li><strong>Mountain pass / canyon gates:</strong> 150&ndash;300 m radius</li>
+    <li><strong>Open-area checkpoints:</strong> 300&ndash;600 m radius</li>
+    <li><strong>Start &amp; Finish lines:</strong> 400&ndash;800 m radius (be generous so players don't accidentally miss them)</li>
+  </ul>
+
+  <h3>Step 3 &mdash; Load the Scripts</h3>
+  <p>In the Triggers panel, create a trigger that fires <strong>ONCE</strong> at <strong>MISSION START</strong>:</p>
+  <ol>
+    <li>Action: <strong>DO SCRIPT FILE</strong> &rarr; select <code>MIST.lua</code> (or however your MIST file is named)</li>
+    <li>Action: <strong>DO SCRIPT FILE</strong> &rarr; select <code>RaceScript_V4.0.lua</code></li>
+  </ol>
+  <div class="warn">&#9888; MIST <strong>must</strong> load first. If RaceScript loads before MIST, it will crash immediately because <code>mist.DBs</code> won't exist.</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="config">
+  <h2>Configuration</h2>
+  <p>All configurable values are near the top of the script (around lines 83&ndash;101). Here's what each one does:</p>
+
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Default</th><th>What It Does</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>startZoneName</code></td>
+        <td><code>"StartingLine"</code></td>
+        <td>Name of the trigger zone that starts the timer. Change this if you want a different zone name in the editor.</td>
+      </tr>
+      <tr>
+        <td><code>endZoneName</code></td>
+        <td><code>"FinishLine"</code></td>
+        <td>Name of the trigger zone that stops the timer and logs the run.</td>
+      </tr>
+      <tr>
+        <td><code>zonesToTime</code></td>
+        <td><code>{"Gate 1", ..., "Gate 20"}</code></td>
+        <td>The ordered list of checkpoint gates. See <a href="#gates">Adding / Removing Gates</a> below.</td>
+      </tr>
+      <tr>
+        <td><code>altitudeLimit</code></td>
+        <td><code>250</code></td>
+        <td>Maximum altitude <strong>AGL</strong> (Above Ground Level) in meters. A zone only registers if the player is below this. Prevents high-altitude flyovers from triggering gates.</td>
+      </tr>
+      <tr>
+        <td><code>penaltyTime</code></td>
+        <td><code>5</code></td>
+        <td>Seconds added to the final time for each missed gate.</td>
+      </tr>
+      <tr>
+        <td><code>logFileName</code></td>
+        <td><code>lfs.writedir() .. "PlayerTimesLog.txt"</code></td>
+        <td>Full path to the log file. By default this writes to your <code>Saved Games\DCS\</code> folder.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section id="gates">
+  <h2>Adding / Removing Gates</h2>
+  <p>The gate list lives in the <code>zonesToTime</code> table. To change the number of gates, you <strong>only</strong> need to edit this one table &mdash; the rest of the script adapts automatically.</p>
+
+  <h3>Adding Gates</h3>
+  <p>Say you want to add 5 more gates (21&ndash;25):</p>
+
+  <div class="card">
+    <strong>1.</strong> In the <strong>Mission Editor</strong>, create five new trigger zones named exactly <code>Gate 21</code>, <code>Gate 22</code>, <code>Gate 23</code>, <code>Gate 24</code>, <code>Gate 25</code>.<br><br>
+    <strong>2.</strong> In the <strong>script</strong>, add them to the end of the table:
+  </div>
+
+<pre><code>local zonesToTime = {
+    "Gate 1",
+    "Gate 2",
+    "Gate 3",
+    -- ... gates 4-20 ...
+    "Gate 20",
+    "Gate 21",   -- NEW
+    "Gate 22",   -- NEW
+    "Gate 23",   -- NEW
+    "Gate 24",   -- NEW
+    "Gate 25"    -- NEW  (no trailing comma on the last one)
+}</code></pre>
+
+  <h3>Removing Gates</h3>
+  <p>To go from 20 gates down to 10, simply delete lines from the table and remove the matching trigger zones from the mission (or leave them &mdash; unused zones are harmless, but the script will warn about them at startup since it tries to validate everything in the list).</p>
+
+<pre><code>local zonesToTime = {
+    "Gate 1",
+    "Gate 2",
+    "Gate 3",
+    "Gate 4",
+    "Gate 5",
+    "Gate 6",
+    "Gate 7",
+    "Gate 8",
+    "Gate 9",
+    "Gate 10"
+}</code></pre>
+
+  <h3>Custom Gate Names</h3>
+  <p>Gates don't <em>have</em> to be called "Gate N". You can use any name as long as it matches the trigger zone name exactly:</p>
+
+<pre><code>local zonesToTime = {
+    "Canyon Entry",
+    "Bridge Underpass",
+    "Ridge Climb",
+    "Valley Floor",
+    "Tunnel Exit"
+}</code></pre>
+
+  <div class="tip">&#x2714; The <strong>order in the table is the order the player must fly them</strong>. Gate sequence is determined by position in this list, not by the zone name.</div>
+
+  <h3>Renaming Start / Finish Zones</h3>
+  <p>If you prefer different names, change these two lines:</p>
+<pre><code>local startZoneName = "RaceStart"    -- was "StartingLine"
+local endZoneName   = "RaceFinish"   -- was "FinishLine"</code></pre>
+  <p>Then rename the trigger zones in the Mission Editor to match.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="how-it-works">
+  <h2>How It Works</h2>
+
+  <h3>Timing</h3>
+  <div class="card">
+    <p>Each player gets their own <strong>Stopwatch</strong> object. The stopwatch uses <code>timer.getTime()</code> (DCS simulation clock) and records elapsed time to hundredths of a second. Three functions run every <strong>0.1 seconds</strong>:</p>
+    <ol>
+      <li><strong><code>checkStartZone</code></strong> &mdash; Scans all human players. If a player is inside the StartingLine zone and doesn't already have a timer running, it creates a new Stopwatch and starts it.</li>
+      <li><strong><code>checkTimedZones</code></strong> &mdash; For each player with an active timer, checks if they're inside the <em>next expected gate</em>. If they hit a gate further ahead, the skipped gates are counted as missed.</li>
+      <li><strong><code>checkEndZone</code></strong> &mdash; When a player with an active timer enters the FinishLine zone, the stopwatch stops, penalties are calculated, and the result is logged.</li>
+    </ol>
+  </div>
+
+  <h3>Gate Sequence Detection</h3>
+  <p>The script tracks which gate each player should hit next. When a player enters a gate zone:</p>
+  <ul>
+    <li><strong>Correct gate</strong> &rarr; Time is reported, gate is marked as passed, sequence advances.</li>
+    <li><strong>Skipped ahead</strong> (e.g. hit Gate 8 when Gate 6 was expected) &rarr; Gates 6 and 7 are marked as <strong>missed</strong>. The player sees exactly which gates they missed and their time penalty. Gate 8 is recorded as passed normally.</li>
+  </ul>
+
+  <h3>What Counts as "Inside a Zone"</h3>
+  <p>A player registers as being inside a zone when <strong>both</strong> conditions are true:</p>
+  <ol>
+    <li>Their horizontal distance from the zone center is less than the zone's radius.</li>
+    <li>Their altitude AGL (Above Ground Level) is below <code>altitudeLimit</code> (default: 250 m).</li>
+  </ol>
+  <p>This means you can't cheat by flying over a zone at 10,000 feet.</p>
+
+  <h3>Race Reset</h3>
+  <p>Each player's group gets a <strong>"Reset My Race"</strong> radio menu command (F10 menu) the first time anyone in that group crosses the starting line. This resets only pilots in the same group &mdash; it won't affect other players on the server.</p>
+
+  <h3>Crash / Death Handling</h3>
+  <p>If a player crashes, is killed, or ejects during an active race, the run is <strong>immediately nullified</strong>. No time is logged. The player sees a message telling them to cross the Starting Line to begin again.</p>
+
+  <h3>Disconnect Detection</h3>
+  <p>If a player disconnects mid-race (or their aircraft despawns), the script detects this within 30 seconds and cleans up their race data automatically.</p>
+
+  <h3>Corpse Cleanup</h3>
+  <p>Every 45 minutes, the script scans all coalitions for destroyed aircraft/helicopter wrecks and removes them so they don't clutter the race course.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="rules">
+  <h2>Race Rules</h2>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Rule</th><th>What Happens</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Miss 1 gate</td>
+          <td>+5 seconds penalty (configurable). Time is still logged. Player is told which gate was missed.</td>
+        </tr>
+        <tr>
+          <td style="color:var(--danger);font-weight:700;">Miss 2+ gates</td>
+          <td style="color:var(--danger);">Race is <strong>NULLIFIED</strong>. No time is logged. Player must cross the Starting Line to try again.</td>
+        </tr>
+        <tr>
+          <td>Crash / die mid-race</td>
+          <td>Race is <strong>NULLIFIED</strong>. No time is logged.</td>
+        </tr>
+        <tr>
+          <td>Fly above altitude limit</td>
+          <td>Gate doesn't register &mdash; treated as if you missed it.</td>
+        </tr>
+        <tr>
+          <td>Fly gates out of order</td>
+          <td>Any gates between your last valid gate and the one you hit are marked as missed.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Example Scenario</h3>
+  <div class="card" style="border-left: 3px solid var(--warn);">
+    <p>A pilot flies through Gates 1&ndash;15 perfectly. In a tight mountain pass with Gates 15, 16, and 17 close together, they miss <strong>Gate 16</strong> but hit Gate 17.</p>
+    <ul>
+      <li>Immediately sees: <em>"&#9888; MISSED: Gate 16! +5s penalty"</em></li>
+      <li>Gate 17 is recorded normally.</li>
+      <li>They continue through Gates 18, 19, 20 and cross the Finish Line.</li>
+      <li>Final time = raw time + 5 seconds, with <em>"(+5s penalty: missed Gate 16)"</em> in the result.</li>
+    </ul>
+    <p style="margin-top:12px;">Now imagine they <em>also</em> missed <strong>Gate 20</strong>:</p>
+    <ul>
+      <li>At the moment Gate 20 is detected as missed (when they pass it or hit the Finish Line), the race is <strong>nullified</strong>.</li>
+      <li>They see: <em>"&#10007; Race NULLIFIED &mdash; missed 2 gates (Gate 16, Gate 20). Cross the Starting Line to begin again."</em></li>
+      <li>No time is logged. Must start over.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="log-file">
+  <h2>Log File</h2>
+  <p>Completed runs are appended to:</p>
+  <pre><code>C:\Users\YourName\Saved Games\DCS\PlayerTimesLog.txt</code></pre>
+  <p>Each line looks like:</p>
+  <pre><code>Nickname: Viper11 | Aircraft: F-16C_50 | Time: 142.37s | Missed Gates: None
+Nickname: Hornet23 | Aircraft: FA-18C_hornet | Time: 158.84s | Missed Gates: Gate 12</code></pre>
+
+  <div class="tip">&#x2714; Nullified runs (2+ missed gates or crash) are <strong>never</strong> written to the log. Only complete, valid runs appear.</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="troubleshooting">
+  <h2>Troubleshooting</h2>
+
+  <h3>"RACE SETUP ERROR: Missing X zones!"</h3>
+  <div class="card">
+    <p>The script validates all zones at startup. If any are missing, it lists them and <strong>refuses to start</strong>. Fix: open the Mission Editor and make sure every zone name in <code>zonesToTime</code> (plus <code>StartingLine</code> and <code>FinishLine</code>) exists as a trigger zone with the <strong>exact</strong> same name.</p>
+  </div>
+
+  <h3>"Cannot open log file"</h3>
+  <div class="card">
+    <p>The <code>io</code> and/or <code>lfs</code> libraries are still sanitized. Open <code>DCS World\Scripts\MissionScripting.lua</code> and comment out the sanitize lines. See <a href="#requirements">Requirements</a>.</p>
+  </div>
+
+  <h3>Timer never starts</h3>
+  <div class="card">
+    <ul>
+      <li>Make sure MIST is loaded <em>before</em> the race script.</li>
+      <li>Make sure you're flying below the altitude limit (default 250 m AGL) when crossing the Starting Line.</li>
+      <li>Check that the StartingLine zone radius is large enough for your approach speed.</li>
+    </ul>
+  </div>
+
+  <h3>Gates not registering</h3>
+  <div class="card">
+    <ul>
+      <li>You might be above the altitude limit. The zone only triggers below <code>altitudeLimit</code> meters AGL.</li>
+      <li>Zone radius might be too small for the aircraft's speed. At 500 knots, you cover ~260 m every 0.1 seconds (the polling interval). A zone with a 100 m radius could be missed entirely. Use at least 200&ndash;300 m radius for high-speed sections.</li>
+      <li>Gates must be flown in order. If you skipped one, the next one won't register until you either hit it or fly through a later gate (which marks the skipped one as missed).</li>
+    </ul>
+  </div>
+
+  <h3>"Reset My Race" not appearing in F10 menu</h3>
+  <div class="card">
+    <p>The reset command only appears <strong>after</strong> a pilot in your group crosses the Starting Line for the first time. It won't be there before you've started at least one race.</p>
+  </div>
+
+  <div class="danger" style="margin-top:30px;">
+    <strong>Server Operators:</strong> If you change the gate list, remember to update <em>both</em> the script AND the mission file. The script will tell you at startup if they're out of sync.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<footer>
+  RaceScript V4.0 &mdash; American Vikings &mdash; Created by Lexik"ROBOT"dark &amp; Eilliem"Six'O'Clock"
+</footer>
+
+</body>
+</html>

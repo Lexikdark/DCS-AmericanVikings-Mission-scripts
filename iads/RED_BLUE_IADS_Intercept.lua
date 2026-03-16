@@ -40,20 +40,18 @@
 local IADS_CFG = {
 
     -- ── Polling intervals (seconds) ──────────────────────────────────────────
-    UPDATE_INTERVAL         = 20,   -- Main IADS update loop; also drives pruneDeadNodes + gatherContacts for all three sub-IADS
-    AIR_INTERCEPT_INTERVAL  = 30,   -- Air-intercept zone check loop; 30 s is reactive enough (~7.5 km at 900 km/h)
+    UPDATE_INTERVAL         = 12,   -- Main IADS update loop; also drives pruneDeadNodes + gatherContacts for all three sub-IADS
+    AIR_INTERCEPT_INTERVAL  = 25,   -- Air-intercept zone check loop; 25 s is reactive enough (~6.5 km at 900 km/h)
     WEAPON_TRACK_INTERVAL   = 5,    -- Incoming weapon tracking loop; ample for ARM/AGM intercept (ARMs fly 20–60 s)
     RTB_CHECK_INTERVAL      = 15,   -- Fuel and leash check for airborne intercept flights
     NODE_REFRESH_INTERVAL   = 900,  -- Full SAM/EWR node-list rebuild (15 min)
                                     -- Dead groups are silently dropped each cycle;
                                     -- no respawn — SAM sites are one-and-done.
-
     -- ── IADS detection ranges (metres) ─────────────────────────────────────
     SAM_MIN_ENGAGE_ALT      = 20,      -- metres AGL – ignore very low contacts
     SAM_FIRE_DELAY_MIN      = 0,       -- seconds – random delay before engaging (0 = instant)
-    SAM_FIRE_DELAY_MAX      = 3,       -- tighter window = faster, more dangerous SAMs
-    SAM_MAX_ENGAGE_PER_CONTACT = 2,    -- max SAM nodes assigned to the same contact
-
+    SAM_FIRE_DELAY_MAX      = 1,       -- tighter window = faster, more dangerous SAMs (was 3)
+    SAM_MAX_ENGAGE_PER_CONTACT = 3,    -- max SAM nodes assigned to the same contact
     -- ── Per-type SAM missile envelope (metres) ───────────────────────────────
     -- computeEngagementScore() looks up the first launcher unit in a group,
     -- matches its getTypeName() against these patterns (plain string.find),
@@ -134,34 +132,36 @@ local IADS_CFG = {
         ["IRISTSLM"]         = { min =  1000, max =  40000 },  -- IRIS-T SLM (medium-range, 1–40 km)
         ["IRISTSLS"]         = { min =   500, max =  12000 },  -- IRIS-T SLS (short-range, 0.5–12 km)
     },
-
-    -- ── Low-altitude jet immunity (RED SAMs, excludes SHORAD) ──────────
-    -- Fixed-wing aircraft (jets) flying below this AGL threshold are ignored
-    -- by long-range RED SAMs, simulating radar ground-clutter masking at
-    -- terrain-hugging altitudes.  SHORAD groups (name contains "SHORAD")
-    -- are EXEMPT — they will still engage low-flying jets.  Helicopters are
-    -- also unaffected.  Set to 0 to disable.
-    -- Only affects RED and LEBANON IADS networks.
-    SAM_LOW_JET_IMMUNITY_AGL = 75,    -- metres AGL – jets below this are invisible to non-SHORAD RED SAMs
-
     -- ── Probability of Kill helpers ──────────────────────────────────────────
     -- Each SAM computes a score; highest scorer engages.
     -- Score = basePk * altFactor * rangeFactor * healthFactor
     PKill_BASE              = 0.92,      -- base Pk for a healthy SAM on boresight (raised for lethality)
-    SAM_MIN_ENGAGE_SCORE    = 0.30,      -- minimum Pk score required before a SAM will fire
-                                         --   0.05 = fire at almost anything (old default)
+
+    SAM_MIN_ENGAGE_SCORE    = 0.25,      -- minimum Pk score required before a SAM will fire
+                                         --   0.05 = fire at almost anything
+                                         --   0.12 = very aggressive — takes long-range and edge shots
+                                         --   0.18 = aggressive (previous value)
                                          --   0.25 = fire on any reasonable solution
-                                         --   0.30 = skip low-quality edge shots, still fires early (current — compensates for 20s UPDATE_INTERVAL)
+                                         --   0.30 = skip low-quality edge shots (old default with 20s interval)
                                          --   0.35 = solid engagement solution required
                                          --   0.50 = disciplined — holds fire until near-optimal
                                          --   0.60+= very conservative, only ideal geometry
 
     -- ── ARM / munition defence ──────────────────────────────────────────────
-    ARM_SHUTDOWN_TIME             = 45,    -- seconds radar stays silent after ARM detect
+    ARM_SHUTDOWN_TIME             = 90,    -- seconds radar stays silent after ARM detect (was 28 -- far too short; SAM re-lit 160+ km before HARM arrived)
     ARM_MOVE_RADIUS               = 800,   -- metres random relocate if unit is mobile
     ARM_SUPPRESS_TRIGGER_DIST     = 150000, -- metres – arm suppression triggers when ARM’s projected impact point is within this distance of a SAM node
     ARM_NEIGHBOR_SUPPRESS_RANGE   = 12000,  -- metres – also silence SAMs this close to the targeted node
-    ARM_NEIGHBOR_SUPPRESS_TIME    = 20,     -- seconds neighbors stay dark (shorter than primary)
+    ARM_NEIGHBOR_SUPPRESS_TIME    = 12,     -- seconds neighbors stay dark (was 20; reduced so nearby SAMs can re-engage sooner)
+    -- ── SHORAD terminal defence ──────────────────────────────────────────────
+    -- SHORAD units fire a supplemental terminal layer against aircraft already
+    -- handled by a long-range SAM.  They are also kept at weapons-free / radar-on
+    -- at all times so the DCS AI can autonomously engage incoming ARMs/AGMs
+    -- without the radar-management loop cycling them off every 12 seconds.
+    SHORAD_HANDOFF_ENABLED        = true,
+    SHORAD_NAME_PATTERN           = "SHORAD",  -- substring in group name identifying a SHORAD group
+    SHORAD_MAX_RANGE              = 25000,     -- metres: SAMs with SAM_RANGE_TABLE max <= this are treated as
+                                               -- SHORAD regardless of name (covers Pantsir, Tor, Tunguska, etc.)
     -- ─────────────────────────────────────────────────────────────────────────
     --  ARM_TYPES – Anti-Radiation Missiles (radar-homing weapons)
     --  DCS getTypeName() can return either the underscored or hyphenated form;
@@ -356,12 +356,27 @@ local IADS_CFG = {
         ["BetAB_500"]       = true,
         ["BetAB-500ShP"]    = true,
         ["BetAB_500ShP"]    = true,
+
+        -- ── ATACMS / GMLRS (M270 MLRS / M142 HIMARS ground launchers) ──────
+        -- DCS getTypeName() for HIMARS ATACMS variants (check exact names in
+        -- the DCS Encyclopedia / unit editor if a new variant is added).
+        ["MGM_140"]         = true,   -- MGM-140 ATACMS Block I (unguided submunitions)
+        ["MGM-140"]         = true,   -- hyphen form
+        ["MGM_140A"]        = true,   -- ATACMS Block IA (GPS/unitary)
+        ["MGM-140A"]        = true,
+        ["ATACMS"]          = true,   -- generic catch-all for any ATACMS variant
+        ["M39"]             = true,   -- M39/M39A1 ATACMS (DCS internal)
+        ["M30_GMLRS"]       = true,   -- M30 GMLRS (guided 70 km rocket)
+        ["M31_GMLRS"]       = true,   -- M31 GMLRS unitary warhead
+        ["GMLRS"]           = true,   -- generic GMLRS catch-all
     },
 
     -- ── Air Intercept ────────────────────────────────────────────────────────
     INTERCEPT_ALTITUDE      = 6000,   -- metres  – initial intercept climb altitude
+    PATROL_ALTITUDE         = 6096,   -- metres  – CAP patrol orbit altitude (20,000 ft)
     INTERCEPT_SPEED         = 900,    -- km/h    – intercept speed
-    RTB_LOITER_TIME         = 0,      -- 0 = RTB immediately the moment the zone goes clear (no loiter)
+    MAX_ACTIVE_INTERCEPTS   = 5,      -- global cap: never more than this many intercept flights airborne at once
+    RTB_LOITER_TIME         = 0,      -- (legacy, unused) flights now patrol until bingo/winchester
     SCRAMBLE_THREAT_BUFFER  = 0,      -- 0 = scramble only when threat is inside the zone boundary (no approach buffer)
     INTERCEPT_LEASH_BUFFER  = 80000,  -- metres beyond zone radius — if an airborne intercept flight strays
                                       -- farther than (zone_radius + this value) from its zone centre it is
@@ -555,11 +570,14 @@ local function getNearestAirbase(pos, coa)
     local bases = world.getAirbases()
     local best, bestDist = nil, math.huge
     for _, ab in ipairs(bases) do
-        local abPos = ab:getPoint()
-        local d = dist2d(pos, abPos)
-        if d < bestDist then
-            bestDist = d
-            best = ab
+        -- Filter by coalition when specified; skip neutral (0) and enemy bases
+        if coa == nil or ab:getCoalition() == coa then
+            local abPos = ab:getPoint()
+            local d = dist2d(pos, abPos)
+            if d < bestDist then
+                bestDist = d
+                best = ab
+            end
         end
     end
     return best
@@ -613,16 +631,24 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local IADS = {
-    RED     = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {} },
-    BLUE    = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {} },
+    RED     = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {}, samSector = {} },
+    BLUE    = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {}, samSector = {} },
     -- Lebanon SAMs run as a completely isolated RED-side sub-IADS.
     -- They detect and engage BLUE aircraft independently; they do NOT
     -- share contacts or engagement assignments with the main RED network.
-    LEBANON = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {} },
+    LEBANON = { samNodes = {}, ewrNodes = {}, contacts = {}, suppressedUntil = {}, lastEngagement = {}, radarOn = {}, samSector = {} },
 }
 
 -- Tracked incoming weapons  { weapon_obj, launchPos, coalition_target }
 local trackedWeapons = {}
+
+-- Persistent role-confirmed tables: populated by the SHOT event handler the
+-- first time a unit fires an ARM or AGM.  Unit names are used as keys because
+-- they survive across gatherContacts() rebuilds for the whole mission session.
+-- This is the ONLY reliable way to know a player's role — their slot name gives
+-- us nothing, but the first HARM they fire tells us everything.
+local _confirmedSEAD   = {}  -- unitName → true (fired at least one ARM this session)
+local _confirmedStrike = {}  -- unitName → true (fired at least one AGM this session)
 
 -- GCI / intercept state — both coalitions
 local gciState = {
@@ -690,6 +716,58 @@ local function buildNodeList(coaName, coaID, samPrefix, ewrPrefix, excludePrefix
     log(coaName .. " IADS: " .. #state.samNodes .. " SAM nodes, " .. #state.ewrNodes .. " EWR nodes")
 end
 
+-- Auto-assign each SAM node to the geographic zone it physically sits inside.
+-- Uses the same trigger zones as the GCI system — no manual prefix→zone mappings
+-- needed.  Called once at init and again every NODE_REFRESH_INTERVAL (15 min).
+-- zonePrefix: "RED_ZONE_" / "BLUE_ZONE_" / "LEBANON_ZONE_" (matches the ME naming).
+-- explicitZones (optional): when provided, these zone names are used directly
+-- instead of a MIST prefix search.  Required for LEBANON whose zones are listed
+-- in IADS_CFG.LEBANON_ZONES but are not discoverable from MIST's zone DB.
+local function buildSAMSectorCache(coaName, zonePrefix, explicitZones)
+    local state = IADS[coaName]
+    state.samSector = {}
+
+    -- Collect zone names: explicit list takes priority, then MIST prefix search,
+    -- then GCI registry fallback (only contains RED_ZONE_ / BLUE_ZONE_).
+    local zoneNames = {}
+    if explicitZones then
+        for _, z in ipairs(explicitZones) do
+            table.insert(zoneNames, z)
+        end
+    elseif mist and mist.DBs and mist.DBs.zonesByName then
+        for zoneName, _ in pairs(mist.DBs.zonesByName) do
+            if string.sub(zoneName, 1, #zonePrefix) == zonePrefix then
+                table.insert(zoneNames, zoneName)
+            end
+        end
+    else
+        -- Fallback: enumerate the GCI registry (only contains RED_ZONE_ / BLUE_ZONE_).
+        local gciCoaName = (coaName == "BLUE") and "BLUE" or "RED"
+        for zoneName, _ in pairs(gciState[gciCoaName].zones) do
+            table.insert(zoneNames, zoneName)
+        end
+    end
+
+    local assigned = 0
+    for _, samName in ipairs(state.samNodes) do
+        local sp = getGroupPos(samName)
+        if sp then
+            for _, zoneName in ipairs(zoneNames) do
+                local zd = trigger.misc.getZone(zoneName)
+                if zd and zd.point and zd.radius then
+                    if dist2d(sp, zd.point) <= zd.radius then
+                        state.samSector[samName] = zoneName
+                        assigned = assigned + 1
+                        break  -- each SAM belongs to at most one sector
+                    end
+                end
+            end
+        end
+    end
+    log(string.format("[Sector] %s: %d/%d SAM nodes auto-assigned to sectors via %s*",
+        coaName, assigned, #state.samNodes, zonePrefix))
+end
+
 -- Gather enemy contacts visible to this coalition.
 -- PRIMARY:  coalition.getDetectedTargets (radar-filtered, terrain-masked) – available in newer DCS builds.
 -- FALLBACK: coalition.getGroups scan (all airborne enemy aircraft/helicopters) – used when the
@@ -706,7 +784,7 @@ local function gatherContacts(coaName, enemyCoa)
     local myCoaID = (coaName == "BLUE") and coalition.side.BLUE or coalition.side.RED
 
     -- ── Helper: add a unit to the contacts list (shared by both paths) ───────
-    local function addUnit(obj, byRadar)
+    local function addUnit(obj, byRadar, detRecord)
         if not (obj and obj:isExist()) then return end
         if not (obj.getCoalition and obj:getCoalition() == enemyCoa) then return end
         if not (obj.getLife     and obj:getLife() > 1)               then return end
@@ -724,14 +802,52 @@ local function gatherContacts(coaName, enemyCoa)
             end
         end
 
-        local isLowJet = false
-        if (coaName == "RED" or coaName == "LEBANON")
-           and IADS_CFG.SAM_LOW_JET_IMMUNITY_AGL > 0 then
-            local desc = obj:getDesc()
-            if desc and desc.category == Unit.Category.AIRPLANE then
-                local agl = getAGL(p)
-                if agl < IADS_CFG.SAM_LOW_JET_IMMUNITY_AGL then
-                    isLowJet = true
+        local typeName = (obj.getTypeName and obj:getTypeName()) or ""
+        local desc     = obj:getDesc()
+        local unitCat  = desc and desc.category
+
+        -- ── Threat classification ──────────────────────────────────────────────
+        -- Priority 1: confirmed by weapon fire this session (ground truth).
+        -- Priority 2: platform-type prior (dedicated SEAD aircraft only).
+        -- Priority 3: generic fighter / helicopter default.
+        local threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.FIGHTER_WEIGHT or 1.2
+        if unitCat == Unit.Category.HELICOPTER then
+            threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.HELO_WEIGHT or 0.8
+        elseif _confirmedSEAD[n] then
+            -- This pilot has fired an ARM this session — definitive SEAD.
+            threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.SEAD_WEIGHT or 3.0
+        elseif _confirmedStrike[n] then
+            -- This pilot has fired an AGM this session — strike role confirmed.
+            threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.STRIKE_WEIGHT or 2.0
+        else
+            -- No weapon fired yet — use platform type as a conservative prior.
+            -- Only dedicated SEAD/EW airframes (EA-18G, EF-111, MiG-25BM …) get
+            -- SEAD priority here.  Multirole jets default to Fighter until they
+            -- actually fire an ARM.
+            local isSEAD = false
+            local grpObj2 = obj.getGroup and obj:getGroup() or nil
+            local grpN    = grpObj2 and grpObj2:getName() or ""
+            if IADS_CFG.SEAD_GROUP_PATTERNS then
+                for _, pat in ipairs(IADS_CFG.SEAD_GROUP_PATTERNS) do
+                    if string.find(grpN, pat, 1, true) then isSEAD = true; break end
+                end
+            end
+            if not isSEAD and IADS_CFG.SEAD_TYPE_PATTERNS then
+                for _, pat in ipairs(IADS_CFG.SEAD_TYPE_PATTERNS) do
+                    if string.find(typeName, pat, 1, true) then isSEAD = true; break end
+                end
+            end
+            if isSEAD then
+                threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.SEAD_WEIGHT or 3.0
+            else
+                local isStrike = false
+                if IADS_CFG.STRIKE_TYPE_PATTERNS then
+                    for _, pat in ipairs(IADS_CFG.STRIKE_TYPE_PATTERNS) do
+                        if string.find(typeName, pat, 1, true) then isStrike = true; break end
+                    end
+                end
+                if isStrike then
+                    threatPriority = IADS_CFG.THREAT_PRIORITY and IADS_CFG.THREAT_PRIORITY.STRIKE_WEIGHT or 2.0
                 end
             end
         end
@@ -739,14 +855,15 @@ local function gatherContacts(coaName, enemyCoa)
         if not seen[n] then
             seen[n] = true
             table.insert(state.contacts, {
-                unit       = obj,
-                group      = obj.getGroup and obj:getGroup() or nil,
-                pos        = p,
-                vel        = obj.getVelocity and obj:getVelocity() or {x=0,y=0,z=0},
-                name       = n,
-                detectedAt = now,
-                byRadar    = byRadar,
-                isLowJet   = isLowJet,
+                unit           = obj,
+                group          = obj.getGroup and obj:getGroup() or nil,
+                pos            = p,
+                vel            = obj.getVelocity and obj:getVelocity() or {x=0,y=0,z=0},
+                name           = n,
+                typeName       = typeName,
+                detectedAt     = now,
+                byRadar        = byRadar,
+                threatPriority = threatPriority,
             })
         end
     end
@@ -757,8 +874,26 @@ local function gatherContacts(coaName, enemyCoa)
         local radarSensorType = (Unit.SensorType ~= nil) and Unit.SensorType.RADAR or nil
         local det = coalition.getDetectedTargets(myCoaID, radarSensorType)
         for _, d in ipairs(det or {}) do
-            addUnit(d.object, true)
+            addUnit(d.object, true, d)   -- pass detection record for native ECM quality flags
         end
+
+        -- ── SUPPLEMENTAL: all-sensor pass for helicopters ───────────────────
+        -- Helicopters flying NOE have near-zero RCS in DCS — radar-only sweeps
+        -- routinely miss them entirely even when they are in plain LOS of EWRs.
+        -- A second all-sensor pass (optical / IR / acoustic) picks up any helos
+        -- the radar scan skipped.  Aircraft already added by the radar pass are
+        -- deduplicated by the seen[] check inside addUnit(), so no double-count.
+        local allDet = coalition.getDetectedTargets(myCoaID)
+        for _, d in ipairs(allDet or {}) do
+            local obj = d.object
+            if obj and obj:isExist() and obj.getDesc then
+                local desc = obj:getDesc()
+                if desc and desc.category == Unit.Category.HELICOPTER then
+                    addUnit(obj, false, d)   -- byRadar=false: acquired by optical/IR sensor
+                end
+            end
+        end
+
         return state.contacts
     end
 
@@ -855,8 +990,16 @@ local function orderSAMEngage(samName, contact)
     local ctrl = g:getController()
     if not ctrl then return end
 
-    -- Turn radar ON
+    -- Turn radar ON and ensure ROE/alarm state are correct.
+    -- When a SAM goes dark (no contacts) the radar-management pass sets
+    -- ROE=4 (return fire only) and alarm state=1 (green/standby).
+    -- Those options persist until explicitly overridden.  Without resetting
+    -- them here the DCS AI will lock its fire-control radar on the target
+    -- (visible to the pilot as "being looked at") but WILL NOT fire because
+    -- the ROE forbids offensive engagement.
     ctrl:setOnOff(true)
+    ctrl:setOption(0, 2)   -- ROE: weapons free
+    ctrl:setOption(9, 2)   -- alarm state: red (ready to engage)
 
     -- Set attack task – replaces any existing task (setTask, not pushTask, to avoid
     -- stacking thousands of EngageUnit entries in the controller queue over time)
@@ -899,7 +1042,50 @@ local function optimizeEngagements(coaName)
                 end
                 hf = (total > 0) and (alive / total) or 0
             end
-            samCache[sn] = { pos = sp, health = hf, rng = getSAMRange(sn) }
+            -- Sector zone: auto-assigned at startup from the SAM's physical position.
+            -- state.samSector[sn] is nil when the SAM doesn't sit inside any zone.
+            samCache[sn] = { pos = sp, health = hf, rng = getSAMRange(sn), sectorZone = state.samSector[sn] }
+        end
+    end
+
+    -- ── Contact sort: highest-threat / closest contacts get first pick of SAMs ──
+    -- Pre-compute a composite sort key for each contact so the comparator runs
+    -- in O(1) instead of re-iterating samCache on every sort comparison.
+    for _, c in ipairs(state.contacts) do
+        local best = math.huge
+        for _, entry in pairs(samCache) do
+            local d = dist2d(c.pos, entry.pos)
+            if d < best then best = d end
+        end
+        -- proxFactor: 0 km → 2.0, 300 km → 0.5 (closing contacts rank higher)
+        local prox = math.max(0.5, 2.0 - (best / 150000))
+        c._sortKey = (c.threatPriority or 1.0) * prox
+    end
+    if #state.contacts > 1 then
+        table.sort(state.contacts, function(a, b)
+            return (a._sortKey or 1.0) > (b._sortKey or 1.0)
+        end)
+    end
+
+    -- ── Sector zone membership pre-computation ─────────────────────────────
+    -- Collect the set of unique sector zones referenced by at least one SAM node
+    -- this tick, then evaluate each contact against each of those zones exactly
+    -- once.  This avoids repeated trigger.misc.getZone() calls in the inner loop.
+    local contactInSector = {}  -- contactName → { zoneName → bool }
+    local uniqueZones = {}
+    for _, entry in pairs(samCache) do
+        if entry.sectorZone then uniqueZones[entry.sectorZone] = true end
+    end
+    for zoneName, _ in pairs(uniqueZones) do
+        local zd = trigger.misc.getZone(zoneName)
+        if zd and zd.point and zd.radius then
+            for _, contact in ipairs(state.contacts) do
+                if not contactInSector[contact.name] then
+                    contactInSector[contact.name] = {}
+                end
+                contactInSector[contact.name][zoneName] =
+                    (dist2d(contact.pos, zd.point) <= zd.radius)
+            end
         end
     end
 
@@ -927,28 +1113,37 @@ local function optimizeEngagements(coaName)
                 local bestSam2, bestScore2 = nil, 0
                 for _, samName in ipairs(state.samNodes) do
                     if not usedSAMs[samName] then
-                        -- Low-jet immunity: non-SHORAD SAMs skip low-flying jets.
-                        -- SHORAD groups (name contains "SHORAD") always engage.
-                        if contact.isLowJet and not string.find(samName, "SHORAD") then
-                            -- This SAM is not SHORAD — skip the low-flying jet
-                        else
-                            local sup = state.suppressedUntil[samName] or 0
-                            if now >= sup then
-                                local entry = samCache[samName]
-                                local score = entry and computeEngagementScore(entry, contact) or 0
-                                if score > bestScore2 then
-                                    bestScore2 = score
-                                    bestSam2   = samName
+                        local sup = state.suppressedUntil[samName] or 0
+                        if now >= sup then
+                            local entry = samCache[samName]
+                            local score = entry and computeEngagementScore(entry, contact) or 0
+                            -- Geographic sector derating: SAMs score lower for contacts
+                            -- outside their assigned zone.  Does not block the shot —
+                            -- prevents the best southern SAM from being wasted on a
+                            -- northern contact when an equally capable northern site
+                            -- is available.
+                            if score > 0 and entry and entry.sectorZone then
+                                local inSec = contactInSector[contact.name]
+                                              and contactInSector[contact.name][entry.sectorZone]
+                                if not inSec then
+                                    score = score * (IADS_CFG.SAM_OUT_OF_SECTOR_PENALTY or 0.25)
                                 end
                             end
-                        end -- low-jet SHORAD check
+                            if score > bestScore2 then
+                                bestScore2 = score
+                                bestSam2   = samName
+                            end
+                        end
                     end
                 end
 
                 if bestSam2 and bestScore2 > (IADS_CFG.SAM_MIN_ENGAGE_SCORE or 0.05) then
                     usedSAMs[bestSam2] = true
                     assigned_count = assigned_count + 1
-                    assigned[contact.name] = bestSam2  -- last writer wins for radar-mgmt reverse map
+                    assigned[contact.name] = bestSam2  -- used by SHORAD handoff check (last writer)
+                    assigned["__sam__" .. bestSam2] = bestSam2  -- ensures ALL assigned SAMs are visible
+                                                                 -- to the radar-management values scan,
+                                                                 -- not just the last one per contact
 
                     local stagger = (assigned_count - 1) * 1.5  -- 0s for primary, 1.5s for secondary
                     local delay   = stagger
@@ -996,9 +1191,80 @@ local function optimizeEngagements(coaName)
         end  -- inLebanonBounds
     end
 
+    -- ── SHORAD independent engagement pass ───────────────────────────────────
+    -- SHORAD units engage ANY contact in range autonomously — they do NOT wait
+    -- for a long-range SAM to be assigned first.  Real-world SHORAD operates as
+    -- an independent inner-layer: it fires on everything that enters its envelope
+    -- regardless of whether the outer ring is already handling the contact.
+    -- Checks both the SHORAD_NAME_PATTERN convention AND the SHORAD_MAX_RANGE
+    -- so that Pantsir/Tor/Tunguska groups not literally named "*SHORAD*" are
+    -- identified correctly (e.g. RED_SAM_THALAH with max range ≤ 25 km).
+    if IADS_CFG.SHORAD_HANDOFF_ENABLED then
+        local shoradPat    = IADS_CFG.SHORAD_NAME_PATTERN or "SHORAD"
+        local shoradMaxRng = IADS_CFG.SHORAD_MAX_RANGE or 25000
+        for _, contact in ipairs(state.contacts) do
+            -- No assigned[contact.name] gate — SHORAD fires on any contact in range.
+            for _, samName in ipairs(state.samNodes) do
+                local rng      = getSAMRange(samName)
+                local isSHORAD = string.find(samName, shoradPat, 1, true)
+                              or (rng and rng.max <= shoradMaxRng)
+                if isSHORAD then
+                    -- Skip if this SHORAD is already handling a contact this tick
+                    local alreadyBusy = false
+                    for _, sn in pairs(assigned) do
+                        if sn == samName then alreadyBusy = true; break end
+                    end
+                    if not alreadyBusy then
+                        local sup = state.suppressedUntil[samName] or 0
+                        if now >= sup then
+                            local entry = samCache[samName]
+                            if entry then
+                                local score = computeEngagementScore(entry, contact)
+                                if score > (IADS_CFG.SAM_MIN_ENGAGE_SCORE or 0.05) then
+                                    -- Register under a unique key so the radar-management
+                                    -- reverse-value scan sees it as assigned.
+                                    assigned["__shorad__" .. samName] = samName
+                                    if state.lastEngagement[samName] ~= contact.name then
+                                        state.lastEngagement[samName] = contact.name
+                                        state.radarOn[samName] = true
+                                        local cap_c = contact
+                                        local cap_s = samName
+                                        timer.scheduleFunction(function()
+                                            if groupAlive(cap_s)
+                                            and cap_c.unit:isExist() and cap_c.unit:isActive()
+                                            and cap_c.unit:getLife() > 1 then
+                                                orderSAMEngage(cap_s, cap_c)
+                                            else
+                                                state.lastEngagement[cap_s] = nil
+                                            end
+                                            return nil
+                                        end, nil, timer.getTime() + 0.5)
+                                        log(coaName .. " SHORAD " .. samName
+                                            .. " engaging " .. contact.name
+                                            .. string.format(" [score=%.2f]", score))
+                                    else
+                                        state.radarOn[samName] = true  -- already on target
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     -- Radar management: turn radar OFF for any SAM without an active assignment.
+    -- SHORAD-type units are an exception: turning them off here creates a
+    -- race with weaponTrackingLoop (which turns them on every 5 s to engage
+    -- incoming ARMs/AGMs).  The oscillation means the DCS AI never gets a
+    -- sustained radar-on window long enough to acquire and fire a missile.
+    -- Instead, SHORAD units are kept at weapons-free / alarm-green when idle
+    -- (low-power standby) and are upgraded to alarm-red by alertSHORADtoEngageWeapon.
     -- Only call setOnOff/setOption when the state actually needs to change — avoids
     -- issuing ~279 redundant DCS API calls per 10-second tick across 93 SAM nodes.
+    local shoradPat   = IADS_CFG.SHORAD_NAME_PATTERN or "SHORAD"
+    local shoradMaxRng = IADS_CFG.SHORAD_MAX_RANGE or 25000
     for _, samName in ipairs(state.samNodes) do
         local sup = state.suppressedUntil[samName] or 0
         if now >= sup then
@@ -1007,18 +1273,41 @@ local function optimizeEngagements(coaName)
                 if sName == samName then hasAssigned = true; break end
             end
             if not hasAssigned then
-                -- Only write to DCS if radar was previously on (or unknown)
-                if state.radarOn[samName] ~= false then
-                    local g = Group.getByName(samName)
-                    if g and g:getController() then
-                        g:getController():setOnOff(false)
-                        g:getController():setOption(9, 1)  -- alarm state: green
-                        g:getController():setOption(0, 4)  -- ROE: return fire only
+                -- Determine whether this node is a short-range SHORAD type.
+                -- We check both the name convention AND the SAM_RANGE_TABLE max
+                -- so that unnamed Pantsir/Tor batteries are also protected.
+                local rng = getSAMRange(samName)
+                local isSHORADType = string.find(samName, shoradPat, 1, true)
+                             or (rng and rng.max <= shoradMaxRng)
+                if isSHORADType then
+                    -- Keep SHORAD radar on and ROE at weapons-free so the DCS AI
+                    -- engages incoming missiles autonomously without interruption.
+                    -- weaponTrackingLoop will upgrade alarm state to red when a
+                    -- weapon enters the engagement zone.
+                    if state.radarOn[samName] ~= true then
+                        local g = Group.getByName(samName)
+                        if g and g:getController() then
+                            g:getController():setOnOff(true)
+                            g:getController():setOption(0, 2)   -- ROE: weapons free
+                            g:getController():setOption(9, 1)   -- alarm state: green (standby)
+                        end
+                        state.radarOn[samName] = true
                     end
-                    state.radarOn[samName]      = false
-                    state.lastEngagement[samName] = nil  -- clear so new contact gets a fresh order
+                else
+                    -- Long-range SAM with no active target — go dark.
+                    -- Only write to DCS if radar was previously on (or unknown)
+                    if state.radarOn[samName] ~= false then
+                        local g = Group.getByName(samName)
+                        if g and g:getController() then
+                            g:getController():setOnOff(false)
+                            g:getController():setOption(9, 1)  -- alarm state: green
+                            g:getController():setOption(0, 4)  -- ROE: return fire only
+                        end
+                        state.radarOn[samName]      = false
+                        state.lastEngagement[samName] = nil  -- clear so new contact gets a fresh order
+                    end
+                    -- hasAssigned=false, radarOn already false → nothing to do
                 end
-                -- hasAssigned=false, radarOn already false → nothing to do
             end
             -- hasAssigned=true case: radar already turned on by orderSAMEngage
         end
@@ -1035,7 +1324,20 @@ end
     If AGM: track the weapon and alert nearby SAMs or SHORAD to engage it.
 ]]
 
-local function suppressSAMRadar(coaName, samName)
+local function suppressSAMRadar(coaName, samName, nodeType)
+    -- nodeType: "SAM" or "EWR" (from findARMTarget)
+    nodeType = nodeType or "SAM"
+
+    -- SHORAD units must NEVER suppress their radar for any reason.
+    -- Their job is to engage everything in range — ARMs, AGMs, aircraft — and
+    -- shutting them down is always counterproductive regardless of weapon type.
+    -- Check both name convention AND range so short-range groups not literally
+    -- named "*SHORAD*" (e.g. Pantsir/Tor batteries) are also protected.
+    local _srng   = getSAMRange(samName)
+    local _isSHORAD = string.find(samName, "SHORAD", 1, true)
+                   or (_srng and _srng.max <= (IADS_CFG.SHORAD_MAX_RANGE or 25000))
+    if _isSHORAD then return end
+
     -- Immortal networks never need to suppress radar – skip entirely.
     if IADS_CFG.IMMORTAL_IADS_NETWORKS and IADS_CFG.IMMORTAL_IADS_NETWORKS[coaName] then
         return
@@ -1046,7 +1348,7 @@ local function suppressSAMRadar(coaName, samName)
     local ctrl = g:getController()
     if ctrl then
         ctrl:setOnOff(false)  -- kill radar
-        log(coaName .. " SAM " .. samName .. " radar SUPPRESSED (ARM inbound)")
+        log(coaName .. " " .. nodeType .. " " .. samName .. " radar SUPPRESSED (ARM inbound)")
     end
 
     -- Sync state cache so the radar-management pass doesn't waste API calls
@@ -1057,29 +1359,43 @@ local function suppressSAMRadar(coaName, samName)
     IADS[coaName].suppressedUntil[samName] = timer.getTime() + IADS_CFG.ARM_SHUTDOWN_TIME
 
     -- Also briefly silence neighboring SAMs so the ARM seeker can't re-acquire a nearby radar.
+    -- Only applies when the primary target is a SAM; EWRs are typically isolated.
     local primaryPos = getGroupPos(samName)
     local neighborRange = IADS_CFG.ARM_NEIGHBOR_SUPPRESS_RANGE or 12000
     local neighborTime  = IADS_CFG.ARM_NEIGHBOR_SUPPRESS_TIME  or 20
-    if primaryPos then
+    if primaryPos and nodeType == "SAM" then
         for _, nName in ipairs(IADS[coaName].samNodes) do
             if nName ~= samName then
-                local np = getGroupPos(nName)
-                if np and dist3d(primaryPos, np) <= neighborRange then
-                    local ng = Group.getByName(nName)
-                    if ng and ng:getController() then
-                        ng:getController():setOnOff(false)
-                        if not IADS[coaName].suppressedUntil[nName] or
-                           IADS[coaName].suppressedUntil[nName] < timer.getTime() + neighborTime then
-                            IADS[coaName].suppressedUntil[nName] = timer.getTime() + neighborTime
+                -- SHORAD units must NEVER be ARM-suppressed: they don't home on
+                -- radar emissions, so there is no reason for them to go dark.
+                -- Suppressing a SHORAD just disarms the one asset that could
+                -- shoot the incoming ARM down.  We check both the name convention
+                -- AND the SAM_RANGE_TABLE max so unnamed Pantsir/Tor batteries
+                -- are also protected from neighbour-suppression.
+                local isSHORAD = string.find(nName, "SHORAD", 1, true)
+                local nRng     = getSAMRange(nName)
+                local isSHORADType = isSHORAD or (nRng and nRng.max <= (IADS_CFG.SHORAD_MAX_RANGE or 25000))
+                if not isSHORADType then
+                    local np = getGroupPos(nName)
+                    if np and dist3d(primaryPos, np) <= neighborRange then
+                        local ng = Group.getByName(nName)
+                        if ng and ng:getController() then
+                            ng:getController():setOnOff(false)
+                            if not IADS[coaName].suppressedUntil[nName] or
+                               IADS[coaName].suppressedUntil[nName] < timer.getTime() + neighborTime then
+                                IADS[coaName].suppressedUntil[nName] = timer.getTime() + neighborTime
+                            end
+                            log(coaName .. " SAM " .. nName .. " neighbour-darkened for " .. neighborTime .. "s")
                         end
-                        log(coaName .. " SAM " .. nName .. " neighbour-darkened for " .. neighborTime .. "s")
                     end
                 end
             end
         end
     end
 
-    -- If the unit is mobile (wheeled SAM), attempt relocation
+    -- If the unit is mobile (wheeled SAM), attempt relocation.
+    -- EWR nodes are typically static installations — skip relocation for them.
+    if nodeType == "SAM" then
     local sp = getGroupPos(samName)
     if sp then
         local offset = randomOffset(IADS_CFG.ARM_MOVE_RADIUS)
@@ -1113,6 +1429,7 @@ local function suppressSAMRadar(coaName, samName)
             log(coaName .. " SAM " .. samName .. " relocating to avoid ARM")
         end
     end
+    end -- nodeType == "SAM" (relocation block)
 
     -- Schedule radar back ON after suppression window
     local cn_cap  = coaName
@@ -1124,14 +1441,17 @@ local function suppressSAMRadar(coaName, samName)
             local gg = Group.getByName(sn_cap)
             if gg and gg:getController() then
                 gg:getController():setOnOff(true)
-                log(cn_cap .. " SAM " .. sn_cap .. " radar back ONLINE")
+                log(cn_cap .. " " .. sn_cap .. " radar back ONLINE")
             end
         end
         return nil
     end, nil, timer.getTime() + IADS_CFG.ARM_SHUTDOWN_TIME + 2)
 end
 
--- Find which SAM network the ARM is most likely targeting (closest to trajectory)
+-- Find which SAM or EWR node the ARM is most likely targeting (closest to
+-- projected impact point).  SHORAD units are excluded — they don't operate
+-- the long-range acquisition/fire-control radars that ARMs home on.
+-- Returns: nodeName, distance, nodeType ("SAM" or "EWR")
 local function findARMTarget(wpnPos, wpnVel, coaName)
     -- Extrapolate weapon path 60 s forward
     local futurePos = {
@@ -1141,20 +1461,42 @@ local function findARMTarget(wpnPos, wpnVel, coaName)
     }
 
     local state = IADS[coaName]
-    local best, bestDist = nil, math.huge
+    local shoradPat    = IADS_CFG.SHORAD_NAME_PATTERN or "SHORAD"
+    local shoradMaxRng = IADS_CFG.SHORAD_MAX_RANGE or 25000
+    local best, bestDist, bestType = nil, math.huge, nil
 
+    -- Check SAM nodes (excluding SHORAD by both name AND range)
     for _, samName in ipairs(state.samNodes) do
-        local sp = getGroupPos(samName)
-        if sp then
-            -- Distance from the projected impact point to each SAM node
-            local d = dist3d(futurePos, sp)
-            if d < bestDist then
-                bestDist = d
-                best     = samName
+        local rng = getSAMRange(samName)
+        local isSHORAD = string.find(samName, shoradPat, 1, true)
+                      or (rng and rng.max <= shoradMaxRng)
+        if not isSHORAD then
+            local sp = getGroupPos(samName)
+            if sp then
+                local d = dist3d(futurePos, sp)
+                if d < bestDist then
+                    bestDist = d
+                    best     = samName
+                    bestType = "SAM"
+                end
             end
         end
     end
-    return best, bestDist
+
+    -- Check EWR nodes — they have active radar emitters that ARMs home on
+    for _, ewrName in ipairs(state.ewrNodes) do
+        local ep = getGroupPos(ewrName)
+        if ep then
+            local d = dist3d(futurePos, ep)
+            if d < bestDist then
+                bestDist = d
+                best     = ewrName
+                bestType = "EWR"
+            end
+        end
+    end
+
+    return best, bestDist, bestType
 end
 
 -- Alert SAMs and SHORAD near a tracked weapon to engage it.
@@ -1170,14 +1512,24 @@ local function alertSHORADtoEngageWeapon(weapon, coaName, skipSuppressed)
     local wpPos = weapon:getPoint()
     if not wpPos then return end
 
-    local CLOSE = 30000   -- metres – engage immediately
-    local WARN  = 60000   -- metres – slew radar, standby to engage
+    local CLOSE = 50000   -- metres – engage immediately (widened from 30 km; at HARM approach
+                           -- speed ~527 m/s the DCS AI needs ≥60 s to acquire and fire, and the
+                           -- weaponTrackingLoop runs every 5 s, so 50 km gives ~95 s of reaction window)
+    local WARN  = 90000   -- metres – slew radar, standby to engage (widened from 60 km)
     local now   = timer.getTime()
 
     for _, samName in ipairs(state.samNodes) do
+        -- SHORAD units are NEVER skipped, even when skipSuppressed=true.
+        -- They do not suppress their radars for ARM evasion and must always
+        -- be free to engage incoming weapons (ARMs, AGMs) at close range.
+        -- Check both name convention AND range table for consistent SHORAD identification.
+        local rng = getSAMRange(samName)
+        local isSHORAD = string.find(samName, "SHORAD", 1, true)
+                      or (rng and rng.max <= (IADS_CFG.SHORAD_MAX_RANGE or 25000))
+
         -- Skip nodes that are currently suppressed (ARM evasion – keep radar dark)
         local suppressed = false
-        if skipSuppressed then
+        if skipSuppressed and not isSHORAD then
             local supUntil = state.suppressedUntil and state.suppressedUntil[samName] or 0
             suppressed = now < supUntil
         end
@@ -1193,10 +1545,14 @@ local function alertSHORADtoEngageWeapon(weapon, coaName, skipSuppressed)
                         g:getController():setOnOff(true)
                         g:getController():setOption(0, 2)   -- ROE: weapons free
                         g:getController():setOption(9, 2)   -- alarm state: red
+                        -- Mark radar state so optimizeEngagements doesn't immediately
+                        -- shut this node off on the next 12-second tick.
+                        state.radarOn[samName] = true
                     elseif d <= WARN then
                         -- Within warning range – wake up radar, hold fire
                         g:getController():setOnOff(true)
                         g:getController():setOption(9, 2)   -- alarm state: red (tracking mode)
+                        state.radarOn[samName] = true
                     end
                 end
             end
@@ -1211,6 +1567,16 @@ end
 local eventHandler = {}
 
 function eventHandler:onEvent(event)
+    -- Fast path: ignore every event type we don't handle.
+    -- This avoids creating a pcall closure (and its GC pressure) for the
+    -- large bursts of S_EVENT_SCORE / S_EVENT_HIT / S_EVENT_BDA events that
+    -- DCS fires during multi-unit explosions (e.g. HARM vs SAM site).
+    local id = event.id
+    if id ~= world.event.S_EVENT_SHOT
+    and id ~= world.event.S_EVENT_DEAD
+    and id ~= world.event.S_EVENT_CRASH then
+        return
+    end
     local _ok, _err = pcall(function()
 
     -- ── WEAPON SHOT ────────────────────────────────────────────────────────
@@ -1245,6 +1611,27 @@ function eventHandler:onEvent(event)
             -- Determine which side fired (attacker coalition)
             local initiator = event.initiator
             local shotCoa   = initiator and initiator:getCoalition() or nil
+
+            -- ── Role confirmation ──────────────────────────────────────────────
+            -- Record that this specific unit is confirmed in a SEAD or Strike
+            -- role.  gatherContacts() checks these tables each tick so the
+            -- contact's threat priority is immediately upgraded on the next
+            -- 12-second scan — no extra API calls required.
+            if initiator and initiator.getName then
+                local uName = initiator:getName()
+                if isARM then
+                    if not _confirmedSEAD[uName] then
+                        _confirmedSEAD[uName] = true
+                        log("[ThreatID] " .. uName .. " confirmed SEAD (fired " .. typeName .. ")")
+                    end
+                elseif isAGM and not _confirmedSEAD[uName] then
+                    -- Only upgrade to Strike if not already confirmed SEAD
+                    if not _confirmedStrike[uName] then
+                        _confirmedStrike[uName] = true
+                        log("[ThreatID] " .. uName .. " confirmed Strike (fired " .. typeName .. ")")
+                    end
+                end
+            end
 
             -- Determine the defending coalition
             local defendCoaName = nil
@@ -1297,6 +1684,34 @@ function eventHandler:onEvent(event)
                     log(cn .. " flight " .. gName .. " KIA")
                 end
             end
+            -- ── Dynamic SAM reallocation ──────────────────────────────────────
+            -- If the dead unit's group was a SAM node and the whole group is now
+            -- destroyed, remove it from the network immediately and schedule an
+            -- out-of-band optimizeEngagements() so contacts it was handling are
+            -- reassigned within ~1 s instead of waiting the full UPDATE_INTERVAL.
+            if not groupAlive(gName) then
+                for _, coaName in ipairs({"RED", "BLUE", "LEBANON"}) do
+                    local iadsState = IADS[coaName]
+                    for i = #iadsState.samNodes, 1, -1 do
+                        if iadsState.samNodes[i] == gName then
+                            table.remove(iadsState.samNodes, i)
+                            iadsState.lastEngagement[gName] = nil
+                            iadsState.radarOn[gName]         = nil
+                            iadsState.suppressedUntil[gName] = nil
+                            log(coaName .. " SAM node KIA: " .. gName
+                                .. " — immediately removed; contacts reallocating.")
+                            local cn_cap = coaName
+                            timer.scheduleFunction(function()
+                                if #IADS[cn_cap].contacts > 0 then
+                                    optimizeEngagements(cn_cap)
+                                end
+                                return nil
+                            end, nil, timer.getTime() + 1)
+                            break
+                        end
+                    end
+                end
+            end
         end
     end
     end) -- close pcall
@@ -1325,6 +1740,10 @@ local function weaponTrackingLoop()
             -- Weapon has hit / expired / TTL exceeded – drop entry
         else
             local vel = wpn:getVelocity()
+            -- Guard: some mod weapons or DCS edge-cases return nil velocity.
+            -- Without this, findARMTarget would crash on nil.x, throw an uncaught
+            -- error, and permanently kill the weapon tracking loop for the mission.
+            if not vel then vel = { x = 0, y = 0, z = 0 } end
 
             if wt.isARM then
                 if not wt.alerted then
@@ -1332,9 +1751,9 @@ local function weaponTrackingLoop()
                     -- Trigger earlier (ARM_SUPPRESS_TRIGGER_DIST, default 150 km) so
                     -- the SAM has time to go dark before the HARM seeker locks it.
                     local trigger_dist = IADS_CFG.ARM_SUPPRESS_TRIGGER_DIST or 150000
-                    local target, dist = findARMTarget(wpnPos, vel, wt.targetCoa)
+                    local target, dist, nodeType = findARMTarget(wpnPos, vel, wt.targetCoa)
                     if target and dist < trigger_dist then
-                        suppressSAMRadar(wt.targetCoa, target)
+                        suppressSAMRadar(wt.targetCoa, target, nodeType)
                         wt.alerted = true
                     end
                 end
@@ -1424,38 +1843,60 @@ function registerBlueZone(zoneName)
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
---  SECTION 11 – AWACS ORBIT KEEPER
+--  SECTION 11 – AWACS ORBIT KEEPER  (both coalitions)
 -- ─────────────────────────────────────────────────────────────────────────────
--- Runs every 30 s and re-assigns a Circle orbit task to any BLUE AWACS group
--- that has drifted more than 1000 ft below its configured altitude.  This
--- recovers from any external interference (other scripts, DCS AI quirks, etc.)
--- without touching the AWACS if it is already flying at the correct altitude.
+-- Runs every 5 min and re-assigns tasks to any AWACS group that has drifted
+-- more than 1000 ft below its configured altitude.  Uses a ComboTask with
+-- the AWACS role task FIRST (preserves DCS datalink / GCI functionality) and
+-- the Orbit task second so both run concurrently.  Previous versions used a
+-- bare Orbit setTask that silently replaced the built-in AWACS role, breaking
+-- datalink target sharing to fighters and helicopters.
 local function awacsOrbitLoop()
     local altM   = (IADS_CFG.AWACS_ORBIT_ALT_FT or 30000) * 0.3048   -- ft → m
     local spdMS  = (IADS_CFG.AWACS_ORBIT_KTS    or 350)   * 0.514444  -- kts → m/s
     local thresh = altM - 305   -- 1000 ft below target triggers correction
 
-    local myCoaID     = coalition.side.BLUE
-    local awacsPrefix = IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_"
+    -- Process both coalitions
+    local awacsConfigs = {
+        { coaID = coalition.side.BLUE, prefix = IADS_CFG.AWACS_PREFIX_BLUE or "BLUE_AWACS_" },
+        { coaID = coalition.side.RED,  prefix = IADS_CFG.AWACS_PREFIX_RED  or "RED_AWACS_"  },
+    }
 
-    for _, gName in ipairs(getAirGroupsByPrefix(myCoaID, awacsPrefix)) do
-        if groupAlive(gName) then
-            local p = getGroupPos(gName)
-            if p and p.y < thresh then
-                local g = Group.getByName(gName)
-                if g then
-                    local ctrl = g:getController()
-                    if ctrl then
-                        ctrl:setTask({
-                            id = "Orbit",
-                            params = {
-                                pattern  = "Circle",
-                                speed    = spdMS,
-                                altitude = altM,
-                            }
-                        })
-                        log("AWACS " .. gName .. " altitude recovery – orbit restored at FL"
-                            .. math.floor(altM * 3.28084 / 100 + 0.5))
+    for _, cfg in ipairs(awacsConfigs) do
+        for _, gName in ipairs(getAirGroupsByPrefix(cfg.coaID, cfg.prefix)) do
+            if groupAlive(gName) then
+                local p = getGroupPos(gName)
+                if p and p.y < thresh then
+                    local g = Group.getByName(gName)
+                    if g then
+                        local ctrl = g:getController()
+                        if ctrl then
+                            -- ComboTask: AWACS role first (datalink), then Orbit for altitude.
+                            -- DCS processes tasks in a ComboTask concurrently, so the AWACS
+                            -- role (GCI callouts, datalink target sharing) stays active while
+                            -- the Orbit task controls altitude and speed.
+                            ctrl:setTask({
+                                id = "ComboTask",
+                                params = {
+                                    tasks = {
+                                        {
+                                            id = "AWACS",
+                                            params = {},
+                                        },
+                                        {
+                                            id = "Orbit",
+                                            params = {
+                                                pattern  = "Circle",
+                                                speed    = spdMS,
+                                                altitude = altM,
+                                            },
+                                        },
+                                    },
+                                },
+                            })
+                            log("AWACS " .. gName .. " altitude recovery – orbit restored at FL"
+                                .. math.floor(altM * 3.28084 / 100 + 0.5))
+                        end
                     end
                 end
             end
@@ -1502,13 +1943,25 @@ local function getAvailableFlights(sqd, gciSt)
                             table.insert(available, gName)
                         end
                     else
-                        -- Group.getByName returned nil — group was destroyed in-mission.
-                        -- Permanently mark dead so it is never selected for dispatch again.
-                        if not gciSt.flights[gName] then
-                            gciSt.flights[gName] = {}
+                        -- Group.getByName() returned nil.
+                        -- Two possibilities: (a) destroyed in-mission, or (b) a late-activate
+                        -- group that DCS has not yet materialised — Group.getByName() returns nil
+                        -- for unspawned late-activate groups in many DCS builds (same quirk that
+                        -- blocked the CSAR garrison activation).
+                        -- Only permanently mark dead if the group was previously seen as airborne
+                        -- or RTB.  If it was never dispatched, leave it available and let
+                        -- dispatchFlight handle materialisation via MIST.
+                        local prevStatus = gciSt.flights[gName] and gciSt.flights[gName].status
+                        if prevStatus == "airborne" or prevStatus == "rtb" then
+                            if not gciSt.flights[gName] then gciSt.flights[gName] = {} end
+                            gciSt.flights[gName].status = "dead"
+                            log("[GCI] " .. gName .. " was airborne, now gone — KIA, marked dead.")
+                        else
+                            -- Never dispatched or was standby — nil likely means late-activate
+                            -- not yet spawned.  Add to available; dispatchFlight will use MIST
+                            -- dynAdd to materialise it if Group.getByName() still returns nil.
+                            table.insert(available, gName)
                         end
-                        gciSt.flights[gName].status = "dead"
-                        log("[GCI] " .. gName .. " not found (destroyed) — marked dead, skipping.")
                     end
                 end
             end
@@ -1529,8 +1982,10 @@ local function countAirborne(sqd, gciSt)
     return count
 end
 
--- Contacts from IADS[coaName].contacts that are within or approaching a zone
--- cachedGroups (optional): pre-fetched enemy airplane list to avoid redundant API calls.
+-- Contacts from IADS[coaName].contacts that are within or approaching a zone.
+-- Only returns enemies that are BOTH physically inside the zone AND detected by
+-- the coalition's radar/sensor network (IADS contacts list).  This prevents GCI
+-- from scrambling against undetected aircraft (terrain-masked, ECM, etc.).
 local _missingZonesLogged = {}   -- deduplicate; log each missing zone name only once
 local function getThreatsForZone(zoneName, coaName, cachedGroups)
     local threats = {}
@@ -1544,11 +1999,22 @@ local function getThreatsForZone(zoneName, coaName, cachedGroups)
         return threats
     end
     local zPos    = zd.point
-    local zRadius = zd.radius   -- no buffer; threat must be inside the zone boundary
+    local zRadius = zd.radius
 
-    -- Use a direct aircraft position scan rather than radar contacts.
-    -- This means the GCI will scramble even if the enemy is below radar coverage,
-    -- in a notch, or otherwise undetected.
+    -- Build a set of unit names currently detected by IADS radar/sensors.
+    -- For RED GCI we check both RED and LEBANON contacts (Lebanon is a RED sub-IADS
+    -- that tracks BLUE aircraft independently).
+    local detectedSet = {}
+    local iadsNetworks = { coaName }
+    if coaName == "RED" then iadsNetworks[#iadsNetworks + 1] = "LEBANON" end
+    for _, netName in ipairs(iadsNetworks) do
+        for _, c in ipairs(IADS[netName].contacts) do
+            if c.name then detectedSet[c.name] = true end
+        end
+    end
+
+    -- Scan enemy aircraft physically inside the zone, but only include ones
+    -- that appear in the IADS detection list.
     local groups = cachedGroups
     if not groups then
         local enemyCoa = (coaName == "RED") and coalition.side.BLUE or coalition.side.RED
@@ -1559,7 +2025,8 @@ local function getThreatsForZone(zoneName, coaName, cachedGroups)
             for _, u in ipairs(grp:getUnits()) do
                 if u:isExist() and u:isActive() and u:getLife() > 1 then
                     local uPos = u:getPoint()
-                    if uPos and dist2d(uPos, zPos) <= zRadius then
+                    if uPos and dist2d(uPos, zPos) <= zRadius
+                    and detectedSet[u:getName()] then
                         table.insert(threats, { unit = u, pos = uPos, group = grp })
                         break  -- one entry per group is enough
                     end
@@ -1578,28 +2045,46 @@ end
 local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
     log("Dispatching " .. coalName .. " flight: " .. groupName)
 
-    -- trigger.action.activateGroup is the correct DCS API for late-activate groups
+    -- Activate the late-activate group.
+    -- Primary: trigger.action.activateGroup() — requires a live Group object.
+    -- Fallback: mist.dynAdd() — materialises the group from the ME definition when
+    --           Group.getByName() returns nil for an unspawned late-activate group
+    --           (a known DCS quirk: the group exists in the mission data but is not
+    --           yet registered in the DCS runtime until the first activation call).
     local g = Group.getByName(groupName)
     if g then
         trigger.action.activateGroup(g)
     else
-        -- Group.getByName() returned nil — group was killed before it could be dispatched.
-        -- Silently mark dead and abort; getAvailableFlights will exclude it next cycle.
-        log("[GCI] Dispatch skipped: '" .. groupName .. "' no longer exists (killed). Marked dead.")
-        if not gciSt.flights[groupName] then
-            gciSt.flights[groupName] = {}
+        -- Group.getByName() returned nil — try MIST dynAdd as a fallback.
+        local mGrpData = mist and mist.DBs and mist.DBs.groupsByName
+                         and mist.DBs.groupsByName[groupName]
+        if mGrpData then
+            local ok, dynErr = pcall(function() mist.dynAdd(mGrpData) end)
+            if ok then
+                log("[GCI] '" .. groupName .. "' materialised via MIST dynAdd (late-activate fallback).")
+            else
+                log("[GCI] Dispatch failed for '" .. groupName .. "': MIST dynAdd error: " .. tostring(dynErr) .. " — marking dead.")
+                if not gciSt.flights[groupName] then gciSt.flights[groupName] = {} end
+                gciSt.flights[groupName].status = "dead"
+                return
+            end
+        else
+            -- Not in MIST data either — group was destroyed before it could fly.
+            log("[GCI] Dispatch failed: '" .. groupName .. "' not found in DCS or MIST — marking dead.")
+            if not gciSt.flights[groupName] then gciSt.flights[groupName] = {} end
+            gciSt.flights[groupName].status = "dead"
+            return
         end
-        gciSt.flights[groupName].status = "dead"
-        return
     end
 
     gciSt.flights[groupName] = {
-        status     = "airborne",
-        zone       = sqd.zone,
-        homeBase   = sqd.homeBase,
-        callsign   = sqd.callsign,
-        coalName   = coalName,
-        launchTime = timer.getTime(),
+        status       = "airborne",
+        zone         = sqd.zone,
+        homeBase     = sqd.homeBase,
+        callsign     = sqd.callsign,
+        coalName     = coalName,
+        launchTime   = timer.getTime(),
+        targetUnitID = nil,  -- updated by re-targeting logic in gciInterceptLoop
     }
 
     -- Assign task after short spawn delay
@@ -1627,8 +2112,11 @@ local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
                     expend     = "Auto",
                 }
             }
+            -- Record target so re-targeting logic knows what we're chasing
+            local fRec = gciSt.flights[cap_gName]
+            if fRec then fRec.targetUnitID = targetUnit:getID() end
         else
-            -- Orbit over zone centre
+            -- No immediate target — orbit over zone centre at patrol altitude
             local zd  = trigger.misc.getZone(cap_sqd.zone)  -- native DCS API, correct world coords
             local ox   = zd and zd.point.x or 0
             local oz   = zd and zd.point.z or 0
@@ -1637,10 +2125,12 @@ local function dispatchFlight(groupName, coalName, sqd, threats, gciSt)
                 params = {
                     pattern  = "Circle",
                     speed    = IADS_CFG.INTERCEPT_SPEED / 3.6,
-                    altitude = IADS_CFG.INTERCEPT_ALTITUDE,
+                    altitude = IADS_CFG.PATROL_ALTITUDE,
                     point    = { x = ox, y = oz },
                 }
             }
+            local fRec = gciSt.flights[cap_gName]
+            if fRec then fRec.patrolling = true end
         end
 
         ctrl:setTask({ id = "ComboTask", params = { tasks = { taskDef } } })
@@ -1747,32 +2237,125 @@ local function gciInterceptLoop()
                     gciSt.zones[sqd.zone].clearSince = nil
                 end
 
+                -- ── Re-target existing airborne flights ──────────────────────
+                -- For each airborne flight in this squadron, check whether its
+                -- current target is still alive and in-zone.  If not, pick the
+                -- closest threat and re-task.  This makes interceptors dynamic
+                -- and harder to predict — they switch targets instead of going
+                -- home the moment the original threat dies.
+                for gName, fs in pairs(gciSt.flights) do
+                    if string.sub(gName, 1, #sqd.groupPrefix) == sqd.groupPrefix
+                    and fs.status == "airborne" then
+                        local needsRetarget = false
+                        if not fs.targetUnitID then
+                            needsRetarget = true
+                        else
+                            -- Check if current target is still alive
+                            local curTarget = nil
+                            for _, t in ipairs(threats) do
+                                if t.unit:getID() == fs.targetUnitID then
+                                    curTarget = t
+                                    break
+                                end
+                            end
+                            if not curTarget then needsRetarget = true end
+                        end
+
+                        if needsRetarget and #threats > 0 then
+                            -- Pick the closest threat to this flight
+                            local fPos = getGroupPos(gName)
+                            if fPos then
+                                local bestThreat, bestDist = nil, math.huge
+                                for _, t in ipairs(threats) do
+                                    local d = dist2d(fPos, t.pos)
+                                    if d < bestDist then
+                                        bestDist   = d
+                                        bestThreat = t
+                                    end
+                                end
+                                if bestThreat and bestThreat.unit:isExist()
+                                and bestThreat.unit:isActive() and bestThreat.unit:getLife() > 1 then
+                                    local grp  = Group.getByName(gName)
+                                    local ctrl = grp and grp:getController()
+                                    if ctrl then
+                                        ctrl:setTask({
+                                            id = "ComboTask",
+                                            params = { tasks = { {
+                                                id = "EngageUnit",
+                                                params = {
+                                                    unitId     = bestThreat.unit:getID(),
+                                                    weaponType = 268402688,
+                                                    expend     = "Auto",
+                                                },
+                                            } } },
+                                        })
+                                        fs.targetUnitID = bestThreat.unit:getID()
+                                        fs.patrolling   = nil  -- back in combat, no longer patrolling
+                                        log(coalName .. " " .. gName .. " re-targeted to " .. bestThreat.unit:getName())
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
                 -- Scramble additional flights if under-strength
                 local needed = math.min(#threats, sqd.maxFlights) - airborne
                 if needed > 0 then
+                    -- Global cap: never exceed MAX_ACTIVE_INTERCEPTS total airborne across all squadrons.
+                    local totalAirborne = 0
+                    for _, fs in pairs(gciSt.flights) do
+                        if fs.status == "airborne" then totalAirborne = totalAirborne + 1 end
+                    end
+                    local headroom  = math.max(0, (IADS_CFG.MAX_ACTIVE_INTERCEPTS or 999) - totalAirborne)
                     local available = getAvailableFlights(sqd, gciSt)
-                    local toSend    = math.min(needed, #available)
+                    local toSend    = math.min(needed, #available, headroom)
                     for i = 1, toSend do
-                        dispatchFlight(available[i], coalName, sqd, threats, gciSt)
+                        local gn      = available[i]
+                        local stagger = (i - 1) * 0.75  -- 0.75 s gap between each spawn
+                        if stagger == 0 then
+                            dispatchFlight(gn, coalName, sqd, threats, gciSt)
+                        else
+                            -- Defer subsequent flights so DCS doesn't materialise
+                            -- multiple groups in the same frame, which causes a stutter.
+                            timer.scheduleFunction(function()
+                                dispatchFlight(gn, coalName, sqd, threats, gciSt)
+                                return nil
+                            end, nil, timer.getTime() + stagger)
+                        end
                     end
                 end
 
             elseif airborne > 0 then
-                -- No threats — start / advance the clear timer
-                local zSt = gciSt.zones[sqd.zone]
-                if not zSt then
-                    gciSt.zones[sqd.zone] = { clearSince = now }
-                    zSt = gciSt.zones[sqd.zone]
-                end
-                if zSt.clearSince == nil then
-                    zSt.clearSince = now
-                    log(coalName .. " zone " .. sqd.zone .. " clear – ordering RTB")
-                end
-                if (now - zSt.clearSince) >= IADS_CFG.RTB_LOITER_TIME then
-                    for gName, fs in pairs(gciSt.flights) do
-                        if string.sub(gName, 1, #sqd.groupPrefix) == sqd.groupPrefix
-                        and fs.status == "airborne" then
-                            orderFlightRTB(gName, gciSt, "Zone clear.")
+                -- No threats — switch airborne flights to CAP patrol orbit.
+                -- They stay up at 20,000 ft protecting the airspace until
+                -- bingo fuel, winchester (out of AA missiles), or shot down.
+                for gName, fs in pairs(gciSt.flights) do
+                    if string.sub(gName, 1, #sqd.groupPrefix) == sqd.groupPrefix
+                    and fs.status == "airborne" and not fs.patrolling then
+                        local grp = Group.getByName(gName)
+                        if grp then
+                            local ctrl = grp:getController()
+                            local zd   = trigger.misc.getZone(sqd.zone)
+                            if ctrl and zd and zd.point then
+                                ctrl:setTask({
+                                    id = "ComboTask",
+                                    params = { tasks = { {
+                                        id = "Orbit",
+                                        params = {
+                                            pattern  = "Circle",
+                                            speed    = IADS_CFG.INTERCEPT_SPEED / 3.6,
+                                            altitude = IADS_CFG.PATROL_ALTITUDE,
+                                            point    = { x = zd.point.x, y = zd.point.z },
+                                        },
+                                    } } },
+                                })
+                                ctrl:setOption(0, 2)  -- ROE weapons free
+                                ctrl:setOption(1, 0)  -- aggressive reaction
+                                fs.patrolling   = true
+                                fs.targetUnitID = nil
+                                log(gName .. " zone clear – CAP patrol at 20,000 ft over " .. sqd.zone)
+                            end
                         end
                     end
                 end
@@ -1806,6 +2389,26 @@ local function flightMaintenanceLoop()
                             if f < lowestFuel then lowestFuel = f end
                         end
                     end
+                    -- Check ammo: winchester = out of air-to-air missiles
+                    local hasAAMissiles = false
+                    for _, u in ipairs(grp:getUnits()) do
+                        if u:getLife() > 1 then
+                            local ammo = u:getAmmo()
+                            if ammo then
+                                for _, a in ipairs(ammo) do
+                                    if a.count and a.count > 0 and a.desc
+                                    and a.desc.category == 1        -- Weapon.Category.MISSILE
+                                    and a.desc.missileCategory == 1 -- Weapon.MissileCategory.AAM
+                                    then
+                                        hasAAMissiles = true
+                                        break
+                                    end
+                                end
+                            end
+                            if hasAAMissiles then break end
+                        end
+                    end
+
                     if not alive then
                         fs.status = "dead"
                         log(gName .. " KIA (maintenance loop)")
@@ -1813,6 +2416,9 @@ local function flightMaintenanceLoop()
                         log(string.format("%s bingo fuel (%.0f%%) – RTB", gName, lowestFuel * 100))
                         orderFlightRTB(gName, gciSt,
                             string.format("Bingo fuel (%.0f%%).", lowestFuel * 100))
+                    elseif not hasAAMissiles then
+                        log(gName .. " winchester (no AA missiles) – RTB")
+                        orderFlightRTB(gName, gciSt, "Winchester – out of AA missiles.")
                     else
                         -- Leash check: recall immediately if the flight has strayed too far
                         -- from its assigned zone, regardless of the RTB_LOITER_TIME timer.
@@ -1851,19 +2457,21 @@ end
 --    • trackedWeapons    – belt-and-suspenders TTL pass
 --    • IADS.contacts     – stale Unit references for aircraft killed mid-tick
 -- ─────────────────────────────────────────────────────────────────────────────
-local MEM_CLEANUP_INTERVAL = 600   -- seconds (10 min).  Raise to 900 on low-pop servers.
+local MEM_CLEANUP_INTERVAL = 1800  -- seconds (30 min).  Most tables are already pruned by faster loops.
 
 local function memoryCleanupLoop()
     local now = timer.getTime()
     local purgedFlights, purgedSuppress, purgedWeapons, purgedContacts = 0, 0, 0, 0
 
     -- 1. Flight record purge ─────────────────────────────────────────────────
-    -- Remove dead/standby entries accumulated from completed scramble cycles.
-    -- Keeps countAirborne() / getAvailableFlights() O(active) not O(all-time).
+    -- Remove standby entries from completed RTB cycles so the booking tables
+    -- stay lean.  DEAD entries are NEVER purged — killed flights must remain
+    -- permanently marked so getAvailableFlights() doesn't re-discover and
+    -- re-dispatch them via MIST dynAdd.
     for _, coalName in ipairs({"RED", "BLUE"}) do
         local gciSt = gciState[coalName]
         for gName, fs in pairs(gciSt.flights) do
-            if fs.status == "dead" or fs.status == "standby" then
+            if fs.status == "standby" then
                 gciSt.flights[gName] = nil
                 purgedFlights = purgedFlights + 1
             end
@@ -1990,10 +2598,13 @@ local function init()
     -- Discover RED_ZONE_ and BLUE_ZONE_ trigger zones via MIST DB
     discoverZones()
 
-    -- Initial IADS node build
+    -- Initial IADS node build + automatic sector assignment
     buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
     buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
     buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
+    buildSAMSectorCache("RED",     "RED_ZONE_")
+    buildSAMSectorCache("BLUE",    "BLUE_ZONE_")
+    buildSAMSectorCache("LEBANON", "LEBANON_ZONE_", IADS_CFG.LEBANON_ZONES)
 
     -- Schedule main loops
     timer.scheduleFunction(iadsUpdateLoop,       {}, timer.getTime() + 10)
@@ -2003,18 +2614,46 @@ local function init()
     timer.scheduleFunction(awacsOrbitLoop,        {}, timer.getTime() + 20)
     timer.scheduleFunction(memoryCleanupLoop,     {}, timer.getTime() + MEM_CLEANUP_INTERVAL)
 
-    -- Periodic IADS node-list rebuild (drops destroyed SAM/EWR groups).
-    -- Runs every NODE_REFRESH_INTERVAL seconds (default 900 = 15 min).
-    -- SAM sites are one-and-done: dead groups simply won't appear on the
-    -- next rebuild and will be silently pruned from all tracking tables.
+    -- Incremental IADS node-list refresh.
+    -- LEBANON: skipped entirely (immortal, never changes after init).
+    -- RED:     skipped (dead nodes removed instantly by DEAD event handler
+    --          + pruneDeadNodes every 12s; RED SAMs are one-and-done).
+    -- BLUE:    additive-only scan — discovers newly activated groups
+    --          (FOB late-activates, CTLD NASAMS spawns) without wiping
+    --          the existing immortal nodes.  Sector cache only rebuilt
+    --          when new nodes are actually discovered.
     local NODE_REFRESH_INTERVAL = IADS_CFG.NODE_REFRESH_INTERVAL or 900
     local function nodeRefreshLoop(_, time)
-        log("[NodeRefresh] Rebuilding IADS node lists...")
-        buildNodeList("RED",     coalition.side.RED,  "RED_SAM_",         "RED_EWR_",         "RED_SAM_LEBANON_")
-        buildNodeList("BLUE",    coalition.side.BLUE, "BLUE_SAM_",        "BLUE_EWR_")
-        buildNodeList("LEBANON", coalition.side.RED,  "RED_SAM_LEBANON_", "RED_EWR_LEBANON_")
-        log(string.format("[NodeRefresh] Done. RED: %d SAMs  BLUE: %d SAMs  LEBANON: %d SAMs",
-            #IADS.RED.samNodes, #IADS.BLUE.samNodes, #IADS.LEBANON.samNodes))
+        -- ── BLUE additive scan ──────────────────────────────────────────
+        local blueState = IADS.BLUE
+        local knownSAM  = {}
+        local knownEWR  = {}
+        for _, n in ipairs(blueState.samNodes) do knownSAM[n] = true end
+        for _, n in ipairs(blueState.ewrNodes) do knownEWR[n] = true end
+
+        local added = 0
+        for _, name in ipairs(getGroupsByPrefix(coalition.side.BLUE, "BLUE_SAM_")) do
+            if not knownSAM[name] and groupAlive(name) then
+                table.insert(blueState.samNodes, name)
+                added = added + 1
+                log("[NodeRefresh] New BLUE SAM discovered: " .. name)
+            end
+        end
+        for _, name in ipairs(getGroupsByPrefix(coalition.side.BLUE, "BLUE_EWR_")) do
+            if not knownEWR[name] and groupAlive(name) then
+                table.insert(blueState.ewrNodes, name)
+                added = added + 1
+                log("[NodeRefresh] New BLUE EWR discovered: " .. name)
+            end
+        end
+
+        -- Only rebuild BLUE sector cache when new nodes were added.
+        if added > 0 then
+            buildSAMSectorCache("BLUE", "BLUE_ZONE_")
+        end
+
+        log(string.format("[NodeRefresh] Incremental done. BLUE: +%d new nodes (%d SAMs total)  RED: %d SAMs  LEBANON: %d SAMs",
+            added, #blueState.samNodes, #IADS.RED.samNodes, #IADS.LEBANON.samNodes))
         return time + NODE_REFRESH_INTERVAL
     end
     timer.scheduleFunction(nodeRefreshLoop, {}, timer.getTime() + NODE_REFRESH_INTERVAL)
@@ -2116,6 +2755,6 @@ end, {}, timer.getTime() + 1)
 --  8. OPTIONAL TUNING – edit the IADS_CFG table at the top of this file:
 --       UPDATE_INTERVAL, ARM_SHUTDOWN_TIME, INTERCEPT_ALTITUDE,
 --       GCI_FUEL_RTB_THRESHOLD, AWACS_ORBIT_ALT_FT, AWACS_ORBIT_KTS,
---       SAM_MIN_ENGAGE_SCORE, SAM_RANGE_TABLE, SAM_LOW_JET_IMMUNITY_AGL,
+--       SAM_MIN_ENGAGE_SCORE, SAM_RANGE_TABLE,
 --       IMMORTAL_IADS_NETWORKS, SQUADRONS (add/remove squadrons for either side).
 -- =============================================================================

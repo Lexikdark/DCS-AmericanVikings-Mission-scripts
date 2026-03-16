@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedCoalitionLock v1.0 – Documentation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c26;
+    --surface2: #1e2433;
+    --border: #2a3044;
+    --accent: #e87070;
+    --accent2: #e8a44f;
+    --accent3: #63c5a0;
+    --accent4: #4fa3e8;
+    --text: #d4daf0;
+    --muted: #7a8499;
+    --code-bg: #12151f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+  }
+  nav {
+    width: 220px;
+    min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav .nav-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 20px 12px;
+  }
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav a:hover, nav a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(232,112,112,0.06);
+  }
+  nav .nav-section {
+    margin-top: 14px;
+    padding: 0 20px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #3d4560;
+  }
+  main {
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 860px;
+  }
+  h1 { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .badge-red    { background: rgba(232,112,112,0.15); color: var(--accent);  border: 1px solid rgba(232,112,112,0.3); }
+  .badge-orange { background: rgba(232,164,79,0.15);  color: var(--accent2); border: 1px solid rgba(232,164,79,0.3); }
+  .badge-green  { background: rgba(99,197,160,0.15);  color: var(--accent3); border: 1px solid rgba(99,197,160,0.3); }
+  .badge-blue   { background: rgba(79,163,232,0.15);  color: var(--accent4); border: 1px solid rgba(79,163,232,0.3); }
+  h2 {
+    font-size: 18px; font-weight: 700; color: #fff;
+    margin: 36px 0 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 20px;
+  }
+  h3 {
+    font-size: 14px; font-weight: 600; color: var(--accent2);
+    margin: 20px 0 8px; scroll-margin-top: 20px;
+  }
+  p { margin-bottom: 10px; }
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px; color: #a8d8f0;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px 20px;
+    overflow-x: auto; font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px; color: #a8d8f0; margin: 12px 0; line-height: 1.7;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .card-title { font-weight: 600; color: #fff; margin-bottom: 8px; font-size: 13px; }
+  .cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .cfg-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px;
+  }
+  .cfg-key { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .cfg-val { font-family: 'Cascadia Code', monospace; font-size: 13px; color: var(--accent2); }
+  .cfg-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th {
+    background: var(--surface2); color: var(--muted);
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.6px; padding: 8px 12px; text-align: left;
+    border: 1px solid var(--border);
+  }
+  td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 12px 0; }
+  .flow-step { display: flex; gap: 16px; position: relative; padding-bottom: 6px; }
+  .flow-step:not(:last-child)::before {
+    content: ''; position: absolute; left: 15px; top: 32px;
+    bottom: 0; width: 2px; background: var(--border);
+  }
+  .flow-num {
+    width: 32px; height: 32px; min-width: 32px;
+    background: var(--surface2); border: 2px solid var(--accent);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--accent); z-index: 1;
+  }
+  .flow-body { flex: 1; padding: 6px 0 16px; }
+  .flow-body strong { color: #fff; display: block; margin-bottom: 3px; }
+  .flow-body p { color: var(--muted); font-size: 13px; margin: 0; }
+  .info-box {
+    border-left: 3px solid var(--accent4);
+    background: rgba(79,163,232,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .warn-box {
+    border-left: 3px solid var(--accent2);
+    background: rgba(232,164,79,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .danger-box {
+    border-left: 3px solid var(--accent);
+    background: rgba(232,112,112,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  .good-box {
+    border-left: 3px solid var(--accent3);
+    background: rgba(99,197,160,0.07);
+    border-radius: 0 6px 6px 0; padding: 10px 14px;
+    margin: 12px 0; font-size: 13px; color: var(--text);
+  }
+  ul { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; color: var(--muted); }
+  li strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">RedCoalitionLock v1.0</div>
+  <a href="#overview">Overview</a>
+  <a href="#requirements">Requirements</a>
+  <a href="#config">Configuration</a>
+  <div class="nav-section">How It Works</div>
+  <a href="#logic">Enforcement Logic</a>
+  <a href="#flow">Enforcement Flow</a>
+  <a href="#unaffected">What Is Unaffected</a>
+  <div class="nav-section">Setup</div>
+  <a href="#me-setup">ME Checklist</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<main>
+
+  <h1>RedCoalitionLock</h1>
+  <div class="subtitle">
+    <span class="badge badge-red">v1.0</span>
+    <span class="badge badge-red">Multiplayer Only</span>
+    <span class="badge badge-orange">No Dependencies</span>
+    Prevents players from occupying Red coalition slots · AI and dynamic spawns unaffected
+  </div>
+
+  <!-- OVERVIEW -->
+  <h2 id="overview">Overview</h2>
+  <p>
+    A lightweight enforcement script that locks the Red coalition to AI-only. Because DCS does not
+    provide a native in-mission option to block a coalition from player use while still allowing
+    dynamic spawn / airbase capture mechanics, this script fills that gap by scanning all connected
+    players every 5 seconds and immediately ejecting anyone found on the Red side back to Spectators.
+  </p>
+  <div class="info-box">
+    <strong>Why this is needed:</strong> When Red airbases have Dynamic Spawn enabled (so Blue players
+    can capture them), DCS also makes those slots available to Red-side human players. This script
+    ensures that can never happen without disabling Dynamic Spawn or altering airbase settings.
+  </div>
+  <div class="good-box">
+    <strong>Safe by design</strong> — uses only <code>net.force_player_slot()</code> and
+    <code>net.send_chat_to()</code>. No Red AI, no groups, no triggers, no airbase settings and
+    no other scripts are touched in any way.
+  </div>
+
+  <!-- REQUIREMENTS -->
+  <h2 id="requirements">Requirements</h2>
+  <table>
+    <thead><tr><th>Dependency</th><th>Role</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Multiplayer server</td>
+        <td><code>net.*</code> functions are only available in a multiplayer environment</td>
+        <td>In single-player or ME preview the <code>net</code> library is absent. The script detects this and silently skips all enforcement — no errors are thrown.</td>
+      </tr>
+      <tr>
+        <td>DCS timer</td>
+        <td>Used to self-reschedule the enforcement loop</td>
+        <td>Always available in DCS — no fallback needed.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="warn-box">
+    <strong>No MIST required.</strong> This script has zero external dependencies and can be loaded
+    completely standalone. Load order relative to other scripts does not matter.
+  </div>
+
+  <!-- CONFIGURATION -->
+  <h2 id="config">Configuration</h2>
+  <p>Three constants at the top of the file can be adjusted:</p>
+  <div class="cfg-grid">
+    <div class="cfg-item">
+      <div class="cfg-key">RED_COALITION</div>
+      <div class="cfg-val">1</div>
+      <div class="cfg-desc">DCS internal coalition ID for Red. Do not change unless DCS changes this value.</div>
+    </div>
+    <div class="cfg-item">
+      <div class="cfg-key">CHECK_INTERVAL</div>
+      <div class="cfg-val">5 seconds</div>
+      <div class="cfg-desc">How often the enforcement scan runs. Lower values give a tighter lock; higher values reduce server overhead. 5 s is a good balance.</div>
+    </div>
+    <div class="cfg-item" style="grid-column: span 2;">
+      <div class="cfg-key">KICK_MESSAGE</div>
+      <div class="cfg-val">"[SERVER] Red coalition is reserved for AI only..."</div>
+      <div class="cfg-desc">The private chat message sent to the player when they are ejected. Edit this string to customise the message shown.</div>
+    </div>
+  </div>
+
+  <!-- ENFORCEMENT LOGIC -->
+  <h2 id="logic">Enforcement Logic</h2>
+  <p>
+    The script runs a single self-rescheduling timer function — <code>enforceRedLock()</code> — every
+    <code>CHECK_INTERVAL</code> seconds. On each tick it:
+  </p>
+  <ul>
+    <li>Calls <code>net.get_player_list()</code> to get the IDs of all currently connected players.</li>
+    <li>Skips player ID <code>1</code> — this is always the server/host process, never a human player.</li>
+    <li>For each remaining player, calls <code>net.get_player_info(pid)</code> and checks the <code>side</code> field.</li>
+    <li>If <code>side == 1</code> (Red), calls <code>net.force_player_slot(pid, 0, "")</code> to move them to Spectators.</li>
+    <li>Sends the player a private chat message explaining why they were moved.</li>
+    <li>Logs the action to <code>dcs.log</code> with the player name and slot they were removed from.</li>
+  </ul>
+  <div class="warn-box">
+    There is an inherent window of up to <strong>5 seconds</strong> during which a player could technically
+    occupy a Red slot before being ejected. This is unavoidable with a polling approach but is not
+    exploitable in any meaningful way — the slot is cleared before they can do anything significant.
+  </div>
+
+  <!-- FLOW -->
+  <h2 id="flow">Enforcement Flow</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <strong>Script loads at Mission Start</strong>
+        <p>Schedules first enforcement check 10 seconds after load, giving DCS time to fully initialise multiplayer state.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <strong>Check for net library</strong>
+        <p>If <code>net</code> is not present (single-player / ME preview), the function exits immediately and reschedules itself. No errors, no side effects.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <strong>Scan all connected players</strong>
+        <p>Iterates the player list returned by <code>net.get_player_list()</code>. Skips the server process (ID 1).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <strong>Check coalition side</strong>
+        <p>Reads <code>net.get_player_info(pid).side</code>. Blue (side 2), Spectators (side 0), and unslotted players are ignored entirely.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <strong>Eject Red player → Spectators</strong>
+        <p><code>net.force_player_slot(pid, 0, "")</code> moves the player to Spectators. A private chat message is sent. The action is written to <code>dcs.log</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <strong>Reschedule</strong>
+        <p>Returns <code>timer.getTime() + CHECK_INTERVAL</code> to self-reschedule for the next tick. Runs indefinitely for the duration of the mission.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IS UNAFFECTED -->
+  <h2 id="unaffected">What Is Unaffected</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Affected?</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Red AI units &amp; groups</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>Script never touches AI — only human player slots via <code>net.*</code>.</td></tr>
+      <tr><td>Red airbase Dynamic Spawn</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>Airbase settings are completely untouched. Blue players can still capture and spawn at Red bases.</td></tr>
+      <tr><td>Airbase capture mechanics</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>Capture triggers, coalition ownership changes, and spawn enablement all work normally.</td></tr>
+      <tr><td>Blue coalition players</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>Only <code>side == 1</code> (Red) is acted upon. Blue (side 2) and Spectators (side 0) are never touched.</td></tr>
+      <tr><td>Other mission scripts</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>No shared globals modified. No event handlers registered. No interference with MIST, IADS, convoy systems, etc.</td></tr>
+      <tr><td>Single-player &amp; ME preview</td><td><span style="color:var(--accent3)">✔ Safe</span></td><td>Absence of <code>net</code> library is detected; enforcement is silently skipped.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ME CHECKLIST -->
+  <h2 id="me-setup">Mission Editor Checklist</h2>
+  <ul>
+    <li><strong>Add a Mission Start trigger</strong> — Type: ONCE, Condition: Mission Start.</li>
+    <li><strong>Add a DO SCRIPT FILE action</strong> to that trigger pointing to <code>RedCoalitionLock.lua</code>.</li>
+    <li><strong>No load order requirement</strong> — this script has no dependencies. It can be the first or last script loaded.</li>
+    <li><strong>No ME zones, groups, or units needed</strong> — the script is entirely self-contained.</li>
+    <li><strong>Verify in dcs.log</strong> — on mission start you should see: <code>[RedLock] RedCoalitionLock loaded. Red slots locked to AI only.</code></li>
+  </ul>
+
+  <h3>Example Trigger Setup</h3>
+  <pre>Trigger name : RedCoalitionLock_Init
+Type         : ONCE
+Condition    : Mission Start
+Action       : DO SCRIPT FILE → RedCoalitionLock.lua</pre>
+
+  <!-- TROUBLESHOOTING -->
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Red players are not being ejected</td>
+        <td>Running in single-player or ME preview where <code>net</code> is unavailable</td>
+        <td>Test on a multiplayer server. The script silently does nothing in single-player by design.</td>
+      </tr>
+      <tr>
+        <td>No log entry on mission start</td>
+        <td>Script file not loaded — DO SCRIPT FILE trigger may be misconfigured or pointing to wrong path</td>
+        <td>Check the trigger action in ME. Ensure the file path is correct and the trigger fires on Mission Start.</td>
+      </tr>
+      <tr>
+        <td>Players ejected from Blue slots incorrectly</td>
+        <td>Cannot happen — only <code>side == 1</code> (Red) is acted on</td>
+        <td>If seen, verify <code>RED_COALITION = 1</code> has not been changed accidentally.</td>
+      </tr>
+      <tr>
+        <td>Player appears briefly in a Red aircraft before ejection</td>
+        <td>Expected behaviour — polling has up to a 5-second window</td>
+        <td>Reduce <code>CHECK_INTERVAL</code> to <code>2</code> for a tighter response at the cost of slightly more frequent <code>net</code> calls.</td>
+      </tr>
+      <tr>
+        <td>Script errors in dcs.log referencing <code>net</code></td>
+        <td>Unlikely — <code>net</code> presence is checked before any call is made</td>
+        <td>If it occurs, verify the DCS version supports <code>net.get_player_list()</code> (available since DCS 2.7+).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;">
+    RedCoalitionLock v1.0 · DCS World · Multiplayer · No Dependencies
+  </div>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0% -70% 0%' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

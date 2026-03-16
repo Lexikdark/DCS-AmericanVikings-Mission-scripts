@@ -93,8 +93,9 @@
   <a href="#cfg-detection">Detection</a>
   <a href="#cfg-sam-range">SAM Range Table</a>
   <a href="#cfg-sam">SAM Engagement</a>
-  <a href="#cfg-lowjet">Low-Jet Immunity</a>
   <a href="#cfg-arm">ARM Defence</a>
+  <a href="#cfg-threat">Threat Prioritisation</a>
+  <a href="#cfg-sectors">Geographic Sectors</a>
   <div class="grp">Config — Air</div>
   <a href="#cfg-intercept">Intercept</a>
   <a href="#cfg-gci">GCI / AWACS</a>
@@ -108,6 +109,10 @@
   <a href="#sys-awacs">AWACS Orbit</a>
   <a href="#sys-rtb">RTB / Fuel</a>
   <a href="#sys-node">Node Refresh</a>
+  <a href="#sys-threat">Threat Prioritisation</a>
+  <a href="#sys-sectors">Geographic Sectors</a>
+  <a href="#sys-shorad">SHORAD Independent</a>
+  <a href="#sys-realloc">Dynamic Reallocation</a>
   <div class="grp">Setup</div>
   <a href="#me-setup">ME Checklist</a>
   <a href="#weapon-lists">Weapon Lists</a>
@@ -142,7 +147,7 @@
 <div class="flow">
   <div class="flow-s">Mission start<br><small>buildNodeList()</small></div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">EWR/SAM<br>nodes indexed</div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Every 10 s<br>pruneDeadNodes() &rarr;<br>gatherContacts()</div><div class="flow-a">&#x2192;</div>
+  <div class="flow-s">Every 12 s<br>pruneDeadNodes() &rarr;<br>gatherContacts()</div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">Contacts shared<br>to SAMs in range</div><div class="flow-a">&#x2192;</div>
   <div class="flow-s">Best SAM scores<br>and engages</div>
 </div>
@@ -194,7 +199,7 @@
   <text x="820" y="131" text-anchor="middle" fill="#868d9e" font-family="Cascadia Code,Consolas,monospace" font-size="9">PREFIXES</text>
 
   <!-- ════════════════ ROW 2 : DETECTION ENGINE (y 165-240) ══════════ -->
-  <text x="460" y="164" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">DETECTION ENGINE — gatherContacts()  every 10 s</text>
+  <text x="460" y="164" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">DETECTION ENGINE — gatherContacts()  every 12 s</text>
 
   <!-- DCS Radar API box -->
   <rect x="120" y="180" width="260" height="56" rx="8" fill="#1d2233" stroke="#4a90e2" stroke-width="1"/>
@@ -218,7 +223,7 @@
   <!-- ════════════════ ROW 3 : CONTACT LIST (y 265-320) ══════════════ -->
   <rect x="200" y="268" width="400" height="52" rx="8" fill="#181c26" stroke="#4a90e2" stroke-width="1.5"/>
   <text x="400" y="291" text-anchor="middle" fill="#fff" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700">IADS[coa].contacts[]</text>
-  <text x="400" y="308" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">unit, pos, vel, isLowJet — deduplicated per tick</text>
+  <text x="400" y="308" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">unit, pos, vel, threatPriority — deduplicated per tick</text>
 
   <!-- Arrow: Detection → Contact list -->
   <line x1="250" y1="236" x2="340" y2="268" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
@@ -236,19 +241,12 @@
   <!-- Scoring box -->
   <rect x="270" y="362" width="300" height="60" rx="8" fill="#1d2233" stroke="#4a90e2" stroke-width="1.5"/>
   <text x="420" y="383" text-anchor="middle" fill="#4a90e2" font-family="Segoe UI,system-ui,sans-serif" font-size="12" font-weight="700">computeEngagementScore()</text>
-  <text x="420" y="399" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">PKill = rangeFactor × altFactor × health</text>
-  <text x="420" y="413" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Hard range gate → min score gate → best 2 SAMs win</text>
-
-  <!-- Low-jet box -->
-  <rect x="610" y="362" width="170" height="60" rx="8" fill="#181c26" stroke="#e0a020" stroke-width="1" stroke-dasharray="4 3"/>
-  <text x="695" y="385" text-anchor="middle" fill="#e0a020" font-family="Segoe UI,system-ui,sans-serif" font-size="11" font-weight="700">Low-Jet Gate</text>
-  <text x="695" y="400" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">AGL &lt; threshold?</text>
-  <text x="695" y="412" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Non-SHORAD skips jet</text>
+  <text x="420" y="399" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10">PKill = rangeFactor × altFactor × health × threatWeight</text>
+  <text x="420" y="413" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="9">Hard range gate → min score gate → best 3 SAMs win</text>
 
   <!-- Arrows into scoring -->
   <line x1="400" y1="320" x2="420" y2="362" stroke="#4a90e2" stroke-width="1.2" marker-end="url(#ah-blue)"/>
   <line x1="230" y1="392" x2="270" y2="392" stroke="#5cb85c" stroke-width="1.2" marker-end="url(#ah-grn)"/>
-  <line x1="610" y1="392" x2="570" y2="392" stroke="#e0a020" stroke-width="1" marker-end="url(#ah-yel)" stroke-dasharray="4 3"/>
 
   <!-- ════════════════ ROW 5 : ENGAGEMENT (y 455-530) ════════════════ -->
   <text x="300" y="450" text-anchor="middle" fill="#868d9e" font-family="Segoe UI,system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.15em">ENGAGEMENT</text>
@@ -377,18 +375,18 @@
 <p>Click any row to expand the detailed explanation.</p>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">UPDATE_INTERVAL</span><span class="cc-default">10 s</span><span class="cc-quick">Main IADS loop &mdash; contact gathering, SAM engagement decisions.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">UPDATE_INTERVAL</span><span class="cc-default">12 s</span><span class="cc-quick">Main IADS loop &mdash; contact gathering, SAM engagement decisions.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>Every <code>UPDATE_INTERVAL</code> seconds the script runs <code>pruneDeadNodes()</code> to remove destroyed SAMs/EWRs, then <code>gatherContacts()</code> for all three coalition sub-IADS (RED, BLUE, LEBANON), shares detections to SAM nodes, scores each SAM's engagement geometry, and fires the best shooter. This is the heartbeat of the entire IADS.</p>
-<p><strong>Performance note (Feb 2026):</strong> Changed from 5 s to 10 s. The main loop no longer calls <code>buildNodeList()</code> (which triggered 6&times; <code>coalition.getGroups(GROUND)</code> per tick). Instead, a lightweight <code>pruneDeadNodes()</code> removes dead groups from the existing lists without any API calls. Full node-list rebuilds only happen on the 15-minute <code>nodeRefreshLoop</code>. Additionally, <code>gciInterceptLoop</code> now caches <code>coalition.getGroups(AIRPLANE)</code> once per coalition per tick instead of calling it 21&times; per squadron.</p>
-<p><strong>Recommended range:</strong> 5&ndash;15 s. The default 10 s gives responsive SAM engagement while keeping API overhead low.</p>
+<p><strong>Performance note (Feb 2026):</strong> Raised from 5 s to 10 s, then again to 12 s for larger networks. The main loop no longer calls <code>buildNodeList()</code> (which triggered 6&times; <code>coalition.getGroups(GROUND)</code> per tick). Instead, a lightweight <code>pruneDeadNodes()</code> removes dead groups from the existing lists without any API calls. Full node-list rebuilds only happen on the 15-minute <code>nodeRefreshLoop</code>. Additionally, <code>gciInterceptLoop</code> now caches <code>coalition.getGroups(AIRPLANE)</code> once per coalition per tick instead of calling it 21&times; per squadron.</p>
+<p><strong>Recommended range:</strong> 5&ndash;15 s. The default 12 s gives responsive SAM engagement while keeping API overhead low on large Syria networks.</p>
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">AIR_INTERCEPT_INTERVAL</span><span class="cc-default">30 s</span><span class="cc-quick">How often intercept zones are checked for enemy aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">AIR_INTERCEPT_INTERVAL</span><span class="cc-default">25 s</span><span class="cc-quick">How often intercept zones are checked for enemy aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>Every 30 seconds the script checks whether any enemy aircraft are inside any coalition trigger zones. If so, and if the assigned squadron has available (alive, not currently airborne) flights, one flight is scrambled.</p>
-<p>30 s means up to a 30-second delay between an aircraft entering a zone and a scramble order. At 900 km/h an aircraft travels ~7.5 km in 30 s &mdash; increase the zone radius if you want tighter response, or lower to 10 s for more reactive scrambles at the cost of higher API load.</p>
+<p>Every 25 seconds the script checks whether any enemy aircraft are inside any coalition trigger zones. If so, and if the assigned squadron has available (alive, not currently airborne) flights, one flight is scrambled.</p>
+<p>25 s means up to a 25-second delay between an aircraft entering a zone and a scramble order. At 900 km/h an aircraft travels ~6.25 km in 25 s &mdash; increase the zone radius if you want tighter response, or lower to 10 s for more reactive scrambles at the cost of higher API load.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -470,10 +468,10 @@
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_FIRE_DELAY_MIN / MAX</span><span class="cc-default">0 &ndash; 3 s</span><span class="cc-quick">Random reaction delay before a SAM fires once it has a valid firing solution.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_FIRE_DELAY_MIN / MAX</span><span class="cc-default">0 &ndash; 1 s</span><span class="cc-quick">Random reaction delay before a SAM fires once it has a valid firing solution.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>Once a SAM wins the engagement scoring contest, a random delay between <code>SAM_FIRE_DELAY_MIN</code> and <code>SAM_FIRE_DELAY_MAX</code> is applied before the actual fire order. This prevents all SAMs firing simultaneously in the same DCS frame, which looks unnatural and can cause missile spawn issues.</p>
-<p>The 0&ndash;3 s window makes the IADS feel fast and dangerous &mdash; the minimum is 0 (instant response) with a small random jitter up to 3 s for natural variation. Raise the max to 15 s for a noticeably sluggish network.</p>
+<p>The 0&ndash;1 s window makes the IADS react near-instantly &mdash; the minimum is 0 (immediate response) with a minimal random jitter up to 1 s for natural variation. Raise the max to 5&ndash;10 s for a noticeably sluggish network.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -485,80 +483,30 @@
 </div></div>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_SCORE</span><span class="cc-default">0.25</span><span class="cc-quick">Minimum Pk score a SAM needs before it will fire. Prevents wasted shots.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_MIN_ENGAGE_SCORE</span><span class="cc-default">0.18</span><span class="cc-quick">Minimum Pk score a SAM needs before it will fire. Prevents wasted shots.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
 <p>After the scoring formula computes a value for every SAM&ndash;contact pair, the result is compared to this threshold. If the score is below it, the SAM <strong>holds fire</strong> regardless of whether it is the best available shooter. This prevents damaged SAMs at extreme range from wasting missiles on hopeless shots.</p>
-<p>At the current <strong>0.25</strong>, the threshold skips only genuinely hopeless geometry: very low-altitude targets at long range, severely crippled batteries at extreme distance. Any normal attack profile at normal bombing altitude clears this gate easily.</p>
+<p>At the current <strong>0.18</strong>, the threshold is aggressive &mdash; the IADS will take long-range and edge shots. Only truly unworkable geometry is skipped: severely damaged batteries at extreme range against low-altitude contacts.</p>
 <table>
   <tr><th>Value</th><th>Behaviour</th></tr>
   <tr><td><code>0.05</code></td><td>Fire at almost anything detected. Wastes missiles on hopeless shots.</td></tr>
-  <tr><td><code>0.25</code> <span class="badge g">current</span></td><td>Skip truly hopeless shots (extreme range + low alt + damaged).</td></tr>
-  <tr><td><code>0.35</code></td><td>Solid engagement solution required. Recommended if you want more disciplined fire.</td></tr>
+  <tr><td><code>0.18</code></td><td>Very aggressive &mdash; takes long-range and edge shots; only ruinous geometry is skipped.</td></tr>
+  <tr><td><code>0.25</code> <span class="badge g">current</span></td><td>Skip genuinely hopeless shots (extreme range + low alt + damaged).</td></tr>
+  <tr><td><code>0.35</code></td><td>Solid engagement solution required. Recommended for more disciplined fire.</td></tr>
   <tr><td><code>0.50</code></td><td>Disciplined &mdash; holds until near-optimal geometry. Damaged SAMs become noticeably less effective.</td></tr>
   <tr><td><code>0.60+</code></td><td>Very conservative. Only fires in ideal conditions. Players can exploit the gaps.</td></tr>
 </table>
 <p>See the <a href="#sys-pk">Pk Threshold Gate deep-dive</a> for full scoring tables with real DCS engagement scenarios.</p>
 </div></div>
 
-<h2 id="cfg-lowjet">Configuration &mdash; Low-Altitude Jet Immunity</h2>
-<p>Simulates radar ground-clutter masking: fixed-wing aircraft (jets) flying very low are invisible to long-range RED SAMs but <strong>remain visible to SHORAD</strong> groups. This gives pilots a meaningful tactical choice &mdash; fly low to dodge SA-5/SA-10 but risk running into Pantsir / Shilka / Tor SHORAD sites that are specifically designed for low-altitude targets.</p>
-
-<div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_LOW_JET_IMMUNITY_AGL</span><span class="cc-default">75 m AGL</span><span class="cc-quick">Jets below this altitude are invisible to non-SHORAD RED SAMs.</span><span class="cc-toggle">&#x25BC; details</span></div>
-<div class="cc-body">
-<p>When the IADS gathers radar contacts, each detected unit is checked:</p>
-<ol>
-  <li>Is this a <strong>RED</strong> or <strong>LEBANON</strong> IADS network? (BLUE SAMs are unaffected.)</li>
-  <li>Is the contact a <strong>fixed-wing aircraft</strong> (<code>Unit.Category.AIRPLANE</code>)? Helicopters are always visible.</li>
-  <li>Is the contact&rsquo;s <strong>AGL altitude</strong> (terrain-aware: <code>pos.y &minus; land.getHeight(x,z)</code>) below this threshold?</li>
-</ol>
-<p>If all three conditions are true, the contact is tagged <code>isLowJet = true</code>. The contact <em>stays in the contact list</em> (so SHORAD can see it) but when the engagement loop assigns SAMs, any SAM whose group name does <strong>not</strong> contain <code>"SHORAD"</code> will skip the contact.</p>
-
-<h3>Decision flow</h3>
-<div class="flow">
-  <div class="flow-s">Contact detected<br><small>gatherContacts()</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Is AIRPLANE?<br><small>obj:getDesc().category</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">AGL < 75 m?<br><small>getAGL(pos)</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">Tag isLowJet<br><small>stays in list</small></div><div class="flow-a">&#x2192;</div>
-  <div class="flow-s">SAM loop<br><small>skip if non-SHORAD</small></div>
-</div>
-
-<h3>How the script identifies jets vs helicopters</h3>
-<p>DCS provides a unit descriptor via <code>obj:getDesc()</code> which includes a <code>category</code> field:</p>
-<table>
-  <tr><th>Category</th><th>Constant</th><th>Examples</th><th>Affected?</th></tr>
-  <tr><td>Fixed-wing</td><td><code>Unit.Category.AIRPLANE</code></td><td>F-16C, F/A-18C, A-10C, MiG-29, Su-25T</td><td><span class="badge r">YES &mdash; filtered</span></td></tr>
-  <tr><td>Rotary-wing</td><td><code>Unit.Category.HELICOPTER</code></td><td>UH-1H, Ka-50, Mi-24, AH-64</td><td><span class="badge g">NO &mdash; always visible</span></td></tr>
-</table>
-
-<h3>How SHORAD is detected</h3>
-<p>The script checks if the SAM group&rsquo;s name contains the string <code>"SHORAD"</code> (case-sensitive). This relies on your existing naming convention:</p>
-<pre>RED_SAM_SHORAD_Pantsir_01   &larr; contains "SHORAD" &rarr; EXEMPT (engages low jets)
-RED_SAM_S300_Battery_01     &larr; no "SHORAD"       &rarr; SKIPS low jets
-RED_SAM_SHORAD_Tor_02       &larr; contains "SHORAD" &rarr; EXEMPT
-RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
-<div class="box box-warn"><strong>Naming matters!</strong> If a SHORAD group is named <code>RED_SAM_Pantsir_01</code> (without &ldquo;SHORAD&rdquo; in the name), it will <em>not</em> be exempt and will ignore low-flying jets. Make sure all short-range air-defence groups include <code>SHORAD</code> in their ME group name.</div>
-
-<h3>Tuning</h3>
-<table>
-  <tr><th>Value</th><th>Effect</th></tr>
-  <tr><td><code>0</code></td><td>Feature disabled &mdash; all SAMs engage at any altitude (original behaviour).</td></tr>
-  <tr><td><code>50</code></td><td>Only extreme terrain-hugging is safe &mdash; hard to maintain without crashing.</td></tr>
-  <tr><td><code>75</code> (default)</td><td>Skilled low-level flying (~250 ft) evades long-range SAMs.</td></tr>
-  <tr><td><code>100</code></td><td>A wider safety band &mdash; most low-altitude ingress routes are protected.</td></tr>
-  <tr><td><code>150</code></td><td>Very forgiving &mdash; even moderate altitude flying is safe from big SAMs.</td></tr>
-</table>
-<div class="box box-tip"><strong>To edit:</strong> Open <code>RED_BLUE_IADS_Intercept.lua</code>, find <code>SAM_LOW_JET_IMMUNITY_AGL</code> in the <code>IADS_CFG</code> block (near the top), and change the number. No other edits needed.</div>
-</div></div>
-
 <h2 id="cfg-arm">Configuration &mdash; ARM Defence</h2>
 
 <div class="cfg-card">
-<div class="cc-head" onclick="tog(this)"><span class="cc-key">ARM_SHUTDOWN_TIME</span><span class="cc-default">45 s</span><span class="cc-quick">How long a radar stays silent (EMCON) after detecting an incoming ARM.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">ARM_SHUTDOWN_TIME</span><span class="cc-default">90 s</span><span class="cc-quick">How long a radar stays silent (EMCON) after detecting an incoming ARM.</span><span class="cc-toggle">&#x25BC; details</span></div>
 <div class="cc-body">
-<p>When the weapon tracking loop detects an ARM-class weapon within a threat threshold of a radar group, it orders that radar to stop emissions and records the suppression end time. For the next 45 seconds that group is skipped in SAM engagement scoring even if a non-ARM aircraft is in view.</p>
-<p>45 seconds is realistic for a trained SAM crew's EMCON response. AGM-88 HARM flies ~100 km in about 45&ndash;60 seconds, so this value roughly matches the weapon's flight time, giving the radar a realistic window to go dark before impact.</p>
-<p>Reduce to 20 s for a less cautious crew. Increase to 90 s to make SEAD missions very punishing &mdash; the SAM will be dark for the entire follow-on strike window.</p>
+<p>When the weapon tracking loop identifies an ARM heading for a radar group, that radar stops emissions and the suppression end time is recorded. For the next 90 seconds the group is excluded from SAM engagement scoring &mdash; radars stay dark even if non-ARM contacts are in view during that window.</p>
+<p>90 seconds covers the full terminal flight time of an AGM-88 HARM launched from its maximum practical standoff range (~180 km at altitude). The SAM stays dark for the entire follow-on strike window and cannot simply be waited out by launching a quick second pass after the ARM has flown clear.</p>
+<p>Reduce to 60 s for a more forgiving EMCON window. Reduce to 28 s for a short window where tight SEAD timing is rewarded &mdash; the radar comes back online while the HARM is still in flight at long range.</p>
 </div></div>
 
 <div class="cfg-card">
@@ -567,6 +515,67 @@ RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
 <p>If the targeted SAM group contains mobile units (e.g. Pantsir, Buk, S-300 TELs) this value defines the radius of the random relocation offset applied when an ARM is detected. The group moves to a random point within this radius of its current position.</p>
 <p>800 m is enough to cause a HARM with a ~50 m CEP to miss. Increase to 1500&ndash;2000 m for a more dramatic scoot response, but note that large moves on hilly terrain may place a unit in an obstacle &mdash; DCS doesn't pathfind random moves.</p>
 <p>For static sites (e.g. fixed S-300 launchers) this value is irrelevant because the movement command is ignored by non-mobile units.</p>
+</div></div>
+
+<h2 id="cfg-threat">Configuration &mdash; Threat Prioritisation</h2>
+<p>Each contact&rsquo;s engagement score is multiplied by a threat-class weight so the IADS allocates its best SAMs to the most dangerous threats regardless of geometry. Threat class is confirmed by weapon fire, not airframe-name assumptions &mdash; so multi-role aircraft start as <strong>Fighter</strong> and upgrade only when they actually fire.</p>
+<div class="box box-info"><strong>Weapon-fire confirmation:</strong> <code>S_EVENT_SHOT</code> maintains <code>_confirmedSEAD{}</code> (fired an ARM) and <code>_confirmedStrike{}</code> (fired an AGM). Only dedicated SEAD-only airframes (EA-18G, EA-6B, EF-111, MiG-25BM) default to SEAD class without a confirmed shot. An F-16C starts as Fighter and upgrades to SEAD if/when it fires a HARM.</div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">THREAT_PRIORITY.SEAD_WEIGHT</span><span class="cc-default">3.0</span><span class="cc-quick">Score multiplier for confirmed SEAD aircraft (ARM shooters).</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>The highest priority weight. SEAD aircraft actively hunting radar sites are the most dangerous threat to the IADS network. A 3.0 multiplier ensures the best available SAM is always assigned to the SEAD contact even if a strike aircraft has better raw engagement geometry.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">THREAT_PRIORITY.STRIKE_WEIGHT</span><span class="cc-default">2.0</span><span class="cc-quick">Score multiplier for confirmed strike aircraft (AGM shooters, not already SEAD).</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>Aircraft confirmed to be in a ground-attack role. Prioritised above fighters and helicopters because they represent a direct threat to ground assets.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">THREAT_PRIORITY.FIGHTER_WEIGHT</span><span class="cc-default">1.2</span><span class="cc-quick">Default multiplier for unconfirmed-role or air-superiority aircraft.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>Applies to any aircraft not yet confirmed as SEAD or Strike, including dedicated air-superiority fighters and multi-role aircraft before they fire a ground weapon. Slightly prioritised above helicopters.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">THREAT_PRIORITY.HELO_WEIGHT</span><span class="cc-default">0.8</span><span class="cc-quick">Score multiplier for rotary-wing contacts.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>Helicopters are de-prioritised relative to fast jets. Long-range SAMs prefer fast-jet threats; SHORAD units (which specifically engage low-altitude contacts) handle helicopter suppression.</p>
+</div></div>
+
+<h2 id="cfg-sectors">Configuration &mdash; Geographic Sectors</h2>
+<p>SAM nodes are automatically assigned to geographic sectors based on physical proximity to ME trigger zones. Contacts detected outside a SAM&rsquo;s assigned sector incur a score penalty, steering the network toward local SAM&ndash;to&ndash;local threat allocation rather than long cross-map assignments.</p>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SAM_OUT_OF_SECTOR_PENALTY</span><span class="cc-default">0.25</span><span class="cc-quick">Score multiplier for SAMs engaging contacts outside their assigned sector zone.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>When <code>optimizeEngagements()</code> scores a SAM against a contact, it checks whether the contact&rsquo;s position is inside the SAM&rsquo;s assigned zone (determined at startup by <code>buildSAMSectorCache()</code>). If not, the score is multiplied by 0.25. An out-of-sector SAM needs to score 4&times; higher than the best in-sector candidate to win the assignment &mdash; preventing cross-sector allocation except when the local sector is completely saturated.</p>
+<p>Set to 1.0 to disable sector preference entirely. Set to 0.0 to hard-block out-of-sector engagements (use with care &mdash; a contact without any in-sector SAMs would be ignored).</p>
+<div class="box box-info">Sector assignment is fully automatic from the ME trigger zone layout &mdash; no manual configuration needed. Each SAM is homed to whichever <code>RED_ZONE_*</code> / <code>BLUE_ZONE_*</code> / <code>LEBANON_ZONE_*</code> centre is closest to its current position. Assignment refreshes every <code>NODE_REFRESH_INTERVAL</code>.</div>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SHORAD_HANDOFF_ENABLED</span><span class="cc-default">true</span><span class="cc-quick">Enables the independent SHORAD engagement pass in <code>optimizeEngagements()</code>.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>When <code>true</code>, a dedicated SHORAD pass runs after the primary SAM assignment loop each tick. SHORAD units engage <strong>any contact in their envelope independently</strong> &mdash; they do not wait for a long-range SAM to be assigned first. A Pantsir fires on an aircraft within its range even if no SA-10 or SA-17 is engaged at all.</p>
+<p>SHORAD units are identified by two checks (either is sufficient): the group name contains <code>SHORAD_NAME_PATTERN</code> (default <code>"SHORAD"</code>), OR the group&rsquo;s max engagement range in <code>SAM_RANGE_TABLE</code> is &le; <code>SHORAD_MAX_RANGE</code> (default 25,000 m). This protects groups like Pantsir and Tor batteries not literally named <code>*SHORAD*</code>.</p>
+<p>Set to <code>false</code> to disable independent SHORAD engagement. SHORAD units will still compete in the normal primary scoring loop but will not get a dedicated second pass.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SHORAD_NAME_PATTERN</span><span class="cc-default">&ldquo;SHORAD&rdquo;</span><span class="cc-quick">String that identifies a SAM group as SHORAD by name.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>Any SAM group whose name contains this exact substring (case-sensitive) is treated as SHORAD throughout the script: kept radar-on permanently, never suppressed by ARM events, and participates in the independent SHORAD engagement pass. The default <code>"SHORAD"</code> matches names like <code>RED_SAM_SHORAD_Pantsir_01</code>.</p>
+<p>Change to any other string to match your mission&rsquo;s naming convention.</p>
+</div></div>
+
+<div class="cfg-card">
+<div class="cc-head" onclick="tog(this)"><span class="cc-key">SHORAD_MAX_RANGE</span><span class="cc-default">25,000 m</span><span class="cc-quick">Max missile range threshold that also classifies a group as SHORAD.</span><span class="cc-toggle">&#x25BC; details</span></div>
+<div class="cc-body">
+<p>If a SAM group&rsquo;s maximum range in <code>SAM_RANGE_TABLE</code> is &le; this value, it is treated as SHORAD <strong>regardless of its name</strong>. This ensures Pantsir-S1 (max 20 km), Tor-M1 (max 12 km), and similar short-range systems not named with <code>"SHORAD"</code> receive all SHORAD protections: permanent radar-on, ARM-suppression immunity, and the independent engagement pass.</p>
+<p>Groups not in <code>SAM_RANGE_TABLE</code> at all are not matched by this check &mdash; only the name pattern applies. Set to 0 to rely purely on name-based detection.</p>
 </div></div>
 
 <h2 id="cfg-intercept">Configuration &mdash; Air Intercept</h2>
@@ -679,8 +688,8 @@ RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
 <p>After contacts are gathered, each contact is scored against every live SAM node. The engagement sequence:</p>
 <ol>
   <li>At the start of each tick, a <code>samCache</code> is built once: position, health factor, and per-type range (from <code>getSAMRange()</code> &mdash; <code>{min, max}</code> for known types, <code>nil</code> for unrecognised) for each live SAM node. This is a single flat pass &mdash; scoring never calls <code>Group.getByName()</code> or <code>getUnits()</code> again after the cache is built.</li>
-  <li>For each contact, every SAM is scored: <code>score = PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor</code>. Contacts outside a SAM&rsquo;s per-type <code>[min, max]</code> envelope immediately score 0 and are skipped. Low-flying jets bypass non-SHORAD SAMs entirely (see Low-Jet Immunity).</li>
-  <li>Up to <code>SAM_MAX_ENGAGE_PER_CONTACT</code> SAMs (default 2) can be assigned to the same contact. The primary fires immediately; secondary fires 1.5 s later to saturate point-defence.</li>
+  <li>For each contact, every SAM is scored: <code>score = PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor &times; threatWeight</code>. Contacts outside a SAM&rsquo;s per-type <code>[min, max]</code> envelope immediately score 0 and are skipped.</li>
+  <li>Up to <code>SAM_MAX_ENGAGE_PER_CONTACT</code> SAMs (default 3) can be assigned to the same contact. The primary fires immediately; each subsequent SAM fires 1.5 s after the previous to saturate point-defence.</li>
   <li>The assigned SAM receives a randomised delayed fire order after <code>SAM_FIRE_DELAY_MIN</code>&ndash;<code>SAM_FIRE_DELAY_MAX</code> seconds to simulate crew reaction time.</li>
   <li>SAMs with no assigned contact have their radar shut off (<code>setOnOff(false)</code>) to reduce SEAD exposure. Only when the assignment actually changes is a DCS controller call made &mdash; avoiding hundreds of redundant API calls per tick on large networks.</li>
 </ol>
@@ -690,7 +699,7 @@ RED_SAM_SA5_Gammon_01       &larr; no "SHORAD"       &rarr; SKIPS low jets</pre>
 <p>The <code>SAM_MIN_ENGAGE_SCORE</code> constant (default <strong>0.25</strong>) acts as a quality gate on every engagement. A SAM will only fire when its computed score exceeds this value.</p>
 
 <h3>The Scoring Formula</h3>
-<pre>Score = PKill_BASE (0.92) &times; rangeFactor &times; altFactor &times; healthFactor</pre>
+<pre>Score = PKill_BASE (0.92) &times; rangeFactor &times; altFactor &times; healthFactor &times; threatWeight</pre>
 <p>Each factor runs from 0.0 to 1.0 and they <strong>multiply</strong> together, so one bad factor drags the whole score down.</p>
 
 <h3>rangeFactor</h3>
@@ -722,27 +731,28 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <h3>healthFactor</h3>
 <p>Proportion of surviving units in the SAM group: 4/4 alive = 1.00, 3/4 = 0.75, 2/4 = 0.50.</p>
 
+
+
 <h3>Real DCS Scenarios &mdash; Healthy SA-17 Buk (min=3 km, max=50 km, optimal=31 km)</h3>
 <table>
-  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>0.25?</th><th>0.35?</th></tr>
+  <tr><th>Scenario</th><th>Altitude</th><th>Range</th><th>Score</th><th>&ge;0.25?</th><th>&ge;0.50?</th></tr>
   <tr><td>JDAM run, FL200 (6 km), 20 km out</td><td>6 km</td><td>20 km</td><td><strong>0.73</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
   <tr><td>JDAM run, FL200, 31 km (optimal)</td><td>6 km</td><td>31 km</td><td><strong>0.92</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
   <tr><td>JDAM run, FL200, 45 km</td><td>6 km</td><td>45 km</td><td><strong>0.73</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
   <tr><td>Contact beyond 50 km (outside envelope)</td><td>any</td><td>&gt;50 km</td><td><strong>0.00</strong></td><td><span class="badge r">NO (hard gate)</span></td><td><span class="badge r">NO</span></td></tr>
 </table>
-<div class="box box-info">Any target inside the SAM&rsquo;s own missile envelope at normal altitude will score well above 0.35. The threshold only blocks hopeless shots: crippled batteries at the extreme fringe, or very low-altitude contacts at max range.</div>
+<div class="box box-info">Any target inside the SAM&rsquo;s own missile envelope at normal altitude will score well above 0.25. The threshold only blocks hopeless shots: crippled batteries at the extreme fringe, or very low-altitude contacts at max range.</div>
 
 <h3>Where the Threshold Filters</h3>
 <table>
-  <tr><th>Scenario</th><th>Score (Buk)</th><th>0.25?</th><th>0.35?</th></tr>
-  <tr><td>Low ingress 300 m, 40 km (fringe of envelope)</td><td><strong>0.45</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
-  <tr><td>Damaged SAM 50%, 6 km alt, 45 km</td><td><strong>0.37</strong></td><td><span class="badge g">YES</span></td><td><span class="badge g">YES</span></td></tr>
+  <tr><th>Scenario</th><th>Score (Buk)</th><th>&ge;0.25?</th><th>&ge;0.50?</th></tr>
+  <tr><td>Low ingress 300 m, 40 km (fringe of envelope)</td><td><strong>0.45</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
+  <tr><td>Damaged SAM 50%, 6 km alt, 45 km</td><td><strong>0.37</strong></td><td><span class="badge g">YES</span></td><td><span class="badge r">NO</span></td></tr>
   <tr><td>Damaged SAM 25%, 300 m alt, 45 km</td><td><strong>0.17</strong></td><td><span class="badge r">NO</span></td><td><span class="badge r">NO</span></td></tr>
   <tr><td>Contact outside the type’s SAM_RANGE_TABLE envelope</td><td><strong>0.00</strong></td><td><span class="badge r">NO (hard gate)</span></td><td><span class="badge r">NO</span></td></tr>
 </table>
 
 <div class="box box-tip"><strong>Bottom line:</strong> The primary engagement gate is the hard per-type <code>SAM_RANGE_TABLE</code> envelope &mdash; a SAM simply cannot be assigned a contact outside its own missile range. The <code>SAM_MIN_ENGAGE_SCORE</code> threshold is a secondary quality gate that prevents crippled batteries from wasting missiles at the fringe of their envelope.</div>
-<div class="box box-info">The 75&nbsp;m AGL jet immunity (<code>SAM_LOW_JET_IMMUNITY_AGL</code>) is separate. That&rsquo;s a hard contact-list filter for non-SHORAD SAMs; the Pk threshold operates above that floor for contacts that do reach the scoring loop.</div>
 
 <h2 id="sys-arm">System Deep-Dive &mdash; ARM Defence</h2>
 <p>The 5-second weapon tracking loop iterates all in-flight weapons from the <code>trackedWeapons[]</code> list (populated by <code>S_EVENT_SHOT</code>). For each weapon:</p>
@@ -793,6 +803,46 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
   <li>Filters by prefix string matching, then checks <code>groupAlive(name)</code> (at least one unit with health &gt;1%).</li>
   <li>Logs the counts: <code>[IADS] RED IADS: 12 SAM nodes, 4 EWR nodes</code></li>
 </ol>
+
+<h2 id="sys-threat">System Deep-Dive &mdash; Threat Prioritisation</h2>
+<p>The scoring formula multiplies each SAM&ndash;contact pair&rsquo;s raw Pk by the contact&rsquo;s <code>threatPriority</code> weight before comparing across all contacts competing for the same SAM. A SEAD aircraft at medium range will outbid a fighter at perfect geometry, ensuring the network allocates its best shooters to the most dangerous threats first.</p>
+
+<h3>Threat Class Assignment (in <code>gatherContacts()</code>)</h3>
+<ol>
+  <li><strong>SEAD</strong> (weight 3.0) &mdash; unit name in <code>_confirmedSEAD{}</code> (fired an ARM this session), OR type matches <code>SEAD_TYPE_PATTERNS</code> (EA-18G, EA-6B, EF-111, MiG-25BM &mdash; dedicated SEAD-only airframes only).</li>
+  <li><strong>Strike</strong> (weight 2.0) &mdash; unit name in <code>_confirmedStrike{}</code> (fired a non-ARM AGM and not already SEAD).</li>
+  <li><strong>Helicopter</strong> (weight 0.8) &mdash; rotary-wing category.</li>
+  <li><strong>Fighter</strong> (weight 1.2) &mdash; default for all other aircraft.</li>
+</ol>
+<p>Classification is persistent and one-way. An F-16C starts as Fighter; firing an AGM-65 during a strike promotes it to Strike; firing a HARM subsequently promotes it to SEAD for the rest of the session.</p>
+
+<div class="box box-info"><strong>Why weapon-fire confirmation rather than airframe type?</strong> DCS returns <code>"F-16C"</code> for an F-16C regardless of what ordnance it is carrying. Checking the airframe name alone would classify every F-16C in a BARCAP role as a Fighter and every F-16C that loaded HARMs and then went cold as a permanent SEAD threat. Using <code>S_EVENT_SHOT</code> as ground truth means the IADS responds only to what pilots have actually done during the mission.</div>
+
+<h2 id="sys-sectors">System Deep-Dive &mdash; Geographic Sector Auto-Assignment</h2>
+<p>On startup and every node-list refresh, <code>buildSAMSectorCache(coaName, zonePrefix)</code> automatically homes each SAM node to the nearest ME trigger zone. Contacts detected outside a SAM&rsquo;s zone incur a <code>SAM_OUT_OF_SECTOR_PENALTY</code> score multiplier (default 0.25), favouring local SAM&ndash;to&ndash;local threat pairings across the map.</p>
+<p>Assignment is fully automatic &mdash; no configuration required beyond placing ME trigger zones. The function iterates <code>mist.DBs.zonesByName</code> filtered to the coalition&rsquo;s prefix (<code>RED_ZONE_*</code>, <code>BLUE_ZONE_*</code>, <code>LEBANON_ZONE_*</code>) and stores <code>IADS[coaName].samSector[samName] = nearestZoneName</code>. SAMs that move dynamically (ARM evasion relocation) are re-homed at the next <code>nodeRefreshLoop()</code> rebuild.</p>
+
+<h2 id="sys-shorad">System Deep-Dive &mdash; SHORAD Independent Engagement</h2>
+<p>SHORAD units operate as an <strong>autonomous inner layer</strong> that runs independently of the long-range SAM assignment loop. They do not wait for an outer SAM to be engaged first &mdash; if a contact enters their missile envelope, they fire.</p>
+<h3>How SHORAD units are identified</h3>
+<p>Two checks are applied &mdash; either is sufficient for classification:</p>
+<ol>
+  <li>The group name contains <code>SHORAD_NAME_PATTERN</code> (default <code>"SHORAD"</code>, case-sensitive).</li>
+  <li>The group&rsquo;s max range in <code>SAM_RANGE_TABLE</code> is &le; <code>SHORAD_MAX_RANGE</code> (default 25,000 m).</li>
+</ol>
+<p>The range-based check ensures Pantsir-S1 (max 20 km), Tor-M1 (max 12 km), and any other short-range battery is correctly classified even without <code>"SHORAD"</code> in the group name (e.g. <code>RED_SAM_THALAH</code>).</p>
+<h3>SHORAD protections</h3>
+<ol>
+  <li><strong>Permanent radar-on / weapons-free</strong> &mdash; the radar management pass never turns SHORAD off between assignments. The DCS AI keeps its sensor active continuously to react to missiles in milliseconds.</li>
+  <li><strong>ARM suppression immunity</strong> &mdash; <code>suppressSAMRadar()</code> returns immediately for any SHORAD-classified group. A HARM aimed at a nearby long-range SAM will not silence the Pantsir that should be shooting it down. This applies to both the primary target and the neighbour-suppression pass.</li>
+  <li><strong>Independent engagement pass</strong> &mdash; after the primary SAM scoring loop in <code>optimizeEngagements()</code>, a second pass iterates all SHORAD nodes and assigns them to any contact scoring above <code>SAM_MIN_ENGAGE_SCORE</code> in their envelope, regardless of whether a long-range SAM is already engaged against that contact.</li>
+</ol>
+<div class="box box-info"><code>SHORAD_HANDOFF_ENABLED</code> must be <code>true</code> (the default) to activate the independent engagement pass. Radar management protection and ARM suppression immunity apply regardless of this flag.</div>
+
+<h2 id="sys-realloc">System Deep-Dive &mdash; Dynamic SAM Reallocation</h2>
+<p>When a SAM unit is destroyed (<code>S_EVENT_DEAD</code>), the event handler immediately removes it from the coalition&rsquo;s <code>samNodes</code> list and schedules <code>optimizeEngagements()</code> for 1 second later. This closes any coverage gap the destroyed battery was filling before the next normal <code>iadsUpdateLoop()</code> tick (up to 12 s later).</p>
+<p>The reallocation is a full <code>optimizeEngagements()</code> run &mdash; all remaining live SAMs are re-scored against all current contacts and the best available assignments are issued. SAMs that retain the same assignment from the previous tick do not receive a redundant controller call (tracked via <code>state.lastEngagement</code>).</p>
+<div class="box box-tip">Players executing a DEAD strike can exploit the destroyed SAM&rsquo;s gap for up to ~13 seconds (1 s reallocation delay + up to 12 s until next IADS tick). This is intentional &mdash; it rewards timely follow-on attacks while the network recovers.</div>
 
 <h2 id="me-setup">Mission Editor Setup Checklist</h2>
 <ol>
@@ -953,12 +1003,12 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <p>Populates <code>IADS[coaName].contacts</code> with all currently detectable enemy aircraft. Uses two detection passes (see Detection Pipeline deep-dive) and deduplicates by unit name via a <code>seen{}</code> hash set. The resulting contacts array is consumed by <code>optimizeEngagements()</code> for SAM assignments and by <code>getThreatsForZone()</code> for intercept decisions.</p>
 <p>Each contact entry is a Lua table with these guaranteed fields:</p>
 <table class="param-table"><tr><th>Field</th><th>Type</th><th>Description</th></tr>
-<tr><td><code>unit</code></td><td>DCS Unit</td><td>The enemy unit object. May become invalid between ticks — check <code>:isExist()</code> before use.</td></tr>
+<tr><td><code>unit</code></td><td>DCS Unit</td><td>The enemy unit object. May become invalid between ticks &mdash; check <code>:isExist()</code> before use.</td></tr>
 <tr><td><code>pos</code></td><td>Vec3</td><td>World position at time of detection.</td></tr>
 <tr><td><code>vel</code></td><td>Vec3</td><td>Velocity vector (m/s) at time of detection.</td></tr>
-<tr><td><code>name</code></td><td>string</td><td>Unit name — used as deduplication key.</td></tr>
+<tr><td><code>name</code></td><td>string</td><td>Unit name &mdash; used as deduplication key.</td></tr>
 <tr><td><code>byRadar</code></td><td>boolean</td><td><code>true</code> if detected via DCS native radar model; <code>false</code> if via coalition group scan fallback.</td></tr>
-<tr><td><code>isLowJet</code></td><td>boolean</td><td><code>true</code> if the contact is a fixed-wing aircraft flying below <code>SAM_LOW_JET_IMMUNITY_AGL</code>. Non-SHORAD RED SAMs skip contacts with this flag set.</td></tr>
+<tr><td><code>threatPriority</code></td><td>number</td><td>Threat-class weight (3.0 SEAD / 2.0 Strike / 1.2 Fighter / 0.8 Helo). Set from weapon-fire confirmation tables. Multiplied into <code>computeEngagementScore()</code>.</td></tr>
 </table>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr><tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr><tr><td><code>enemyCoa</code></td><td>coalition.side</td><td>Opposing coalition ID to scan for.</td></tr></table>
 <p class="returns">Returns: the updated <code>IADS[coaName].contacts</code> array</p>
@@ -984,13 +1034,14 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">computeEngagementScore(samEntry, contact) → number</span><span class="rc-scope">internal</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
 <p>Calculates a probability-of-kill score for a SAM engaging a specific contact. Accepts a pre-built cache entry rather than a SAM group name &mdash; no DCS API calls are made inside this function. The score drives which SAM wins the engagement assignment in <code>optimizeEngagements()</code>.</p>
-<p><strong>Score formula when range is known:</strong> <code>PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor</code></p>
+<p><strong>Score formula when range is known:</strong> <code>PKill_BASE &times; rangeFactor &times; altFactor &times; healthFactor &times; threatWeight</code></p>
 <ul>
-<li><strong>rangeFactor</strong> — applied only when <code>samEntry.rng</code> is non-nil (SAM type is in <code>SAM_RANGE_TABLE</code>). Hard returns 0 if contact is outside <code>[min, max]</code>. Peaks at <strong>60% through the envelope</strong>, falls off toward either edge. Minimum 0.05.</li>
-<li><strong>altFactor</strong> — 1.0 for 500–12,000 m AGL. Ramps down linearly below 500 m (nap-of-earth penalty) and above 12,000 m (high-altitude penalty). Clamped to 0.1–1.0.</li>
-<li><strong>healthFactor</strong> — pre-computed ratio of alive units to total units (stored in <code>samEntry.health</code>). A half-destroyed battery scores 0.5&times;.</li>
+<li><strong>rangeFactor</strong> &mdash; applied only when <code>samEntry.rng</code> is non-nil (SAM type is in <code>SAM_RANGE_TABLE</code>). Hard returns 0 if contact is outside <code>[min, max]</code>. Peaks at <strong>60% through the envelope</strong>, falls off toward either edge. Minimum 0.05.</li>
+<li><strong>altFactor</strong> &mdash; 1.0 for 500&ndash;12,000 m AGL. Ramps down linearly below 500 m (nap-of-earth penalty) and above 12,000 m (high-altitude penalty). Clamped to 0.1&ndash;1.0.</li>
+<li><strong>healthFactor</strong> &mdash; pre-computed ratio of alive units to total units (stored in <code>samEntry.health</code>). A half-destroyed battery scores 0.5&times;.</li>
+<li><strong>threatWeight</strong> &mdash; 0.8&ndash;3.0 from <code>contact.threatPriority</code>. Ensures SEAD/Strike aircraft are assigned the best SAMs before fighters or helicopters. See <a href="#cfg-threat">Threat Prioritisation config</a>.</li>
 </ul>
-<p>When <code>samEntry.rng</code> is <code>nil</code> (SAM type not in <code>SAM_RANGE_TABLE</code>), range gates are skipped and a flat mid-weight score of <code>PKill_BASE &times; 0.5 &times; altFactor &times; health</code> is returned. The <code>EngageUnit</code> task is still issued; DCS decides whether the SAM can reach the contact.</p>
+<p>When <code>samEntry.rng</code> is <code>nil</code> (SAM type not in <code>SAM_RANGE_TABLE</code>), range gates are skipped and a flat mid-weight score of <code>PKill_BASE &times; 0.5 &times; altFactor &times; health &times; threatWeight</code> is returned. The <code>EngageUnit</code> task is still issued; DCS decides whether the SAM can reach the contact.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>samEntry</code></td><td>table <code>{pos, health, rng}</code></td><td>Pre-built cache entry from <code>samCache[]</code> in <code>optimizeEngagements()</code>. <code>pos</code> is Vec3, <code>health</code> is 0.0–1.0, <code>rng</code> is <code>{min, max}</code> from <code>getSAMRange()</code> or <code>nil</code> for unrecognised types.</td></tr>
 <tr><td><code>contact</code></td><td>contact table</td><td>Entry from <code>IADS[coaName].contacts</code>.</td></tr></table>
@@ -1015,11 +1066,11 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <p>The IADS engagement brain. Called each <code>UPDATE_INTERVAL</code> tick. Full sequence:</p>
 <ol>
 <li><strong>Build <code>samCache</code></strong> &mdash; a single flat pass over all live SAM nodes, storing <code>{pos, health, rng}</code> for each. This reduces per-tick DCS API calls from O(contacts &times; SAMs &times; <code>SAM_MAX_ENGAGE_PER_CONTACT</code>) to O(SAMs).</li>
-<li><strong>Score and assign</strong> &mdash; for each contact, calls <code>computeEngagementScore()</code> for every un-suppressed SAM using the cached data. The highest-scoring SAM above <code>SAM_MIN_ENGAGE_SCORE</code> wins the primary slot. If <code>SAM_MAX_ENGAGE_PER_CONTACT</code> &gt; 1, the second-best un-used SAM wins the secondary slot.</li>
-<li><strong>Fire orders</strong> &mdash; primary SAM fires after a randomised <code>SAM_FIRE_DELAY_MIN</code>&ndash;<code>SAM_FIRE_DELAY_MAX</code> delay. Secondary fires 1.5 s later to saturate point-defence. A new controller call is only issued if the assigned target actually changed from the previous tick (tracked via <code>state.lastEngagement</code>), preventing redundant task resets every 10 s.</li>
+<li><strong>Score and assign</strong> &mdash; for each contact, calls <code>computeEngagementScore()</code> for every un-suppressed SAM using the cached data. Scores include <code>threatWeight</code> (weapon-fire confirmed class). The highest-scoring SAM above <code>SAM_MIN_ENGAGE_SCORE</code> wins the primary slot. If <code>SAM_MAX_ENGAGE_PER_CONTACT</code> &gt; 1, the next best un-used SAM(s) win secondary and tertiary slots.</li>
+<li><strong>Fire orders</strong> &mdash; primary SAM fires after a randomised <code>SAM_FIRE_DELAY_MIN</code>&ndash;<code>SAM_FIRE_DELAY_MAX</code> delay. Secondary and tertiary SAMs fire 1.5 s apart to saturate point-defence. A new controller call is only issued if the assigned target actually changed from the previous tick (tracked via <code>state.lastEngagement</code>), preventing redundant task resets every 12 s.</li>
 <li><strong>Radar standby</strong> &mdash; SAMs with no assigned contact have their radar shut off (<code>setOnOff(false)</code>) to reduce SEAD exposure.</li>
 </ol>
-<p>Low-flying jets (<code>isLowJet = true</code>) are skipped by non-SHORAD SAMs. Lebanon sub-IADS additionally gates contacts to inside <code>LEBANON_ZONES</code>.</p>
+<p>Lebanon sub-IADS additionally gates contacts to inside <code>LEBANON_ZONES</code>.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
 <tr><td><code>coaName</code></td><td>string</td><td><code>"RED"</code> or <code>"BLUE"</code></td></tr></table>
 <p class="returns">Returns: nothing — fires timer callbacks for each engagement order</p>
@@ -1065,8 +1116,8 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <div class="rc-body">
 <p>Called every tracking tick for in-flight ARM and AGM weapons. For each SAM node within range of the weapon, sets ROE and alarm state to engage. Two distance tiers:</p>
 <ul>
-<li><strong>CLOSE (&le; 30,000 m)</strong> — radar on, ROE weapons free (option 0 → 2), alarm red (option 9 → 2). The SAM is fully in the kill chain.</li>
-<li><strong>WARN (&le; 60,000 m)</strong> — radar on, alarm red only (tracking mode). SAM holds fire but activates its sensor to acquire the threat.</li>
+<li><strong>CLOSE (&le; 50,000 m)</strong> — radar on, ROE weapons free (option 0 → 2), alarm red (option 9 → 2). The SAM is fully in the kill chain.</li>
+<li><strong>WARN (&le; 90,000 m)</strong> — radar on, alarm red only (tracking mode). SAM holds fire but activates its sensor to acquire the threat.</li>
 </ul>
 <p>When <code>skipSuppressed = true</code> (ARM tracks), SAM nodes currently under <code>suppressedUntil</code> are skipped so the targeted SAM stays dark while nearby guns and IR SAMs can still attempt an intercept. When <code>skipSuppressed = false</code> (AGM tracks), all nearby SAMs are alerted regardless of suppression state.</p>
 <table class="param-table"><tr><th>Param</th><th>Type</th><th>Notes</th></tr>
@@ -1116,9 +1167,9 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">iadsUpdateLoop() → nextTime</span><span class="rc-scope">timer — 10 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">iadsUpdateLoop() &rarr; nextTime</span><span class="rc-scope">timer &mdash; 12 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>The main IADS heartbeat. Runs every <code>UPDATE_INTERVAL</code> (10 s). Each tick performs the full detection-to-engagement pipeline for all three coalition sub-IADS (RED, BLUE, LEBANON) in sequence:</p>
+<p>The main IADS heartbeat. Runs every <code>UPDATE_INTERVAL</code> (12 s). Each tick performs the full detection-to-engagement pipeline for all three coalition sub-IADS (RED, BLUE, LEBANON) in sequence:</p>
 <ol>
 <li><code>pruneDeadNodes()</code> × 3 — lightweight incremental removal of destroyed SAM/EWR groups without full API calls.</li>
 <li><code>gatherContacts()</code> × 3 — rebuilds all three contact lists; uses DCS native radar model (primary) or coalition group scan (fallback) per-unit.</li>
@@ -1128,9 +1179,9 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 </div></div>
 
 <div class="ref-card">
-<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciInterceptLoop() → nextTime</span><span class="rc-scope">timer — 30 s</span><span class="rc-toggle">▼ details</span></div>
+<div class="rc-head" onclick="togR(this)"><span class="rc-sig">gciInterceptLoop() &rarr; nextTime</span><span class="rc-scope">timer &mdash; 25 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Runs every <code>AIR_INTERCEPT_INTERVAL</code> (30 s). For each coalition, for each configured squadron:</p>
+<p>Runs every <code>AIR_INTERCEPT_INTERVAL</code> (25 s). For each coalition, for each configured squadron:</p>
 <ol>
 <li>Calls <code>getThreatsForZone()</code> for the squadron's assigned zone using a pre-cached enemy airplane group list (cached once per coalition per tick to avoid redundant API calls).</li>
 <li><strong>Threats present:</strong> resets <code>clearSince</code>; computes <code>need = min(threats, maxFlights) − countAirborne()</code>; calls <code>dispatchFlight()</code> for each needed scramble.</li>
@@ -1155,7 +1206,7 @@ rangeFactor = 1 - abs(relD - 0.6)             -- peaks at relD=0.6 (score=1.0)</
 <div class="ref-card">
 <div class="rc-head" onclick="togR(this)"><span class="rc-sig">nodeRefreshLoop(_, time) → nextTime</span><span class="rc-scope">timer — 900 s</span><span class="rc-toggle">▼ details</span></div>
 <div class="rc-body">
-<p>Runs every <code>NODE_REFRESH_INTERVAL</code> (900 s / 15 min). Calls <code>buildNodeList()</code> for all three coalition sub-IADS (RED, BLUE, LEBANON) — the definitive cleanup pass that permanently removes any SAM or EWR group destroyed since the previous full refresh. While <code>iadsUpdateLoop()</code> calls <code>pruneDeadNodes()</code> every 10 s for lightweight incremental dead-group removal without API calls, <code>nodeRefreshLoop()</code> serves as the authoritative long-period full rebuild ensuring no stale entries persist.</p>
+<p>Runs every <code>NODE_REFRESH_INTERVAL</code> (900 s / 15 min). Calls <code>buildNodeList()</code> for all three coalition sub-IADS (RED, BLUE, LEBANON) — the definitive cleanup pass that permanently removes any SAM or EWR group destroyed since the previous full refresh. While <code>iadsUpdateLoop()</code> calls <code>pruneDeadNodes()</code> every 12 s for lightweight incremental dead-group removal without API calls, <code>nodeRefreshLoop()</code> serves as the authoritative long-period full rebuild ensuring no stale entries persist.</p>
 <p class="returns">Returns: <code>time + NODE_REFRESH_INTERVAL</code></p>
 </div></div>
 

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCS_DynamicWeatherCycle.lua – Documentation</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #20242f;
+      --border:  #2e3347;
+      --accent:  #4f8ef7;
+      --accent2: #7ec8e3;
+      --text:    #d4d8e8;
+      --muted:   #7a7f99;
+      --good:    #2a9d5c;
+      --warn:    #c97a10;
+      --danger:  #c0392b;
+      --code-bg: #12141c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; flex-wrap: wrap;
+      gap: 4px 16px; padding: 10px 24px;
+    }
+    nav .brand { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; margin-right: 12px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; padding: 3px 6px; border-radius: 4px; transition: color .15s, background .15s; }
+    nav a:hover { color: var(--text); background: var(--border); }
+
+    .page { max-width: 980px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    .hero {
+      background: linear-gradient(135deg, #1a2040 0%, #0f1117 60%);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 36px 32px; margin-bottom: 36px;
+    }
+    .hero h1 { font-size: 26px; color: #fff; }
+    .hero .sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+    .badge {
+      display: inline-block; background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 2px 9px;
+      border-radius: 20px; margin-left: 10px; vertical-align: middle; letter-spacing: .4px;
+    }
+    .badge-warn { background: var(--warn); }
+    .badge-good { background: var(--good); }
+
+    section { margin-bottom: 44px; scroll-margin-top: 70px; }
+    h2 { font-size: 19px; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 18px; }
+    h3 { font-size: 15px; color: #b8c0d8; margin: 20px 0 8px; }
+    h4 { font-size: 13.5px; color: var(--accent); margin: 14px 0 6px; }
+    p  { margin-bottom: 12px; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 5px; }
+    strong { color: #e0e4f4; }
+    em     { color: var(--accent2); font-style: normal; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; margin-bottom: 18px; }
+    .card-title { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 12px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 18px; }
+    thead th { background: var(--surface); color: var(--accent2); font-weight: 700; text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border); }
+    tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(79,142,247,.05); }
+
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 16px 18px; overflow-x: auto; font-size: 13px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      line-height: 1.55; margin-bottom: 16px; color: #c9d1e9;
+    }
+    code {
+      background: var(--code-bg); border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 4px; font-size: 12.5px;
+      font-family: 'Cascadia Code', 'Consolas', monospace; color: #a8d8f0;
+    }
+    .kw  { color: #c792ea; }  /* keyword   */
+    .str { color: #c3e88d; }  /* string    */
+    .num { color: #f78c6c; }  /* number    */
+    .cmt { color: #546e7a; font-style: italic; }  /* comment  */
+    .fn  { color: #82aaff; }  /* function  */
+    .key { color: #ffcb6b; }  /* table key */
+
+    .box-info, .box-warn, .box-good, .box-danger {
+      border-left: 4px solid; padding: 12px 16px; border-radius: 0 6px 6px 0;
+      margin-bottom: 14px; font-size: 13.5px;
+    }
+    .box-info   { border-color: var(--accent);  background: rgba(79,142,247,.08); }
+    .box-warn   { border-color: var(--warn);    background: rgba(201,122,16,.08); }
+    .box-good   { border-color: var(--good);    background: rgba(42,157,92,.08); }
+    .box-danger { border-color: var(--danger);  background: rgba(192,57,43,.08); }
+    .box-info strong, .box-warn strong, .box-good strong, .box-danger strong { display: block; margin-bottom: 4px; }
+
+    /* Timeline */
+    .timeline { list-style: none; padding: 0; margin-bottom: 18px; position: relative; }
+    .timeline::before { content: ''; position: absolute; left: 18px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline li { display: flex; gap: 16px; margin-bottom: 0; padding-bottom: 20px; position: relative; }
+    .tl-dot {
+      min-width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .tl-clear   { background: #1a3a2a; border-color: var(--good);   color: var(--good); }
+    .tl-build   { background: #2a2a1a; border-color: var(--warn);   color: var(--warn); }
+    .tl-storm   { background: #2a1a1a; border-color: var(--danger); color: var(--danger); }
+    .tl-clear2  { background: #1a2a3a; border-color: var(--accent); color: var(--accent); }
+    .tl-content { padding-top: 6px; }
+    .tl-time { font-family: 'Cascadia Code','Consolas',monospace; font-size: 13px; color: var(--accent2); font-weight: 700; }
+    .tl-name { font-size: 14px; font-weight: 700; color: #e0e4f4; margin: 2px 0 4px; }
+    .tl-desc { font-size: 13px; color: var(--muted); }
+
+    /* Flow steps */
+    .flow { counter-reset: flow; list-style: none; padding: 0; margin-bottom: 18px; }
+    .flow li { counter-increment: flow; display: flex; gap: 12px; margin-bottom: 14px; font-size: 14px; }
+    .flow li::before {
+      content: counter(flow); min-width: 28px; height: 28px;
+      background: var(--accent); color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    .cfg-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+    .cfg-table th { background: var(--surface); color: var(--accent2); font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); }
+    .cfg-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; font-family: 'Cascadia Code','Consolas',monospace; font-size: 12.5px; }
+    .cfg-table tr:last-child td { border-bottom: none; }
+    .cfg-table td:first-child { color: var(--accent); white-space: nowrap; }
+    .cfg-table td:nth-child(2) { color: #f78c6c; }
+    .cfg-table td:nth-child(3) { font-family: 'Segoe UI',system-ui,sans-serif; font-size: 13px; color: var(--text); }
+    .cfg-table tr:hover { background: rgba(79,142,247,.05); }
+
+    .me-step {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start;
+    }
+    .me-num {
+      min-width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--accent2); flex-shrink: 0;
+    }
+    .me-body { flex: 1; }
+    .me-title { font-size: 13.5px; font-weight: 700; color: #e0e4f4; margin-bottom: 4px; }
+    .me-desc  { font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">DWC Docs</span>
+  <a href="#overview">Overview</a>
+  <a href="#how-it-works">How It Works</a>
+  <a href="#installation">Installation</a>
+  <a href="#cycle">Cycle Timeline</a>
+  <a href="#config">Configuration</a>
+  <a href="#stages">Editing Stages</a>
+  <a href="#atis">ATIS &amp; Flags</a>
+  <a href="#functions">Functions</a>
+  <a href="#customise">Customisation</a>
+  <a href="#troubleshoot">Troubleshooting</a>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <h1>DCS_DynamicWeatherCycle.lua
+      <span class="badge">American Vikings</span>
+      <span class="badge badge-good">Syria</span>
+    </h1>
+    <p class="sub">
+      Complete usage and editing guide for the dynamic weather cycle script —
+      covering installation, every configurable value, how to edit the weather
+      stages, and common customisation recipes.
+    </p>
+  </div>
+
+  <!-- ─── OVERVIEW ─── -->
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      <code>DCS_DynamicWeatherCycle.lua</code> is a mission script for the American
+      Vikings Syria server that creates a <strong>realistic, repeating weather cycle</strong>
+      — progressing from clear sunny skies through a building storm, a full
+      thunderstorm, and back to clear over a 12-hour mission time loop.
+    </p>
+    <p>
+      It broadcasts live <strong>ATIS-style weather reports</strong> to pilots every
+      5 minutes, issues advance warnings before dangerous weather arrives, and reports
+      wind trends (veering, backing, rising speed) in real time.
+    </p>
+    <div class="box-info">
+      <strong>What the script does vs what DCS does</strong>
+      The DCS scripting engine cannot change cloud presets, fog, or visibility at
+      runtime &mdash; that is a hard engine limitation. The script handles everything
+      else: ATIS broadcasts, stage warnings, wind trend reporting, and the timing
+      cycle. The actual sky is evolved automatically by DCS's own dynamic atmosphere
+      engine based on the starting conditions you set in the ME Weather tab.
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ─── -->
+  <section id="how-it-works">
+    <h2>How It Works</h2>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">What the Lua Script does</div>
+        <ul>
+          <li>Runs a <strong>state machine</strong> with 6 named weather stages</li>
+          <li>Polls <code>atmosphere.getWind()</code> at 3 altitudes every 30 seconds</li>
+          <li>Reads temperature and pressure via <code>atmosphere.getTemperatureAndPressure()</code></li>
+          <li>Broadcasts ATIS reports every 5 minutes (or on demand)</li>
+          <li>Issues 30-minute advance warnings before each stage boundary</li>
+          <li>Announces when a new stage begins</li>
+          <li>Tracks wind speed trend and direction (veering / backing)</li>
+          <li>Resets the cycle automatically every 12 hours of mission time</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">What DCS does automatically</div>
+        <ul>
+          <li>Gradually <strong>drifts wind direction</strong> over hours</li>
+          <li>Fluctuates <strong>wind speed</strong> around the ME starting value</li>
+          <li>Shifts <strong>barometric pressure</strong> as a weather system moves through</li>
+          <li>Varies <strong>turbulence</strong> around the baseline</li>
+          <li>All of this happens because <code>atmosphere_type&nbsp;=&nbsp;1</code> (Dynamic) is set</li>
+          <li>No extra triggers are needed — DCS handles it on its own</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Scheduler Loop</h3>
+    <p>
+      The script uses <code>timer.scheduleFunction()</code> to create a self-rescheduling
+      30-second tick loop. Every tick it:
+    </p>
+    <ol>
+      <li>Determines the current weather stage from elapsed mission time</li>
+      <li>Checks whether a 30-minute stage warning needs to fire</li>
+      <li>Checks whether a stage boundary has been crossed (and announces it)</li>
+      <li>Checks whether 5 minutes have passed since the last ATIS broadcast</li>
+      <li>Checks whether the manual ATIS User Flag has been set</li>
+    </ol>
+  </section>
+
+  <!-- ─── INSTALLATION ─── -->
+  <section id="installation">
+    <h2>Installation</h2>
+
+    <div class="me-step">
+      <div class="me-num">1</div>
+      <div class="me-body">
+        <div class="me-title">Create one trigger in the Mission Editor</div>
+        <div class="me-desc">
+          In the ME Triggers editor, add a trigger:<br>
+          <strong>Type:</strong> ONCE<br>
+          <strong>Condition:</strong> MISSION START<br>
+          <strong>Action:</strong> DO SCRIPT FILE &rarr; browse to <code>DCS_DynamicWeatherCycle.lua</code><br><br>
+          This fires the script the instant the mission loads. That is the <em>only</em>
+          trigger you need &mdash; no additional triggers are required.
+        </div>
+      </div>
+    </div>
+
+    <div class="me-step">
+      <div class="me-num">2</div>
+      <div class="me-body">
+        <div class="me-title">Set up the Weather tab in the Mission Editor</div>
+        <div class="me-desc">
+          Open the Mission Editor &rarr; <strong>Weather</strong> tab and configure:<br><br>
+          &bull; <strong>Atmosphere Type = Dynamic</strong> &mdash; this tells DCS to
+          naturally evolve wind, pressure, and turbulence over time<br>
+          &bull; <strong>Starting cloud preset</strong> &mdash; pick whatever sky you want
+          at mission start (e.g. <code>Preset2</code> for sunny)<br>
+          &bull; <strong>Wind, temperature, pressure</strong> &mdash; set your baseline;
+          DCS will drift from these values as the mission runs<br><br>
+          DCS handles all the atmospheric evolution from here. No extra triggers needed.
+        </div>
+      </div>
+    </div>
+
+    <div class="me-step">
+      <div class="me-num">3</div>
+      <div class="me-body">
+        <div class="me-title">(Optional) Set AIRFIELD_REF to your primary base</div>
+        <div class="me-desc">
+          Open the script and update <code>AIRFIELD_REF</code> in the <code>CFG</code>
+          block with the DCS world coordinates of your main operating airfield on Syria.
+          This is the point used for ATIS sampling. See the <a href="#config">Configuration</a>
+          section for Syria airfield coordinate values.
+        </div>
+      </div>
+    </div>
+
+    <div class="box-good">
+      <strong>That is all</strong>
+      Launch the mission. A startup message appears within 30 seconds and a full
+      ATIS within 60 seconds. The script runs the entire cycle automatically from here.
+    </div>
+  </section>
+
+  <!-- ─── CYCLE TIMELINE ─── -->
+  <section id="cycle">
+    <h2>Cycle Timeline</h2>
+    <p>
+      The script's broadcast text follows this 12-hour cycle, then resets automatically.
+      The <strong>actual sky</strong> is driven by DCS's dynamic atmosphere, which will
+      naturally trend through similar conditions based on your ME starting settings &mdash;
+      wind building, pressure dropping during a storm, then recovering as it clears.
+    </p>
+
+    <ul class="timeline">
+      <li>
+        <div class="tl-dot tl-clear">VFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+00:00 → T+02:00</div>
+          <div class="tl-name">☀ CLEAR</div>
+          <div class="tl-desc">
+            Sunny CAVOK. Few cumulus at 6 500 ft. Light and variable winds 3–6 kts.
+            Visibility 50+ km. No hazards.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="tl-dot tl-build">MVFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+02:00 → T+04:30</div>
+          <div class="tl-name">🌥 BUILDING</div>
+          <div class="tl-desc">
+            Clouds building. Scattered to broken, base lowering to 2 600 ft. SSW wind
+            increasing to 10–18 kts, veering. Visibility 15–25 km with haze developing.
+            Hazards: cloud base lowering, wind shift imminent.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="tl-dot tl-storm">LIFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+04:30 → T+07:00</div>
+          <div class="tl-name">⛈ THUNDERSTORM</div>
+          <div class="tl-desc">
+            Full storm. Cumulonimbus overcast, base 2 000 ft. Westerly gusty 25–40 kts.
+            Visibility &lt;1 km in precipitation. Severe turbulence, windshear, icing, lightning.
+
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="tl-dot tl-clear2">IFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+07:00 → T+09:30</div>
+          <div class="tl-name">🌦 CLEARING</div>
+          <div class="tl-desc">
+            Storm passing. Broken stratocumulus, base rising to 3 900 ft. NW wind 15–22 kts
+            with occasional gusts. Visibility 8–20 km, patchy fog lifting.
+            Hazards: residual turbulence, wet runway.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="tl-dot tl-build">MVFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+09:30 → T+12:00</div>
+          <div class="tl-name">☁ OVERCAST</div>
+          <div class="tl-desc">
+            Broken cumulus, base 5 900 ft. Northerly 8–14 kts, steady. Visibility
+            20&ndash;40 km. No significant hazards.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="tl-dot tl-clear">VFR</div>
+        <div class="tl-content">
+          <div class="tl-time">T+12:00 → cycle repeats</div>
+          <div class="tl-name">☀ CLEAR (cycle reset)</div>
+          <div class="tl-desc">
+            Back to CAVOK. Few cumulus 7 200 ft. NNE light wind 4–8 kts.
+            Script resets its internal clock and warning flags automatically.
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ─── CONFIGURATION ─── -->
+  <section id="config">
+    <h2>Configuration — the CFG Block</h2>
+    <p>
+      All user-facing settings are collected in the <code>CFG</code> table near the
+      top of the script. You only need to edit this section for most customisations.
+    </p>
+
+<pre><span class="kw">local</span> CFG = {
+    <span class="key">AIRFIELD_REF</span>        = { x = <span class="num">-35000</span>, y = <span class="num">0</span>, z = <span class="num">75000</span> },
+    <span class="key">ATIS_INTERVAL</span>       = <span class="num">300</span>,
+    <span class="key">WARN_LEAD_TIME</span>      = <span class="num">1800</span>,
+    <span class="key">ATIS_FLAG</span>           = <span class="num">10</span>,
+    <span class="key">WIND_HISTORY_SIZE</span>   = <span class="num">6</span>,
+    <span class="key">BROADCAST_COALITION</span> = <span class="num">2</span>,
+    <span class="key">MSG_DURATION_SHORT</span>  = <span class="num">12</span>,
+    <span class="key">MSG_DURATION_LONG</span>   = <span class="num">25</span>,
+}</pre>
+
+    <table class="cfg-table">
+      <thead>
+        <tr><th>Key</th><th>Default</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AIRFIELD_REF</td>
+          <td>x=-35000, y=0, z=75000</td>
+          <td>DCS world coordinates of your primary airfield. This is where
+          <code>atmosphere.getWind()</code> and <code>atmosphere.getTemperatureAndPressure()</code>
+          are sampled. Get the coordinates from the F10 map (right-click → Coordinates,
+          or use the Mission Editor unit placement and read X/Y from the status bar).
+          <strong>y should always be 0</strong> (ground altitude — DCS adds terrain height internally).</td>
+        </tr>
+        <tr>
+          <td>ATIS_INTERVAL</td>
+          <td>300</td>
+          <td>Seconds between automatic ATIS broadcasts. 300 = every 5 minutes.
+          Increase to 600 for a 10-minute interval on busy servers.</td>
+        </tr>
+        <tr>
+          <td>WARN_LEAD_TIME</td>
+          <td>1800</td>
+          <td>Seconds before a stage transition that an advance warning is issued.
+          1800 = 30 minutes. Set to 600 for a 10-minute warning instead.</td>
+        </tr>
+        <tr>
+          <td>ATIS_FLAG</td>
+          <td>10</td>
+          <td>DCS User Flag number. When a trigger sets this flag to any value &gt;0,
+          an immediate ATIS broadcast fires. Useful for JTAC/GCI triggers or
+          F10 radio menu "Request ATIS" options.</td>
+        </tr>
+        <tr>
+          <td>WIND_HISTORY_SIZE</td>
+          <td>6</td>
+          <td>Number of wind samples kept for trend analysis. Each sample is
+          taken every 5 minutes (ATIS_INTERVAL). 6 samples = ~30 minutes of
+          wind history. Increase for smoother trend reporting.</td>
+        </tr>
+        <tr>
+          <td>BROADCAST_COALITION</td>
+          <td>2</td>
+          <td>Who receives weather messages. <strong>0</strong> = everyone,
+          <strong>1</strong> = Red coalition only, <strong>2</strong> = Blue coalition only.</td>
+        </tr>
+        <tr>
+          <td>MSG_DURATION_SHORT</td>
+          <td>12</td>
+          <td>Seconds a short notification stays on screen.</td>
+        </tr>
+        <tr>
+          <td>MSG_DURATION_LONG</td>
+          <td>25</td>
+          <td>Seconds a full ATIS or warning message stays on screen.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Finding Syria airfield coordinates</h3>
+    <p>
+      In the Mission Editor, place a temporary ground unit on your airfield, then read
+      its position from the <em>Object Properties</em> panel (X / Y values in metres).
+      These map directly to DCS world <code>x</code> and <code>z</code>.
+      Common Syria airfields:
+    </p>
+    <table>
+      <thead><tr><th>Airfield</th><th>Approx x</th><th>Approx z</th></tr></thead>
+      <tbody>
+        <tr><td>Incirlik AFB</td><td>-35 000</td><td>75 000</td></tr>
+        <tr><td>Muwaffaq-Salti (King Hussein)</td><td>-215 000</td><td>-30 000</td></tr>
+        <tr><td>Hatay Airport</td><td>-60 000</td><td>35 000</td></tr>
+        <tr><td>Kuweires</td><td>-190 000</td><td>105 000</td></tr>
+        <tr><td>Al-Qusayr</td><td>-240 000</td><td>35 000</td></tr>
+      </tbody>
+    </table>
+    <div class="box-info">
+      <strong>Tip</strong> — Use the ME's F10 view, press <kbd>Y</kbd> to toggle coordinate display,
+      then hover the cursor over your airfield threshold to read exact values.
+    </div>
+  </section>
+
+  <!-- ─── EDITING STAGES ─── -->
+  <section id="stages">
+    <h2>Editing Weather Stages</h2>
+    <p>
+      The <code>WEATHER_STAGES</code> table controls everything the Lua script announces
+      (text content, hazards, flight category). Each stage is a Lua table with these
+      fields:
+    </p>
+
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>startMin</code></td>
+          <td>number</td>
+          <td>Mission time in <strong>minutes</strong> when this stage's broadcast text
+          becomes active. Only the script reads this &mdash; no ME trigger needed.</td>
+        </tr>
+        <tr>
+          <td><code>name</code></td>
+          <td>string</td>
+          <td>Shown in ATIS headers and transition announcements.
+          Special logic checks for <code>"THUNDERSTORM"</code>,
+          <code>"CLEARING"</code>, <code>"OVERCAST"</code>, and <code>"CLEAR"</code>
+          to pick the right warning tone.</td>
+        </tr>
+        <tr>
+          <td><code>category</code></td>
+          <td>string</td>
+          <td>Flight rules category shown in brackets: <code>VFR</code>,
+          <code>MVFR</code>, <code>IFR</code>, or <code>LIFR</code>.</td>
+        </tr>
+        <tr>
+          <td><code>windDesc</code></td>
+          <td>string</td>
+          <td>Plain-English wind forecast shown in the ATIS WINDS line.
+          Describes the expected wind character during this stage.</td>
+        </tr>
+        <tr>
+          <td><code>cloudDesc</code></td>
+          <td>string</td>
+          <td>Sky condition description shown in the ATIS SKY line.
+          Should match what the ME cloud preset actually looks like.</td>
+        </tr>
+        <tr>
+          <td><code>visDesc</code></td>
+          <td>string</td>
+          <td>Visibility description shown in the ATIS VIS line.</td>
+        </tr>
+        <tr>
+          <td><code>hazards</code></td>
+          <td>table of strings</td>
+          <td>List of pilot NOTAMs shown at the bottom of each ATIS and
+          transition message. Use an empty table <code>{}</code> for no hazards.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Example — adding a stage</h3>
+    <p>
+      To insert a new <em>Dust Haze</em> stage between CLEAR and BUILDING, add a
+      new block and shift subsequent <code>startMin</code> values. No ME trigger needed &mdash;
+      just edit the script.
+    </p>
+<pre><span class="cmt">-- Insert this block after the first CLEAR stage</span>
+{
+    <span class="key">startMin</span>  = <span class="num">90</span>,   <span class="cmt">-- 1h30m into mission</span>
+    <span class="key">name</span>      = <span class="str">"DUST HAZE"</span>,
+    <span class="key">category</span>  = <span class="str">"MVFR"</span>,
+    <span class="key">windDesc</span>  = <span class="str">"Easterly shamal wind 12-18 kts, gusting"</span>,
+    <span class="key">cloudDesc</span> = <span class="str">"Sky obscured by dust, base indeterminate"</span>,
+    <span class="key">visDesc</span>   = <span class="str">"4-8 km in blowing dust"</span>,
+    <span class="key">hazards</span>   = {
+        <span class="str">"Reduced visibility — all aircraft file IFR"</span>,
+        <span class="str">"Dust ingestion risk — avoid low-level hover"</span>,
+    },
+
+},</pre>
+
+    <h3>Changing cycle speed</h3>
+    <div class="box-good">
+      <strong>Only edit the script &mdash; no ME trigger updates needed</strong>
+      To change how fast the cycle runs, just edit the <code>startMin</code> values
+      in <code>WEATHER_STAGES</code>. That is the only change required.
+    </div>
+
+    <h3>Quick cycle speed reference</h3>
+    <table>
+      <thead><tr><th>Total cycle</th><th>Stage durations (equal split)</th><th>Storm at</th></tr></thead>
+      <tbody>
+        <tr><td>4 hours</td><td>~40 min each</td><td>T+1h20m — T+2h</td></tr>
+        <tr><td>6 hours</td><td>~60 min each</td><td>T+2h00m — T+3h</td></tr>
+        <tr><td>12 hours (default)</td><td>2h – 2h30m each</td><td>T+4h30m — T+7h</td></tr>
+        <tr><td>24 hours</td><td>~4h each</td><td>T+9h00m — T+14h</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── ATIS & FLAGS ─── -->
+  <section id="atis">
+    <h2>ATIS Broadcasts &amp; User Flags</h2>
+
+    <h3>Automatic ATIS</h3>
+    <p>
+      A full weather report is broadcast automatically every <strong>5 minutes</strong>
+      (configurable via <code>ATIS_INTERVAL</code>). The first broadcast fires
+      30 seconds after mission start. The report format is:
+    </p>
+<pre>══ AMERICAN VIKINGS WEATHER – 04:32 ══
+STATUS: BUILDING  [MVFR]
+
+SURFACE  195° / 14 kts
+2 000 m  200° / 18 kts
+8 000 m  215° / 24 kts
+TREND: speed RISING +4 kts | veering 9°
+
+QNH: 1009 hPa  (29.80 inHg / 757 mmHg)
+TEMP: +22°C
+
+SKY: Scattered to broken, base lowering 2600 ft
+VIS: 15-25 km, haze developing
+WINDS: South-Southwesterly, increasing 10-18 kts, veering
+
+NOTAM:
+  ⚠ Cloud base lowering
+  ⚠ Wind shift imminent</pre>
+
+    <h3>On-Demand ATIS via User Flag</h3>
+    <p>
+      Any ME trigger can request an immediate ATIS broadcast by setting
+      <strong>User Flag 10</strong> (or whichever number is set in <code>CFG.ATIS_FLAG</code>)
+      to a value greater than 0. The script resets the flag to 0 after broadcasting,
+      so it can be triggered again.
+    </p>
+    <p>Typical use cases:</p>
+    <ul>
+      <li>Add an <strong>F10 radio menu option</strong> "Request ATIS" → SET USER FLAG 10 = 1</li>
+      <li>Trigger an ATIS at a specific mission moment (e.g. on game start, or after a phase change)</li>
+      <li>A JTAC or GCI unit can trigger it with a proximity / communication trigger</li>
+    </ul>
+<pre><span class="cmt">-- ME trigger action equivalent:</span>
+<span class="cmt">-- Condition: any (e.g. FLAG IS TRUE, or RADIO MENU)</span>
+<span class="cmt">-- Action: SET USER FLAG → Flag: 10, Value: 1</span></pre>
+
+    <h3>Transition Warnings</h3>
+    <p>
+      30 minutes before each stage boundary the script broadcasts a single advance
+      warning. It fires only once per stage (a guard flag prevents repeats).
+      The warning tone differs by stage:
+    </p>
+    <ul>
+      <li><strong>→ THUNDERSTORM:</strong> Full red weather warning with evacuation advisory</li>
+      <li><strong>→ CLEARING / OVERCAST / CLEAR:</strong> Informational "conditions improving" update</li>
+      <li><strong>All other transitions:</strong> Generic trend notice</li>
+    </ul>
+  </section>
+
+  <!-- ─── FUNCTIONS ─── -->
+  <section id="functions">
+    <h2>Function Reference</h2>
+    <p>These are the internal functions in the script, in case you want to extend or debug it.</p>
+
+    <div class="card">
+      <div class="card-title">broadcastATIS ( missionTimeSec )</div>
+      <p>
+        Samples <code>atmosphere.getWind()</code> at surface, 2 000 m, and 8 000 m.
+        Samples temperature and pressure. Builds and broadcasts the full ATIS text block.
+        Records the surface wind sample for trend calculation. Updates <code>State.lastAtisTime</code>.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">weatherTick ( _, time )</div>
+      <p>
+        The main loop function. Called by <code>timer.scheduleFunction()</code> and
+        returns <code>time + 30</code> to reschedule itself 30 seconds later. Calls
+        <code>getCurrentStage()</code>, <code>checkTransitionWarnings()</code>,
+        <code>checkStageTransition()</code>, and either <code>broadcastATIS()</code>
+        or <code>checkManualATISFlag()</code>.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">getCurrentStage ( missionTimeSec )</div>
+      <p>
+        Iterates <code>WEATHER_STAGES</code> in reverse to find the last stage whose
+        <code>startMin</code> has been passed. Sets <code>State.currentStageIndex</code>
+        and returns the stage table. Safe to call repeatedly — has no side effects
+        other than updating the index.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">checkTransitionWarnings ( missionTimeSec )</div>
+      <p>
+        For each stage, checks whether we are within <code>WARN_LEAD_TIME</code> seconds
+        of its <code>startMin</code>. If so, fires a warning once (guarded by
+        <code>State.warningsFired[i]</code>). On cycle reset, <code>warningsFired</code>
+        is cleared so warnings fire again in the next cycle.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">checkStageTransition ( missionTimeSec )</div>
+      <p>
+        Compares <code>State.currentStageIndex</code> to <code>prevStageIndex</code>.
+        On a mismatch, broadcasts a stage-change announcement and updates
+        <code>prevStageIndex</code>. Also detects end-of-cycle (last stage → first stage)
+        and resets <code>State.cycleStartTime</code>.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">windTrend ()</div>
+      <p>
+        Compares the oldest and newest entries in <code>State.windHistory</code>
+        (a ring buffer of up to <code>WIND_HISTORY_SIZE</code> samples). Reports
+        whether speed is rising, falling, or steady (threshold: 0.5 m/s), and
+        whether direction is veering (clockwise), backing (anti-clockwise), or steady
+        (threshold: 5°). Returns a formatted string e.g.
+        <code>"speed RISING +4 kts | veering 9°"</code>.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">windVecToMet ( vec )</div>
+      <p>
+        Converts a DCS <code>Vec3</code> wind vector from <code>atmosphere.getWind()</code>
+        into meteorological speed (m/s) and FROM-direction (degrees).
+        Uses <code>atan2(-x, -z)</code> to get the direction the wind comes from,
+        matching the METAR convention.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── CUSTOMISATION ─── -->
+  <section id="customise">
+    <h2>Customisation Recipes</h2>
+
+    <h3>Change cycle speed to 4 hours total</h3>
+    <p>Only edit the <code>startMin</code> values in the script &mdash; nothing else needed:</p>
+<pre>startMin = <span class="num">0</span>,    <span class="cmt">-- CLEAR       (00:00–01:20)</span>
+startMin = <span class="num">80</span>,   <span class="cmt">-- BUILDING    (01:20–02:00)</span>
+startMin = <span class="num">120</span>,  <span class="cmt">-- THUNDERSTORM (02:00–02:40)</span>
+startMin = <span class="num">160</span>,  <span class="cmt">-- CLEARING    (02:40–03:20)</span>
+startMin = <span class="num">200</span>,  <span class="cmt">-- OVERCAST    (03:20–04:00)</span>
+startMin = <span class="num">240</span>,  <span class="cmt">-- CLEAR reset  (04:00 → loop)</span></pre>
+
+    <h3>Broadcast to all coalitions (red + blue + neutral)</h3>
+<pre>BROADCAST_COALITION = <span class="num">0</span>,  <span class="cmt">-- 0 = all players</span></pre>
+
+    <h3>Increase warning lead time to 45 minutes</h3>
+<pre>WARN_LEAD_TIME = <span class="num">2700</span>,  <span class="cmt">-- 45 × 60 seconds</span></pre>
+
+    <h3>Add a radio menu "Request ATIS" option</h3>
+    <p>In the ME, add a trigger:</p>
+    <ul>
+      <li><strong>Condition:</strong> FLAG IS TRUE — any flag you assign to the radio menu item</li>
+      <li><strong>Action 1:</strong> SET USER FLAG → Flag 10, Value 1</li>
+      <li><strong>Action 2:</strong> SET FLAG OFF → clear your radio menu flag</li>
+    </ul>
+
+    <h3>Remove the thunderstorm entirely</h3>
+    <p>
+      Delete the <code>THUNDERSTORM</code> stage block from <code>WEATHER_STAGES</code>
+      and adjust the remaining <code>startMin</code> values so they are still consecutive.
+      No ME trigger changes needed.
+    </p>
+
+    <h3>Add a second ATIS reference point (e.g. carrier / FARP)</h3>
+    <p>
+      Duplicate the <code>broadcastATIS</code> call with a different point table,
+      or add a second call to <code>atmosphere.getWind()</code> inside the function
+      using a different <code>Vec3</code> position, and append its data to the message.
+    </p>
+
+    <h3>Skip ATIS broadcasts — use warnings only</h3>
+<pre>ATIS_INTERVAL = <span class="num">999999</span>,  <span class="cmt">-- effectively disabled</span></pre>
+  </section>
+
+  <!-- ─── TROUBLESHOOTING ─── -->
+  <section id="troubleshoot">
+    <h2>Troubleshooting</h2>
+
+    <table>
+      <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>No weather messages appear at all</td>
+          <td>Script did not load</td>
+          <td>Check your MISSION START trigger has type <em>DO SCRIPT FILE</em>
+          (not DO SCRIPT) and the file path is correct. Check DCS logs
+          (<code>Logs\dcs.log</code>) for <code>[DWC]</code> entries.</td>
+        </tr>
+        <tr>
+          <td>Messages appear for Red coalition only</td>
+          <td><code>BROADCAST_COALITION</code> set to 1</td>
+          <td>Set <code>BROADCAST_COALITION = 2</code> for Blue, or <code>0</code> for all.</td>
+        </tr>
+        <tr>
+          <td>Wind direction in ATIS reads 0° constantly</td>
+          <td><code>AIRFIELD_REF</code> coordinates are wrong or outside the map</td>
+          <td>Re-check your airfield world coordinates from the ME. Ensure
+          <code>y = 0</code> (not altitude).</td>
+        </tr>
+        <tr>
+          <td>Warning fires multiple times for same stage</td>
+          <td>Unlikely — only possible if script was reloaded mid-mission</td>
+          <td>The <code>State.warningsFired</code> guard prevents duplicates within
+          one cycle. If the script is re-triggered by a second MISSION START event,
+          clear the guard by setting <code>State.warningsFired = {}</code>.</td>
+        </tr>
+        <tr>
+          <td>QNH reads standard 1013 hPa every time</td>
+          <td>DCS is using static atmosphere</td>
+          <td>Confirm the Weather tab has <em>Atmosphere Type = Dynamic</em> selected.</td>
+        </tr>
+        <tr>
+          <td>ATIS flag doesn't trigger broadcast</td>
+          <td>Wrong flag number in CFG or ME trigger</td>
+          <td>Both <code>CFG.ATIS_FLAG</code> and the ME SET USER FLAG action must
+          use the same flag number (default: 10).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Reading the DCS log</h3>
+    <p>
+      The script writes status entries to the DCS log prefixed with <code>[DWC]</code>.
+      Open <code>%USERPROFILE%\Saved Games\DCS\Logs\dcs.log</code> in a text editor
+      and search for <code>[DWC]</code>. You'll see entries for initialisation,
+      each ATIS broadcast, each stage transition, and each warning fired.
+    </p>
+<pre><span class="cmt">-- Example log entries:</span>
+INFO    [DWC] DCS_DynamicWeatherCycle initialised at mission time 0
+INFO    [DWC] ATIS broadcast at T+00:00
+INFO    [DWC] Warning fired for stage 2 (BUILDING)
+INFO    [DWC] Stage transition → BUILDING
+INFO    [DWC] Warning fired for stage 3 (THUNDERSTORM)</pre>
+  </section>
+
+  <div style="height:40px;"></div>
+  <p style="font-size:12px; color: var(--muted); text-align:center;">
+    DCS_DynamicWeatherCycle.lua Reference &mdash; American Vikings Syria &middot; Last revised Mar 2026
+  </p>
+
+</div>
+</body>
+</html>

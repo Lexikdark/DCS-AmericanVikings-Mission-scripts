@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCS World Weather System – Documentation</title>
+  <style>
+    /* ── Core palette ── */
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #20242f;
+      --border:  #2e3347;
+      --accent:  #4f8ef7;
+      --accent2: #7ec8e3;
+      --text:    #d4d8e8;
+      --muted:   #7a7f99;
+      --good:    #2a9d5c;
+      --warn:    #c97a10;
+      --danger:  #c0392b;
+      --code-bg: #12141c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── Sticky nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      padding: 10px 24px;
+    }
+    nav .brand {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      margin-right: 12px;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: color .15s, background .15s;
+    }
+    nav a:hover { color: var(--text); background: var(--border); }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    /* ── Hero header ── */
+    .hero {
+      background: linear-gradient(135deg, #1a2040 0%, #0f1117 60%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 36px 32px;
+      margin-bottom: 36px;
+    }
+    .hero h1 { font-size: 28px; color: #fff; }
+    .hero .sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      margin-left: 10px;
+      vertical-align: middle;
+      letter-spacing: .4px;
+    }
+
+    /* ── Section ── */
+    section { margin-bottom: 42px; scroll-margin-top: 70px; }
+    h2 {
+      font-size: 19px;
+      color: var(--accent2);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+    }
+    h3 { font-size: 15px; color: #b8c0d8; margin: 18px 0 8px; }
+    p  { margin-bottom: 12px; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 5px; }
+    strong { color: #e0e4f4; }
+    em     { color: var(--accent2); font-style: normal; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 22px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      margin-bottom: 18px;
+    }
+    thead th {
+      background: var(--surface);
+      color: var(--accent2);
+      font-weight: 700;
+      text-align: left;
+      padding: 9px 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    tbody td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(79,142,247,.05); }
+
+    /* ── Code ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      line-height: 1.55;
+      margin-bottom: 16px;
+      color: #c9d1e9;
+    }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      color: #a8d8f0;
+    }
+
+    /* ── Alert boxes ── */
+    .box-info, .box-warn, .box-good, .box-danger {
+      border-left: 4px solid;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 14px;
+      font-size: 13.5px;
+    }
+    .box-info   { border-color: var(--accent);  background: rgba(79,142,247,.08); }
+    .box-warn   { border-color: var(--warn);    background: rgba(201,122,16,.08); }
+    .box-good   { border-color: var(--good);    background: rgba(42,157,92,.08);  }
+    .box-danger { border-color: var(--danger);  background: rgba(192,57,43,.08);  }
+    .box-info strong, .box-warn strong, .box-good strong, .box-danger strong {
+      display: block; margin-bottom: 4px;
+    }
+
+    /* ── Preset grid ── */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .preset-item {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+    }
+    .preset-item .pname {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .preset-item .pdesc { color: var(--muted); }
+
+    /* ── Wind diagram ── */
+    .wind-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .wind-layer {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .wind-alt {
+      min-width: 90px;
+      font-family: 'Cascadia Code','Consolas', monospace;
+      color: var(--accent2);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .wind-desc { font-size: 13px; color: var(--text); }
+
+    /* ── Flow list ── */
+    .flow { counter-reset: flow; list-style: none; padding: 0; margin-bottom: 18px; }
+    .flow li {
+      counter-increment: flow;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .flow li::before {
+      content: counter(flow);
+      min-width: 26px;
+      height: 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── Comparison ── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .compare-card h4 { color: var(--accent2); font-size: 14px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NAV
+═══════════════════════════════════════════════════════════════ -->
+<nav>
+  <span class="brand">DCS Weather Docs</span>
+  <a href="#overview">Overview</a>
+  <a href="#modes">Static vs Dynamic</a>
+  <a href="#wind">Wind Layers</a>
+  <a href="#clouds">Cloud Presets</a>
+  <a href="#fog">Fog &amp; Visibility</a>
+  <a href="#precip">Precipitation</a>
+  <a href="#pressure">Pressure &amp; Temp</a>
+  <a href="#turbulence">Turbulence</a>
+  <a href="#dynamic-detail">How Dynamic Works</a>
+  <a href="#lua-table">Lua Table</a>
+  <a href="#scripting">Scripting API</a>
+  <a href="#tips">Practical Tips</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE BODY
+═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- hero -->
+  <div class="hero">
+    <h1>DCS World Weather System
+      <span class="badge">DCS 2.7+ Vulkan</span>
+    </h1>
+    <p class="sub">
+      Complete reference for the Mission Editor weather tab, dynamic weather behaviour,
+      Lua mission table structure, cloud presets, and the scripting API — written for
+      mission designers and script authors.
+    </p>
+  </div>
+
+  <!-- ─── OVERVIEW ─── -->
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      DCS World simulates real-world atmospheric conditions including wind at multiple
+      altitudes, temperature, barometric pressure, cloud cover, fog, precipitation, and
+      turbulence. These conditions affect every aspect of flight — from altimeter
+      calibration and fuel burn to weapons delivery accuracy and AI behaviour.
+    </p>
+    <p>
+      Weather is configured per-mission in the <strong>Mission Editor (ME)</strong>
+      under the <em>Weather</em> tab. It can be set to remain <strong>static</strong>
+      for the entire mission, or set to <strong>dynamic</strong> where conditions
+      gradually evolve over time.
+    </p>
+    <p>
+      Since DCS 2.7 (Vulkan renderer), clouds are rendered volumetrically and
+      selected using named <strong>cloud presets</strong> rather than manual
+      density/thickness sliders. This change significantly improved visual fidelity
+      and made cloud definitions more consistent.
+    </p>
+    <div class="box-info">
+      <strong>Key concepts</strong>
+      All altitude values in DCS weather are in <strong>metres above sea level (MSL)</strong>
+      unless otherwise noted. Wind speed is in metres per second (m/s). Wind direction
+      follows the meteorological convention — it describes the direction the wind
+      <em>comes from</em>, not the direction it blows toward.
+    </div>
+  </section>
+
+  <!-- ─── MODES ─── -->
+  <section id="modes">
+    <h2>Static vs Dynamic Weather</h2>
+    <div class="compare">
+      <div class="compare-card">
+        <h4>Static Weather</h4>
+        <p>All weather parameters are fixed from mission start to finish. Wind speed, direction, pressure, temperature, and cloud cover remain exactly as configured in the Mission Editor.</p>
+        <p>Use static weather when you need a controlled, predictable environment — training missions, competitions, or scenarios where weather should not interfere.</p>
+        <p><strong>Lua value:</strong> <code>atmosphere_type = 0</code></p>
+      </div>
+      <div class="compare-card">
+        <h4>Dynamic Weather</h4>
+        <p>Weather parameters gradually shift throughout the mission, simulating natural atmospheric drift. Wind direction rotates, wind speed fluctuates, and barometric pressure rises or falls.</p>
+        <p>The initial settings you configure in the ME act as the <strong>starting point</strong>. Over the mission, conditions evolve in a realistic, continuous transition.</p>
+        <p><strong>Lua value:</strong> <code>atmosphere_type = 1</code></p>
+      </div>
+    </div>
+    <div class="box-warn">
+      <strong>Dynamic weather and cloud presets</strong>
+      In dynamic mode, volumetric clouds themselves do not visibly morph or change
+      preset during flight. The primary dynamic elements are wind vector, pressure,
+      and turbulence. Cloud and fog visibility may also shift subtly over time.
+    </div>
+  </section>
+
+  <!-- ─── WIND ─── -->
+  <section id="wind">
+    <h2>Wind Layers</h2>
+    <p>
+      DCS models wind at <strong>three altitude layers</strong>. Within each layer you
+      set an independent wind speed and direction. Between layers, DCS interpolates
+      smoothly, so wind conditions transition gradually with altitude.
+    </p>
+    <div class="wind-layers">
+      <div class="wind-layer">
+        <span class="wind-alt">Ground (0 m)</span>
+        <span class="wind-desc">
+          Surface wind directly affects takeoff and landing performance, crosswind
+          components, and ground unit dust effects. Maximum ~50 m/s.
+        </span>
+      </div>
+      <div class="wind-layer">
+        <span class="wind-alt">2 000 m</span>
+        <span class="wind-desc">
+          Mid-level wind layer. Represents conditions typical for tactical flight
+          altitudes and rotary wing operations. Interpolated between Ground and 8 000 m.
+        </span>
+      </div>
+      <div class="wind-layer">
+        <span class="wind-alt">8 000 m</span>
+        <span class="wind-desc">
+          Upper layer representing high-altitude jet-stream level winds. Affects
+          high-altitude navigation, long-range weapons drift (JDAM, cruise missiles),
+          and high-speed aircraft cruise flight.
+        </span>
+      </div>
+    </div>
+
+    <h3>Wind Parameters</h3>
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Range</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>speed</code></td><td>0 – 50 m/s</td><td>Wind velocity. 0 = calm. Beaufort reference: 10 m/s ≈ Force 5 (fresh breeze); 20 m/s ≈ Force 8 (gale).</td></tr>
+        <tr><td><code>dir</code></td><td>0 – 360°</td><td>Direction wind <em>comes from</em>. 0/360 = North, 90 = East, 180 = South, 270 = West. Same convention as METAR wind field.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="box-info">
+      <strong>Wind direction convention</strong>
+      A wind of <code>dir = 270</code> and <code>speed = 10</code> means a westerly
+      wind — it <em>blows from</em> the west. Aircraft heading into this wind fly
+      eastward into a headwind. This matches real-world aviation METAR reporting.
+    </div>
+
+    <h3>Crosswind Calculations</h3>
+    <p>To create a crosswind scenario for a specific runway, set the wind direction roughly 90° from the runway heading. For example, with RWY 09 (090° heading), set <code>dir = 000</code> or <code>dir = 180</code> for a full crosswind.</p>
+    <p>Crosswind component = Wind Speed × sin(angle between wind and runway heading). Headwind component = Wind Speed × cos(angle).</p>
+  </section>
+
+  <!-- ─── CLOUDS ─── -->
+  <section id="clouds">
+    <h2>Cloud Presets (DCS 2.7+ Vulkan)</h2>
+    <p>
+      Since DCS 2.7, clouds are rendered using a <strong>volumetric ray-marching system</strong>
+      on the Vulkan graphics backend. Instead of manually setting cloud density and
+      thickness (legacy system), you select a named <strong>preset</strong> that
+      defines the cloud type, layer count, and visual style.
+    </p>
+    <p>
+      Each preset represents a real-world cloud scenario. The preset name is stored
+      in the mission's Lua table as <code>clouds.preset</code>. You also independently
+      set the <strong>cloud base altitude</strong> in metres.
+    </p>
+
+    <div class="card">
+      <div class="card-title">Cloud Base Altitude</div>
+      <p>
+        The <code>clouds.base</code> value (in metres) sets the <strong>floor</strong>
+        of the cloud layer. Valid range is approximately <strong>300 m – 5 000 m</strong>
+        though the ME constrains this. The preset determines the shape and thickness
+        above that base.
+      </p>
+      <p>
+        Example: <code>base = 1500</code> places cloud bottoms at 1 500 m MSL.
+        Pilots flying below this altitude will be VMC; above it they enter IMC
+        inside the cloud layer.
+      </p>
+    </div>
+
+    <h3>Standard Clear / Fair Weather Presets</h3>
+    <div class="preset-grid">
+      <div class="preset-item">
+        <div class="pname">None (Clear)</div>
+        <div class="pdesc">No clouds. Full CAVOK conditions.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset1</div>
+        <div class="pdesc">Few cumulus. Blue sky with scattered low clouds.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset2</div>
+        <div class="pdesc">Scattered cumulus. Standard fair-weather cloud cover.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset3</div>
+        <div class="pdesc">Broken cumulus. Moderate coverage, good visibility.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset4</div>
+        <div class="pdesc">Cumulus mediocris. Puffy, well-defined clouds.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset5</div>
+        <div class="pdesc">Scattered stratocumulus. Layered cloud deck.</div>
+      </div>
+    </div>
+
+    <h3>Overcast / IFR Presets</h3>
+    <div class="preset-grid">
+      <div class="preset-item">
+        <div class="pname">Preset6</div>
+        <div class="pdesc">Overcast stratus. Low grey ceiling.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset7</div>
+        <div class="pdesc">Overcast nimbostratus. Dark, heavy overcast.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset8</div>
+        <div class="pdesc">Altostratus. Mid-level flat grey deck.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset9</div>
+        <div class="pdesc">Thick overcast. IFR ceiling, diffuse light.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset10</div>
+        <div class="pdesc">Dense overcast. Low ceiling, poor visibility above base.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">Preset11</div>
+        <div class="pdesc">Broken high cloud. Dramatic scattered coverage.</div>
+      </div>
+    </div>
+
+    <h3>Extended Presets (Preset12 – Preset27)</h3>
+    <p>
+      Presets 12 through 27 cover a wide range of additional cloud configurations —
+      including various cumulus, cirrus, altocumulus, and mixed-layer combinations.
+      They provide visual diversity between the fair-weather and overcast extremes.
+      Explore them in the Mission Editor to find the exact look you need for each
+      scenario.
+    </p>
+
+    <h3>Rainy / Thunderstorm Presets</h3>
+    <div class="preset-grid">
+      <div class="preset-item">
+        <div class="pname">RainyPreset1</div>
+        <div class="pdesc">Rain clouds. Nimbostratus with precipitation enabled automatically.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">RainyPreset2</div>
+        <div class="pdesc">Moderate rain. Darker base, heavier precipitation effects.</div>
+      </div>
+      <div class="preset-item">
+        <div class="pname">RainyPreset3</div>
+        <div class="pdesc">Heavy thunderstorm. Cumulonimbus, lightning, heavy rain.</div>
+      </div>
+    </div>
+
+    <div class="box-warn">
+      <strong>Preset availability varies by DCS version</strong>
+      Eagle Dynamics has added and renamed presets across updates. Always verify
+      available preset names in the Mission Editor. Missions using presets not present
+      in the target DCS version will default to clear sky on that client.
+    </div>
+
+    <h3>Legacy Cloud System (Pre-DCS 2.7)</h3>
+    <p>
+      Before DCS 2.7 (OpenGL renderer), clouds were configured manually:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Range</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>density</code></td><td>0 – 10</td><td>Cloud coverage (0 = clear, 10 = full overcast)</td></tr>
+        <tr><td><code>thickness</code></td><td>200 – 2 000 m</td><td>Vertical depth of cloud layer</td></tr>
+        <tr><td><code>base</code></td><td>300 – 5 000 m</td><td>Cloud base altitude MSL</td></tr>
+        <tr><td><code>iprecptns</code></td><td>0 / 1 / 2</td><td>0 = none, 1 = rain, 2 = thunderstorm</td></tr>
+      </tbody>
+    </table>
+    <p>These fields still exist in the mission Lua table for backwards compatibility but have no visual effect in Vulkan/2.7+ when a preset is defined.</p>
+  </section>
+
+  <!-- ─── FOG ─── -->
+  <section id="fog">
+    <h2>Fog &amp; Visibility</h2>
+
+    <h3>Horizontal Visibility</h3>
+    <p>
+      The <code>visibility.distance</code> parameter sets overall <strong>horizontal
+      visibility</strong> in metres — how far objects, terrain, and other aircraft can
+      be seen. It simulates haze, dust, smog, or general atmospheric clarity.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Value (m)</th><th>Condition</th><th>Pilot Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>80 000 +</td><td>Exceptional CAVOK</td><td>Full visual range, no haze</td></tr>
+        <tr><td>20 000 – 79 999</td><td>Good VFR</td><td>Normal VFR ops, landmarks visible at range</td></tr>
+        <tr><td>8 000 – 19 999</td><td>Reduced visibility</td><td>Hazy; longer-range visual ID harder</td></tr>
+        <tr><td>3 000 – 7 999</td><td>Marginal VFR / IFR</td><td>Instrument approaches required</td></tr>
+        <tr><td>&lt; 3 000</td><td>Very poor</td><td>Near-ground operations only, very limited targeting</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Fog Layer</h3>
+    <p>
+      Fog is a separate, distinct low-altitude moisture effect layered over the terrain,
+      controlled independently from general visibility.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>enable_fog</code></td><td>Boolean. <code>true</code> activates the fog layer.</td></tr>
+        <tr><td><code>fog.thickness</code></td><td>Vertical depth of the fog layer in metres. E.g. <code>100</code> = shallow ground fog; <code>500</code> = thick fogbank.</td></tr>
+        <tr><td><code>fog.visibility</code></td><td>Horizontal visibility <em>inside</em> the fog layer, in metres. Lower = denser fog (e.g. <code>200</code> = very dense; <code>2000</code> = thin).</td></tr>
+      </tbody>
+    </table>
+
+    <div class="box-info">
+      <strong>Fog vs Visibility — key difference</strong>
+      <code>visibility.distance</code> sets general atmospheric haze across all
+      altitudes. The <code>fog</code> block is a separate ground-hugging layer that
+      only affects altitudes below <code>fog.thickness</code>. Both can be active
+      simultaneously — fog creates near-zero visibility at low altitude while general
+      haze limits longer-range viewing above the fog deck.
+    </div>
+  </section>
+
+  <!-- ─── PRECIPITATION ─── -->
+  <section id="precip">
+    <h2>Precipitation</h2>
+    <p>
+      Precipitation is controlled via <code>clouds.iprecptns</code> in the legacy
+      system, or implied by selecting a <code>Rainy</code> cloud preset in Vulkan.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Value</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>0</code> — None</td><td>No precipitation.</td></tr>
+        <tr><td><code>1</code> — Rain</td><td>Rain particle effects, wet runway visual, slightly reduced visibility. Minimal flight model change for most fixed-wing aircraft.</td></tr>
+        <tr><td><code>2</code> — Thunderstorm</td><td>Heavy rain, lightning flashes, increased turbulence effects. Most realistic severe weather scenario.</td></tr>
+      </tbody>
+    </table>
+    <div class="box-warn">
+      <strong>Precipitation and cloud presets</strong>
+      When using the Vulkan cloud system, select a <code>RainyPreset</code> to enable
+      precipitation visuals automatically. Setting <code>iprecptns = 1</code> without
+      a matching rainy cloud preset may produce inconsistent visual results.
+    </div>
+  </section>
+
+  <!-- ─── PRESSURE & TEMP ─── -->
+  <section id="pressure">
+    <h2>Barometric Pressure &amp; Temperature</h2>
+
+    <h3>QNH (Sea Level Pressure)</h3>
+    <p>
+      The <code>qnh</code> field sets the barometric pressure at sea level in
+      <strong>millimetres of mercury (mmHg)</strong>. This directly affects:
+    </p>
+    <ul>
+      <li>Aircraft <strong>altimeter calibration</strong> — pilots must set QNH in the altimeter subscale for accurate altitude readings</li>
+      <li><strong>Air density</strong> — higher pressure = denser air = more thrust and lift</li>
+      <li><strong>True vs indicated airspeed</strong> relationships</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>mmHg</th><th>hPa (approx)</th><th>Condition</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>760</td><td>1 013</td><td>Standard atmosphere (ISA) — most common default</td></tr>
+        <tr><td>720 – 749</td><td>960 – 999</td><td>Low pressure, stormy weather system</td></tr>
+        <tr><td>750 – 769</td><td>1 000 – 1 025</td><td>Normal range, slight gradient</td></tr>
+        <tr><td>770 – 790</td><td>1 027 – 1 053</td><td>High pressure, stable clear weather</td></tr>
+      </tbody>
+    </table>
+    <div class="box-info">
+      <strong>Unit conversion</strong>
+      1 mmHg ≈ 1.333 hPa. To convert: hPa = mmHg × 1.333.
+      Standard ISA = 760 mmHg = 1 013.25 hPa.
+    </div>
+
+    <h3>Temperature</h3>
+    <p>
+      Temperature is set in <code>season.temperature</code> in <strong>degrees Celsius</strong>.
+      It affects:
+    </p>
+    <ul>
+      <li><strong>Density altitude</strong> — higher temperatures reduce air density, increasing takeoff roll and degrading engine thrust</li>
+      <li><strong>Speed of sound</strong> — affects Mach calculations and indicated vs true airspeed</li>
+      <li><strong>Terrain appearance</strong> — snow/grass coverage on some maps changes with temperature setting</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>Range (°C)</th><th>Scenario</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>−30 to −10</td><td>Arctic / winter operations. High-altitude winter. Significant icing risk on unprotected surfaces.</td></tr>
+        <tr><td>−10 to 5</td><td>Cold climate, winter missions. Snow likely on terrain.</td></tr>
+        <tr><td>6 to 20</td><td>Temperate, spring/autumn. Near ISA standard.</td></tr>
+        <tr><td>21 to 35</td><td>Warm/summer. Middle East standard. Density altitude effect starts to matter.</td></tr>
+        <tr><td>35+</td><td>Desert hot. Significant density altitude degradation for heavily-loaded aircraft.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── TURBULENCE ─── -->
+  <section id="turbulence">
+    <h2>Turbulence</h2>
+    <p>
+      Turbulence adds random perturbations to the aircraft's flight path, simulating
+      atmospheric bumps. Configured via <code>groundTurbulence</code> (and legacy
+      <code>turbulence_power</code>).
+    </p>
+    <table>
+      <thead>
+        <tr><th>Value</th><th>Intensity</th><th>Effect on Aircraft</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>None</td><td>Perfectly smooth air.</td></tr>
+        <tr><td>1 – 10</td><td>Light</td><td>Slight bumps. Minimal impact on weapons delivery or hover.</td></tr>
+        <tr><td>11 – 25</td><td>Moderate</td><td>Noticeable buffeting. Increased workload; affects helicopter stability.</td></tr>
+        <tr><td>26 – 45</td><td>Severe</td><td>Significant jolts. CCIP/CCRP accuracy degrades. Hover very difficult.</td></tr>
+        <tr><td>46 – 60</td><td>Extreme</td><td>Violent buffeting. Weapons highly inaccurate. Use only for extreme scenarios.</td></tr>
+      </tbody>
+    </table>
+    <div class="box-warn">
+      <strong>Turbulence and weapons delivery</strong>
+      High turbulence values noticeably reduce CCIP dumb-bomb accuracy and laser-spot
+      stability from rotary-wing platforms. Keep turbulence below 15 for competitive
+      multiplayer unless intentionally simulating severe conditions.
+    </div>
+  </section>
+
+  <!-- ─── HOW DYNAMIC WORKS ─── -->
+  <section id="dynamic-detail">
+    <h2>How Dynamic Weather Works</h2>
+    <p>
+      When <code>atmosphere_type = 1</code>, DCS runs an internal atmospheric
+      simulation that gradually shifts weather parameters over mission time. This
+      section explains what actually changes, at what rate, and what you can control.
+    </p>
+
+    <h3>What Changes Over Time</h3>
+    <ul class="flow">
+      <li>
+        <div>
+          <strong>Wind Direction</strong> — Gradually rotates over hours of mission time, simulating
+          a pressure system passing through. The rotation is smooth and continuous, typically
+          shifting tens of degrees over a full mission cycle.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Wind Speed</strong> — Increases and decreases in slow oscillations around the
+          initial configured value. Large sudden gusts do not occur; changes are gradual.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Barometric Pressure (QNH)</strong> — Drifts up or down from the starting value,
+          simulating a weather front moving through. Pressure changes affect altimeter
+          accuracy over long missions without re-setting the subscale.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Turbulence</strong> — Fluctuates around the baseline value. The atmosphere
+          becomes bumpier and smoother in irregular cycles.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Visibility / Fog density</strong> — May drift slightly, though this is less
+          pronounced than wind and pressure changes.
+        </div>
+      </li>
+    </ul>
+
+    <h3>What Does NOT Change Dynamically</h3>
+    <ul>
+      <li>Volumetric <strong>cloud preset</strong> — The cloud type does not switch visually mid-mission</li>
+      <li><strong>Temperature</strong> — Fixed at the ME-configured value for the entire mission</li>
+      <li><strong>Season</strong> — Fixed per mission</li>
+    </ul>
+
+    <h3>Rate of Change</h3>
+    <p>
+      DCS does not provide a user-facing "rate of change" slider in the Mission Editor.
+      The internal simulation rate means winds typically shift by several degrees of
+      direction and 1–3 m/s speed over 30–60 minutes of mission time.
+    </p>
+    <p>
+      The <strong>initial configured values act as the weather's starting point</strong>.
+      To control what kind of weather a dynamic mission begins in, configure the ME
+      settings exactly as you would for static weather.
+    </p>
+    <div class="box-good">
+      <strong>Design tip — long persistent server missions</strong>
+      On servers running continuous missions (8–24 hours), dynamic weather creates
+      genuinely varied conditions across different sessions. Pilots flying at different
+      times experience different wind components and pressure, making navigation and
+      fuel planning more complex and rewarding.
+    </div>
+
+    <h3>Mission Time vs Real Time</h3>
+    <p>
+      Weather change is driven by <strong>mission time</strong>, not wall-clock time.
+      Using DCS time acceleration (<kbd>Z</kbd> key) also accelerates weather changes.
+      A mission running at 4× speed progresses weather 4× faster than real time.
+    </p>
+  </section>
+
+  <!-- ─── LUA TABLE ─── -->
+  <section id="lua-table">
+    <h2>Mission Lua Table Structure</h2>
+    <p>
+      The weather configuration is stored inside <code>mission.lua</code> (found within
+      the <code>.miz</code> archive, which is a renamed ZIP file). Below is a fully
+      annotated example showing every weather-related field.
+    </p>
+
+    <div class="box-info">
+      <strong>Editing mission.lua directly</strong>
+      Rename <code>.miz</code> to <code>.zip</code>, extract, edit
+      <code>mission.lua</code> in a text editor, re-zip, then rename back. Keep a
+      backup. For most changes the Mission Editor is safer and faster.
+    </div>
+
+<pre>
+-- ──────────────────────────────────────────────────────────────────
+--  WEATHER BLOCK inside mission.lua
+-- ──────────────────────────────────────────────────────────────────
+["weather"] = {
+
+    -- Atmosphere mode:  0 = Static   |   1 = Dynamic
+    ["atmosphere_type"] = 1,
+
+    -- ── Wind at three altitude layers ──────────────────────────────
+    ["wind"] = {
+
+        -- Upper layer  (8 000 m MSL)
+        ["at8000"] = {
+            ["speed"] = 8,       -- m/s
+            ["dir"]   = 220,     -- degrees wind comes FROM
+        },
+
+        -- Mid layer  (2 000 m MSL)
+        ["at2000"] = {
+            ["speed"] = 5,
+            ["dir"]   = 200,
+        },
+
+        -- Ground layer (surface)
+        ["atGround"] = {
+            ["speed"] = 3,
+            ["dir"]   = 180,
+        },
+    },
+
+    -- ── Season / temperature ────────────────────────────────────────
+    ["season"] = {
+        ["temperature"] = 22,    -- degrees Celsius
+    },
+
+    -- ── Barometric pressure ─────────────────────────────────────────
+    ["qnh"] = 760,               -- mmHg  (760 = ISA standard = 1013 hPa)
+
+    -- ── Cloud configuration (DCS 2.7+ Vulkan system) ───────────────
+    ["clouds"] = {
+
+        -- Volumetric preset name (string)
+        ["preset"]    = "Preset4",
+
+        -- Cloud base altitude in metres
+        ["base"]      = 1800,
+
+        -- ── Legacy fields (pre-2.7, kept for backwards compat.) ───
+        ["density"]   = 5,       -- 0 (clear) to 10 (overcast)
+        ["thickness"] = 400,     -- cloud layer thickness in metres
+        ["iprecptns"] = 0,       -- 0=none  1=rain  2=thunderstorm
+    },
+
+    -- ── Fog ─────────────────────────────────────────────────────────
+    ["enable_fog"] = false,
+    ["fog"] = {
+        ["thickness"]  = 0,      -- vertical depth of fog (m)
+        ["visibility"] = 6000,   -- horiz. visibility inside fog (m)
+    },
+
+    -- ── General horizontal visibility ───────────────────────────────
+    ["visibility"] = {
+        ["distance"] = 80000,    -- metres  (80 km = excellent)
+    },
+
+    -- ── Turbulence ──────────────────────────────────────────────────
+    ["groundTurbulence"] = 5,    -- 0 (calm) to 60 (extreme)
+
+    -- ── Legacy turbulence parameters ────────────────────────────────
+    ["turbulence_power"]     = 0,
+    ["turbulence_threshold"] = 10,
+
+},
+</pre>
+
+    <h3>Field Quick Reference</h3>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>atmosphere_type</code></td><td>integer</td><td>0 = static, 1 = dynamic</td></tr>
+        <tr><td><code>wind.at8000.speed</code></td><td>number</td><td>m/s at 8 000 m</td></tr>
+        <tr><td><code>wind.at8000.dir</code></td><td>number</td><td>degrees (FROM direction)</td></tr>
+        <tr><td><code>wind.at2000.speed</code></td><td>number</td><td>m/s at 2 000 m</td></tr>
+        <tr><td><code>wind.at2000.dir</code></td><td>number</td><td>degrees (FROM direction)</td></tr>
+        <tr><td><code>wind.atGround.speed</code></td><td>number</td><td>m/s at surface</td></tr>
+        <tr><td><code>wind.atGround.dir</code></td><td>number</td><td>degrees (FROM direction)</td></tr>
+        <tr><td><code>season.temperature</code></td><td>number</td><td>°C</td></tr>
+        <tr><td><code>qnh</code></td><td>number</td><td>mmHg (760 = ISA)</td></tr>
+        <tr><td><code>clouds.preset</code></td><td>string</td><td>Vulkan cloud preset name</td></tr>
+        <tr><td><code>clouds.base</code></td><td>number</td><td>Cloud base altitude (m)</td></tr>
+        <tr><td><code>clouds.density</code></td><td>integer</td><td>Legacy: 0–10</td></tr>
+        <tr><td><code>clouds.thickness</code></td><td>number</td><td>Legacy: metres</td></tr>
+        <tr><td><code>clouds.iprecptns</code></td><td>integer</td><td>0/1/2 — none/rain/storm</td></tr>
+        <tr><td><code>enable_fog</code></td><td>boolean</td><td>Activates fog layer</td></tr>
+        <tr><td><code>fog.thickness</code></td><td>number</td><td>Fog vertical depth (m)</td></tr>
+        <tr><td><code>fog.visibility</code></td><td>number</td><td>Visibility inside fog (m)</td></tr>
+        <tr><td><code>visibility.distance</code></td><td>number</td><td>General horizontal visibility (m)</td></tr>
+        <tr><td><code>groundTurbulence</code></td><td>number</td><td>0–60 turbulence intensity</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── SCRIPTING API ─── -->
+  <section id="scripting">
+    <h2>Scripting API (SSE / Mission Scripts)</h2>
+    <p>
+      DCS's <strong>Scripting Engine (SSE)</strong> exposes weather data at runtime
+      via the <code>atmosphere</code> library. These functions can be called from
+      mission trigger DO SCRIPT actions or loaded Lua files.
+    </p>
+
+    <h3><code>atmosphere.getWind(point)</code></h3>
+    <p>Returns the wind vector at a 3D world position as a Vec3 <code>{x, y, z}</code>.</p>
+<pre>
+-- point is a Vec3 world position {x, y, z}
+-- y is altitude in metres
+local windVec = atmosphere.getWind({ x = 0, y = 500, z = 0 })
+
+-- Convert to speed (m/s) and FROM direction (degrees)
+local speed = math.sqrt(windVec.x^2 + windVec.z^2)
+local dir   = math.deg(math.atan2(-windVec.x, -windVec.z)) % 360
+-- 'dir' = direction wind comes FROM (meteorological convention)
+</pre>
+
+    <h3><code>atmosphere.getWindWithTurbulence(point)</code></h3>
+    <p>Same as <code>getWind()</code> but includes turbulence perturbations in the returned vector. Useful for realistic in-flight AI simulation.</p>
+<pre>
+local turbulentWind = atmosphere.getWindWithTurbulence({ x = 0, y = 1000, z = 0 })
+</pre>
+
+    <h3><code>atmosphere.getTemperatureAndPressure(point)</code></h3>
+    <p>Returns temperature (°C) and pressure at a given point. Pressure is in <strong>Pascals (Pa)</strong>.</p>
+<pre>
+local temp, pressure = atmosphere.getTemperatureAndPressure({ x = 0, y = 0, z = 0 })
+-- temp     = degrees Celsius at that point
+-- pressure = Pascals
+
+-- Convert pressure to common units:
+local qnh_hPa  = pressure / 100         -- hPa / millibars
+local qnh_inHg = pressure / 3386.39     -- inches of mercury
+local qnh_mmHg = pressure / 133.322     -- mmHg (DCS native unit)
+</pre>
+
+    <div class="box-warn">
+      <strong>No direct weather table access at runtime</strong>
+      The <code>mission.weather</code> table is not directly accessible to scripts
+      running inside the simulation. Use <code>atmosphere.*</code> functions to query
+      live conditions — especially important in dynamic weather mode where values
+      change over time.
+    </div>
+
+    <h3>Example — In-Game ATIS Wind Report</h3>
+<pre>
+-- Broadcast wind conditions to all players every 5 minutes
+local function broadcastATIS()
+    -- Use your airfield's world coordinates as the reference point
+    local pos  = { x = 0, y = 0, z = 0 }
+    local wind = atmosphere.getWind(pos)
+
+    local speedMs  = math.sqrt(wind.x^2 + wind.z^2)
+    local speedKts = speedMs * 1.94384
+    local dir      = math.deg(math.atan2(-wind.x, -wind.z)) % 360
+
+    local _, pressure = atmosphere.getTemperatureAndPressure(pos)
+    local qnhHPa = pressure / 100
+
+    local msg = string.format(
+        "ATIS: Wind %03d at %.0f kts | QNH %.0f hPa",
+        math.floor(dir + 0.5), speedKts, qnhHPa
+    )
+    trigger.action.outText(msg, 15)
+
+    return timer.getTime() + 300   -- reschedule in 5 minutes
+end
+
+timer.scheduleFunction(broadcastATIS, nil, timer.getTime() + 10)
+</pre>
+  </section>
+
+  <!-- ─── TIPS ─── -->
+  <section id="tips">
+    <h2>Practical Tips for Mission Designers</h2>
+
+    <div class="card">
+      <div class="card-title">Altimeter Setting (QNH)</div>
+      <p>
+        Always include the QNH in pilot briefing materials or an ATIS script. Standard
+        ISA is 760 mmHg (1013 hPa). Western modules (F/A-18C, F-16C, etc.) typically
+        display QNH in hPa or inHg; Russian modules (Su-27, Ka-50) use mmHg. A wrong
+        subscale setting causes altitude errors — dangerous for low-level operations
+        and approach planning.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Crosswind Runway Design</div>
+      <p>
+        To create a realistic crosswind scenario, set ground wind direction 60–90° off
+        the primary runway heading at 8–15 m/s (16–30 kts) for a demanding but
+        manageable crosswind for most tactical jets. Above 18 m/s exceeds the limits
+        for many airframes. Check your module's operating limits before designing
+        extreme wind scenarios.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Weapons Delivery in Wind</div>
+      <p>
+        Strong upper-layer winds (at 8 000 m) directly affect unguided ballistic
+        weapons — dumb bombs, cluster munitions, and unguided rockets drift with the
+        wind. For CAS scenarios, setting a 15–20 m/s upper wind at varying angles
+        makes CCIP/CCRP delivery genuinely challenging.
+      </p>
+      <p>
+        GPS-guided weapons (JDAMs) compensate for wind automatically during fall.
+        Laser-guided weapons are minimally affected. Unguided rockets are most
+        sensitive to drift at high delivery altitudes.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fog for CSAR / Special Operations</div>
+      <p>
+        A fog layer with <code>thickness = 150 m</code> and <code>visibility = 500 m</code>
+        creates a realistic fogbank scenario where helicopters fly NOE below the fog
+        deck to maintain visual, while aircraft above remain VMC. Combine with an
+        overcast preset at 800 m base for a maximum-immersion CSAR environment.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Dynamic Weather on Persistent Servers</div>
+      <p>
+        For long-running multiplayer servers, dynamic weather creates natural variety
+        without scripting. Set starting conditions to a reasonable baseline —
+        10–12 m/s wind at 2 000 m, 760 mmHg, Preset4 clouds. Over 4–8 hours the
+        weather will naturally shift, giving morning and evening players different
+        conditions.
+      </p>
+      <p>
+        <strong>Note:</strong> Weather state is NOT saved between server restarts. Each
+        map cycle begins fresh from the ME-configured starting values, then begins
+        evolving again from that baseline.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Temperature and Density Altitude</div>
+      <p>
+        For Hot &amp; High scenarios (Middle East, summer), set temperature to 35–40°C.
+        This creates genuine density altitude problems: helicopter maximum hover ceiling
+        drops, jet takeoff roll increases, and afterburner thrust is reduced. Particularly
+        impactful for heavily loaded aircraft departing from elevated airbases such as
+        mountain airfields on the Syria map.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Thunderstorm Warning</div>
+      <p>
+        The <code>RainyPreset3</code> thunderstorm combination with
+        <code>groundTurbulence = 40+</code> creates extremely challenging conditions.
+        AI aircraft may struggle to maintain formation, and helicopter AI may abort
+        tasks in severe turbulence. Test thoroughly before deploying on a live server.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <div style="height:40px;"></div>
+  <p style="font-size:12px; color: var(--muted); text-align:center;">
+    DCS World Weather System Reference &mdash; For DCS 2.7+ (Vulkan / Multithreading) &middot; Last revised Mar 2026
+  </p>
+
+</div><!-- .page -->
+</body>
+</html>
