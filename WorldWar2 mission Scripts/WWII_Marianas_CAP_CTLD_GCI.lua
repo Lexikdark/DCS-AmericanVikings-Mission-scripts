@@ -24,19 +24,73 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local capGroups = {
+    -- Rota
     "CAPNorth",
     "CAPNorth2",
     "CAPNorth3",
     "CAPSouth",
     "CAPEast",
     "CAPWest",
-    -- Add more CAP group names as needed
+    -- Charon Kanoa (Saipan)
+    "CAPCharonKanoa",
+    "CAPCharonKanoa2",
+    -- Ushi (Tinian)
+    "CAPUshi",
+    "CAPUshi2",
+    -- Gurguan Point
+    "CAPGurguan",
+    "CAPGurguan2",
+    -- Pagan
+    "CAPPagan",
+    "CAPPagan2",
 }
 
 local capSpawnTimers = {
-    ["CAPNorth2"] = 300,   -- 5 minutes
-    ["CAPNorth3"] = 300,   -- 5 minutes
+    ["CAPNorth2"]       = 300,   -- 5 minutes
+    ["CAPNorth3"]       = 300,
+    ["CAPCharonKanoa2"] = 300,
+    ["CAPUshi2"]        = 300,
+    ["CAPGurguan2"]     = 300,
+    ["CAPPagan2"]       = 300,
 }
+
+-- Map each CAP / bomber group to its home airbase key in ABC.REGISTRY.
+-- If ABC.getOwner(key) ~= "RED", the group will NOT spawn or respawn.
+local groupHomeBase = {
+    -- Rota CAP
+    CAPNorth          = "RotaAirfield",
+    CAPNorth2         = "RotaAirfield",
+    CAPNorth3         = "RotaAirfield",
+    CAPSouth          = "RotaAirfield",
+    CAPEast           = "RotaAirfield",
+    CAPWest           = "RotaAirfield",
+    -- New base CAP
+    CAPCharonKanoa    = "CharonKanoa",
+    CAPCharonKanoa2   = "CharonKanoa",
+    CAPUshi           = "Ushi",
+    CAPUshi2          = "Ushi",
+    CAPGurguan        = "GurguanPoint",
+    CAPGurguan2       = "GurguanPoint",
+    CAPPagan          = "Pagan",
+    CAPPagan2         = "Pagan",
+    -- Rota bombers
+    FighterBomber     = "RotaAirfield",
+    FighterBomber2    = "RotaAirfield",
+    Bombers           = "RotaAirfield",
+    Bombers2          = "RotaAirfield",
+    -- New base fighter-bombers
+    FBCharonKanoa     = "CharonKanoa",
+    FBUshi            = "Ushi",
+    FBGurguan         = "GurguanPoint",
+    FBPagan           = "Pagan",
+}
+
+local function isBaseRed(groupName)
+    local key = groupHomeBase[groupName]
+    if not key then return true end  -- unknown group, allow spawn
+    if not ABC or not ABC.getOwner then return true end  -- ABC not loaded yet
+    return ABC.getOwner(key) == "RED"
+end
 
 local capRespawnDelay  = 120
 local capCheckInterval = 60
@@ -44,26 +98,37 @@ local capSpawned       = {}
 
 local function checkAndRespawnCAP()
     for _, groupName in ipairs(capGroups) do
-        local group = Group.getByName(groupName)
-        if not capSpawned[groupName] then
-            if capSpawnTimers[groupName] then
-                capSpawned[groupName] = "pending"
-            else
-                mist.respawnGroup(groupName, true)
-                capSpawned[groupName] = true
+        if not isBaseRed(groupName) then
+            -- Base lost: destroy any airborne CAP from this base
+            local group = Group.getByName(groupName)
+            if group and group:isExist() then group:destroy() end
+            capSpawned[groupName] = false
+        else
+            local group = Group.getByName(groupName)
+            if not capSpawned[groupName] then
+                if capSpawnTimers[groupName] then
+                    capSpawned[groupName] = "pending"
+                else
+                    mist.respawnGroup(groupName, true)
+                    capSpawned[groupName] = true
+                end
+            elseif capSpawned[groupName] == true and (not group or not group:isExist()) then
+                mist.scheduleFunction(function()
+                    if isBaseRed(groupName) then
+                        mist.respawnGroup(groupName, true)
+                    end
+                end, {}, timer.getTime() + capRespawnDelay)
             end
-        elseif capSpawned[groupName] == true and (not group or not group:isExist()) then
-            mist.scheduleFunction(function()
-                mist.respawnGroup(groupName, true)
-            end, {}, timer.getTime() + capRespawnDelay)
         end
     end
 end
 
 for groupName, spawnTime in pairs(capSpawnTimers) do
     mist.scheduleFunction(function()
-        mist.respawnGroup(groupName, true)
-        capSpawned[groupName] = true
+        if isBaseRed(groupName) then
+            mist.respawnGroup(groupName, true)
+            capSpawned[groupName] = true
+        end
     end, {}, timer.getTime() + spawnTime)
 end
 
@@ -74,10 +139,19 @@ mist.scheduleFunction(checkAndRespawnCAP, {}, timer.getTime() + 1, capCheckInter
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local bomberGroups = {
-    { name = "FighterBomber",  spawnTime = 900  },
-    { name = "FighterBomber2", spawnTime = 1200 },
-    { name = "Bombers",        spawnTime = 900  },
-    { name = "Bombers2",       spawnTime = 1200 },
+    -- Rota (existing)
+    { name = "FighterBomber",          spawnTime = 900  },
+    { name = "FighterBomber2",         spawnTime = 1200 },
+    { name = "Bombers",                spawnTime = 900  },
+    { name = "Bombers2",               spawnTime = 1200 },
+    -- Charon Kanoa
+    { name = "FBCharonKanoa",          spawnTime = 900  },
+    -- Ushi
+    { name = "FBUshi",                 spawnTime = 900  },
+    -- Gurguan Point
+    { name = "FBGurguan",              spawnTime = 1200 },
+    -- Pagan
+    { name = "FBPagan",                spawnTime = 1200 },
 }
 
 local bomberRespawnDelay   = 1800
@@ -97,9 +171,11 @@ end
 
 for _, bomber in ipairs(bomberGroups) do
     mist.scheduleFunction(function()
-        mist.respawnGroup(bomber.name, true)
-        bomberSpawned[bomber.name]        = true
-        bomberRespawnPending[bomber.name]  = false
+        if isBaseRed(bomber.name) then
+            mist.respawnGroup(bomber.name, true)
+            bomberSpawned[bomber.name]        = true
+            bomberRespawnPending[bomber.name]  = false
+        end
     end, {}, timer.getTime() + bomber.spawnTime)
 end
 
@@ -107,18 +183,27 @@ local function checkAndRespawnBombers()
     for _, bomber in ipairs(bomberGroups) do
         local gName = bomber.name
         local group = Group.getByName(gName)
-        if bomberSpawned[gName] then
+        if not isBaseRed(gName) then
+            -- Base lost: destroy any airborne bomber from this base
+            if group and group:isExist() then group:destroy() end
+            bomberSpawned[gName]        = false
+            bomberRespawnPending[gName] = false
+        elseif bomberSpawned[gName] then
             if (not group or not group:isExist()) and not bomberRespawnPending[gName] then
                 bomberRespawnPending[gName] = true
                 mist.scheduleFunction(function()
-                    mist.respawnGroup(gName, true)
+                    if isBaseRed(gName) then
+                        mist.respawnGroup(gName, true)
+                    end
                     bomberRespawnPending[gName] = false
                 end, {}, timer.getTime() + bomberRespawnDelay)
             elseif group and group:isExist() and isGroupLanded(group) and not bomberRespawnPending[gName] then
                 bomberRespawnPending[gName] = true
                 group:destroy()
                 mist.scheduleFunction(function()
-                    mist.respawnGroup(gName, true)
+                    if isBaseRed(gName) then
+                        mist.respawnGroup(gName, true)
+                    end
                     bomberRespawnPending[gName] = false
                 end, {}, timer.getTime() + bomberRespawnDelay)
             end
@@ -249,8 +334,16 @@ mist.scheduleFunction(setupSupportMenus,   {}, timer.getTime() + 2)
 
 local AircraftCleanup = {}
 AircraftCleanup.monitoredGroups = {
+    -- Rota CAP (existing)
     "CAPNorth","CAPNorth2","CAPNorth3","CAPSouth","CAPEast","CAPWest",
+    -- New base CAP
+    "CAPCharonKanoa","CAPCharonKanoa2",
+    "CAPUshi","CAPUshi2",
+    "CAPGurguan","CAPGurguan2",
+    "CAPPagan","CAPPagan2",
+    -- Bombers / Fighter-Bombers
     "FighterBomber","FighterBomber2","Bombers","Bombers2",
+    "FBCharonKanoa","FBUshi","FBGurguan","FBPagan",
 }
 
 local function isAircraftEffectivelyDead(unit)
@@ -656,9 +749,11 @@ local GCI_CFG = {
 
     SQUADRONS = {
         RED = {
-            { callsign = "SHIDEN",  homeBase = "Rota Intl",           zone = "RED_ZONE_ROTA",    groupPrefix = "RED_AIR_ROTA",    maxFlights = 6 },
-            { callsign = "HAYATE", homeBase = "Antonio B. Won Pat Intl", zone = "RED_ZONE_NORTH",   groupPrefix = "RED_AIR_NORTH",   maxFlights = 4 },
-            { callsign = "RAIDEN", homeBase = "Rota Intl",           zone = "RED_ZONE_SOUTH",   groupPrefix = "RED_AIR_SOUTH",   maxFlights = 4 },
+            { callsign = "SHIDEN",  homeBase = "Rota Intl",      zone = "RED_ZONE_ROTA",        groupPrefix = "RED_AIR_ROTA",        maxFlights = 6 },
+            { callsign = "HAYATE",  homeBase = "Charon Kanoa",   zone = "RED_ZONE_CHARONKANOA", groupPrefix = "RED_AIR_CHARONKANOA", maxFlights = 4 },
+            { callsign = "RAIDEN",  homeBase = "Ushi",           zone = "RED_ZONE_USHI",        groupPrefix = "RED_AIR_USHI",        maxFlights = 4 },
+            { callsign = "GEKKO",   homeBase = "Gurguan Point",  zone = "RED_ZONE_GURGUAN",     groupPrefix = "RED_AIR_GURGUAN",     maxFlights = 4 },
+            { callsign = "TENZAN",  homeBase = "Pagan",          zone = "RED_ZONE_PAGAN",       groupPrefix = "RED_AIR_PAGAN",       maxFlights = 4 },
         },
         BLUE = {
             { callsign = "HELLCAT", homeBase = "Olf Orote",           zone = "BLUE_ZONE_AGANA",  groupPrefix = "BLUE_AIR_AGANA",  maxFlights = 6 },
@@ -1029,8 +1124,23 @@ trigger.action.outText("WWII Marianas CAP/CTLD/GCI Script loaded.", 10)
 --  ──────────────────────────
 --  1. Load MIST first, then this script.
 --  2. Late-activate all CAP/Bomber/Support/GCI flight groups.
---  3. Create trigger zones: RED_ZONE_ROTA, RED_ZONE_NORTH, RED_ZONE_SOUTH,
---     BLUE_ZONE_AGANA, BLUE_ZONE_NORTH, BlueCTLD (for logistics).
---  4. GCI flights: RED_AIR_ROTA_01/_02/etc, BLUE_AIR_AGANA_01/_02/etc.
---  5. CTLD logistics plane group name starts with "LogiTF51D".
+--  3. Create trigger zones:
+--       RED_ZONE_ROTA, RED_ZONE_CHARONKANOA, RED_ZONE_USHI,
+--       RED_ZONE_GURGUAN, RED_ZONE_PAGAN,
+--       BLUE_ZONE_AGANA, BLUE_ZONE_NORTH, BlueCTLD (for logistics).
+--  4. CAP groups (late-activated):
+--       Rota (existing): CAPNorth, CAPNorth2, CAPNorth3, CAPSouth, CAPEast, CAPWest
+--       Charon Kanoa: CAPCharonKanoa, CAPCharonKanoa2
+--       Ushi: CAPUshi, CAPUshi2
+--       Gurguan Point: CAPGurguan, CAPGurguan2
+--       Pagan: CAPPagan, CAPPagan2
+--  5. Fighter-Bomber groups (late-activated):
+--       Rota (existing): FighterBomber, FighterBomber2, Bombers, Bombers2
+--       New bases: FBCharonKanoa, FBUshi, FBGurguan, FBPagan
+--  6. GCI flights (late-activated):
+--       RED_AIR_ROTA_01/_02/etc, RED_AIR_CHARONKANOA_01/_02/etc,
+--       RED_AIR_USHI_01/_02/etc, RED_AIR_GURGUAN_01/_02/etc,
+--       RED_AIR_PAGAN_01/_02/etc,
+--       BLUE_AIR_AGANA_01/_02/etc, BLUE_AIR_NORTH_01/_02/etc.
+--  7. CTLD logistics plane group name starts with "LogiTF51D".
 -- =============================================================================

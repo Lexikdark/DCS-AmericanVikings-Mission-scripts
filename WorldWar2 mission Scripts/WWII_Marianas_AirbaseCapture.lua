@@ -32,6 +32,7 @@ ABC = {}
 ABC.CHECK_INTERVAL    = 180   -- seconds between capture scans
 ABC.CAPTURE_TICKS     = 3     -- consecutive scans to capture
 ABC.MIN_CAPTURE_UNITS = 1     -- minimum ground units inside zone
+ABC.FLARE_INTERVAL    = 10    -- seconds between red flare launches
 
 ABC.DEBUG = false              -- set true for env.info logging
 
@@ -125,31 +126,47 @@ local function coaSide(name)
     return coalition.side.NEUTRAL
 end
 
+local function coaCountry(name)
+    if name == "RED"  then return country.id.JAPAN end
+    if name == "BLUE" then return country.id.USA   end
+    return nil  -- NEUTRAL has no country
+end
+
 local function dist2d(a, b)
     local dx = a.x - b.x; local dz = (a.z or a.y) - (b.z or b.y)
     return math.sqrt(dx * dx + dz * dz)
 end
 
-local function countGroundUnitsInZone(zoneName, coaFilter)
+local function countUnitsInZone(zoneName, coaFilter, categories)
     local zd = trigger.misc.getZone(zoneName)
     if not zd then return 0 end
     local centre = zd.point
     local radius = zd.radius
     local count  = 0
     local coaSideID = coaSide(coaFilter)
-    local grps = coalition.getGroups(coaSideID, Group.Category.GROUND)
-    for _, grp in ipairs(grps or {}) do
-        if grp and grp:isExist() then
-            for _, u in ipairs(grp:getUnits()) do
-                if u and u:isExist() and u:getLife() > 1 then
-                    if dist2d(u:getPoint(), centre) <= radius then
-                        count = count + 1
+    for _, cat in ipairs(categories) do
+        local grps = coalition.getGroups(coaSideID, cat)
+        for _, grp in ipairs(grps or {}) do
+            if grp and grp:isExist() then
+                for _, u in ipairs(grp:getUnits()) do
+                    if u and u:isExist() and u:getLife() > 1 then
+                        if dist2d(u:getPoint(), centre) <= radius then
+                            count = count + 1
+                        end
                     end
                 end
             end
         end
     end
     return count
+end
+
+local function countGroundUnitsInZone(zoneName, coaFilter)
+    return countUnitsInZone(zoneName, coaFilter, { Group.Category.GROUND })
+end
+
+local function countAllUnitsInZone(zoneName, coaFilter)
+    return countUnitsInZone(zoneName, coaFilter, { Group.Category.GROUND, Group.Category.SHIP })
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -241,6 +258,43 @@ local function drawDestroyZone(key)
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
+--  RED FLARE SYSTEM
+--  Fires a red signal flare at every RED-owned capture zone and every active
+--  (not yet destroyed) destroy zone. Automatically stops when the zone is
+--  captured / neutralised or destroyed.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+local function fireRedFlares()
+    -- Capture zones currently owned by RED
+    for key, _ in pairs(ABC.REGISTRY) do
+        local st = ABC._state[key]
+        if st and st.owner == "RED" then
+            local zn = "CAPTURE_ZONE_" .. key
+            local zd = trigger.misc.getZone(zn)
+            if zd then
+                local h = land.getHeight({ x = zd.point.x, y = zd.point.z })
+                local pt = { x = zd.point.x, y = h + 5, z = zd.point.z }
+                trigger.action.signalFlare(pt, trigger.flareColor.Red, math.random() * 2 * math.pi)
+            end
+        end
+    end
+    -- Destroy zones still active (RED-held)
+    for key, _ in pairs(ABC.DESTROY_REGISTRY) do
+        local dst = ABC._destroyState[key]
+        if dst and dst.active then
+            local zn = "DESTROY_ZONE_" .. key
+            local zd = trigger.misc.getZone(zn)
+            if zd then
+                local h = land.getHeight({ x = zd.point.x, y = zd.point.z })
+                local pt = { x = zd.point.x, y = h + 5, z = zd.point.z }
+                trigger.action.signalFlare(pt, trigger.flareColor.Red, math.random() * 2 * math.pi)
+            end
+        end
+    end
+    return timer.getTime() + ABC.FLARE_INTERVAL
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
 --  CAPTURE LOGIC
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -310,6 +364,10 @@ function ABC._setOwner(key, newOwner)
         local ab = Airbase.getByName(reg.airbaseName)
         if ab then
             pcall(function() ab:setCoalition(coaSide(newOwner)) end)
+            local cid = coaCountry(newOwner)
+            if cid then
+                pcall(function() ab:setCountry(cid) end)
+            end
         end
     end
 
@@ -330,7 +388,7 @@ local function checkDestroyed()
         local dst = ABC._destroyState[key]
         if dst and dst.active then
             local zn = "DESTROY_ZONE_" .. key
-            local redCount = countGroundUnitsInZone(zn, "RED")
+            local redCount = countAllUnitsInZone(zn, "RED")
             if redCount == 0 then
                 dst.active    = false
                 dst.coalition = "DESTROYED"
@@ -391,6 +449,17 @@ local function abcInit()
             ticks       = 0,
             lastScanner = nil,
         }
+        -- Set correct country on mission start
+        if reg.type == "airbase" and reg.airbaseName then
+            local ab = Airbase.getByName(reg.airbaseName)
+            if ab then
+                pcall(function() ab:setCoalition(coaSide(reg.owner)) end)
+                local cid = coaCountry(reg.owner)
+                if cid then
+                    pcall(function() ab:setCountry(cid) end)
+                end
+            end
+        end
         drawZone(key)
     end
 
@@ -399,7 +468,7 @@ local function abcInit()
         local zn = "DESTROY_ZONE_" .. key
         local startCoal = "RED"
         local isActive  = true
-        local redCount  = countGroundUnitsInZone(zn, "RED")
+        local redCount  = countAllUnitsInZone(zn, "RED")
         if redCount == 0 then
             startCoal = "DESTROYED"
             isActive  = false
@@ -413,6 +482,7 @@ local function abcInit()
     end
 
     timer.scheduleFunction(captureLoop, {}, timer.getTime() + ABC.CHECK_INTERVAL)
+    timer.scheduleFunction(fireRedFlares, {}, timer.getTime() + ABC.FLARE_INTERVAL)
     log("=== ABC initialisation complete – " .. tostring(ABC.CHECK_INTERVAL) .. "s scan interval ===")
 end
 

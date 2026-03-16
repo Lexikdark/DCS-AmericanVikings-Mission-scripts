@@ -314,11 +314,20 @@
             content: "\26A0  ";
             font-size: 1.1rem;
         }
+        header .banner {
+            width: 100%;
+            max-height: 340px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1.2rem;
+            border: 2px solid var(--border);
+        }
     </style>
 </head>
 <body>
 
 <header>
+    <img src="PERFECTION_WWII_American_Vikings_logo.png" alt="Welcome to American Vikings" class="banner">
     <h1>WWII Marianas Mission</h1>
     <p>Script Reference Guide &mdash; DCS World Mission Editor Setup</p>
 </header>
@@ -383,13 +392,21 @@
         <!-- Section A -->
         <div class="card" id="s1a">
             <h3>Section A &mdash; Red CAP Flights <span class="badge badge-red">RED</span></h3>
-            <p><strong>What it does:</strong> Spawns RED combat air patrols that auto-respawn 120 seconds after death. Two groups (<code>CAPNorth2</code>, <code>CAPNorth3</code>) have a 5-minute delayed first-spawn.</p>
+            <p><strong>What it does:</strong> Spawns RED combat air patrols that auto-respawn 120 seconds after death. Several groups have a 5-minute delayed first-spawn. CAP now covers all 5 RED airbases.</p>
 
             <h4>ME Setup</h4>
             <ul>
-                <li>Create <strong>RED</strong> air groups named exactly:
-                    <code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>,
-                    <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></li>
+                <li>Create <strong>RED</strong> air groups named exactly:</li>
+            </ul>
+            <table>
+                <tr><th>Base</th><th>Groups</th><th>Notes</th></tr>
+                <tr><td>Rota (existing)</td><td><code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>, <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></td><td>CAPNorth2/3 delayed 5 min</td></tr>
+                <tr><td>Charon Kanoa</td><td><code>CAPCharonKanoa</code>, <code>CAPCharonKanoa2</code></td><td>2nd delayed 5 min</td></tr>
+                <tr><td>Ushi</td><td><code>CAPUshi</code>, <code>CAPUshi2</code></td><td>2nd delayed 5 min</td></tr>
+                <tr><td>Gurguan Point</td><td><code>CAPGurguan</code>, <code>CAPGurguan2</code></td><td>2nd delayed 5 min</td></tr>
+                <tr><td>Pagan</td><td><code>CAPPagan</code>, <code>CAPPagan2</code></td><td>2nd delayed 5 min</td></tr>
+            </table>
+            <ul>
                 <li>Set every group to <strong>Late Activation</strong></li>
                 <li>Give each group a full CAP waypoint route &mdash; the script uses <code>mist.respawnGroup</code> so the AI follows whatever route you drew</li>
             </ul>
@@ -409,8 +426,18 @@
             <p><strong>What it does:</strong> RED strike aircraft that first appear 15&ndash;20 minutes into the mission, then respawn 30 minutes after being killed or landing.</p>
 
             <h4>ME Setup</h4>
+            <table>
+                <tr><th>Base</th><th>Group</th><th>Initial Spawn Delay</th></tr>
+                <tr><td>Rota (existing)</td><td><code>FighterBomber</code></td><td>15 min</td></tr>
+                <tr><td>Rota (existing)</td><td><code>FighterBomber2</code></td><td>20 min</td></tr>
+                <tr><td>Rota (existing)</td><td><code>Bombers</code></td><td>15 min</td></tr>
+                <tr><td>Rota (existing)</td><td><code>Bombers2</code></td><td>20 min</td></tr>
+                <tr><td>Charon Kanoa</td><td><code>FBCharonKanoa</code></td><td>15 min</td></tr>
+                <tr><td>Ushi</td><td><code>FBUshi</code></td><td>15 min</td></tr>
+                <tr><td>Gurguan Point</td><td><code>FBGurguan</code></td><td>20 min</td></tr>
+                <tr><td>Pagan</td><td><code>FBPagan</code></td><td>20 min</td></tr>
+            </table>
             <ul>
-                <li>Create RED air groups: <code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></li>
                 <li><strong>Late Activation</strong> on all</li>
                 <li>Give them attack/bombing waypoint routes in ME</li>
             </ul>
@@ -502,8 +529,10 @@
             <table>
                 <tr><th>Zone Name</th><th>Side</th><th>Purpose</th></tr>
                 <tr><td><code>RED_ZONE_ROTA</code></td><td><span class="badge badge-red">RED</span></td><td>Rota defense sector</td></tr>
-                <tr><td><code>RED_ZONE_NORTH</code></td><td><span class="badge badge-red">RED</span></td><td>Northern defense sector</td></tr>
-                <tr><td><code>RED_ZONE_SOUTH</code></td><td><span class="badge badge-red">RED</span></td><td>Southern defense sector</td></tr>
+                <tr><td><code>RED_ZONE_CHARONKANOA</code></td><td><span class="badge badge-red">RED</span></td><td>Charon Kanoa defense sector</td></tr>
+                <tr><td><code>RED_ZONE_USHI</code></td><td><span class="badge badge-red">RED</span></td><td>Ushi defense sector</td></tr>
+                <tr><td><code>RED_ZONE_GURGUAN</code></td><td><span class="badge badge-red">RED</span></td><td>Gurguan Point defense sector</td></tr>
+                <tr><td><code>RED_ZONE_PAGAN</code></td><td><span class="badge badge-red">RED</span></td><td>Pagan defense sector</td></tr>
                 <tr><td><code>BLUE_ZONE_AGANA</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Agana defense sector</td></tr>
                 <tr><td><code>BLUE_ZONE_NORTH</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Northern BLUE defense sector</td></tr>
             </table>
@@ -513,8 +542,10 @@
             <table>
                 <tr><th>Group Prefix</th><th>Side</th><th>Max Flights</th><th>Home Base</th><th>Callsign</th></tr>
                 <tr><td><code>RED_AIR_ROTA_01</code> &ndash; <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>6</td><td>Rota Intl</td><td>SHIDEN</td></tr>
-                <tr><td><code>RED_AIR_NORTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Antonio B. Won Pat Intl</td><td>HAYATE</td></tr>
-                <tr><td><code>RED_AIR_SOUTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Rota Intl</td><td>RAIDEN</td></tr>
+                <tr><td><code>RED_AIR_CHARONKANOA_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Charon Kanoa</td><td>HAYATE</td></tr>
+                <tr><td><code>RED_AIR_USHI_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Ushi</td><td>RAIDEN</td></tr>
+                <tr><td><code>RED_AIR_GURGUAN_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Gurguan Point</td><td>GEKKO</td></tr>
+                <tr><td><code>RED_AIR_PAGAN_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>4</td><td>Pagan</td><td>TENZAN</td></tr>
                 <tr><td><code>BLUE_AIR_AGANA_01</code> &ndash; <code>_06</code></td><td><span class="badge badge-blue">BLUE</span></td><td>6</td><td>Olf Orote</td><td>HELLCAT</td></tr>
                 <tr><td><code>BLUE_AIR_NORTH_01</code> &ndash; <code>_04</code></td><td><span class="badge badge-blue">BLUE</span></td><td>4</td><td>Antonio B. Won Pat Intl</td><td>CORSAIR</td></tr>
             </table>
@@ -545,6 +576,7 @@
         <div class="card">
             <h3>What It Does</h3>
             <p>Fills 18 zones with random Japanese ground groups (infantry, tanks, AA, trucks) selected from 20 templates. Uses a <strong>shuffle-bag</strong> so you don&rsquo;t see the same template twice in a row. Marks each group on the F10 map; markers auto-clear when the group is killed. Maintains 1&ndash;3 groups per zone.</p>
+            <p><span class="badge badge-yellow">FLARE</span> Each alive group fires a <strong>yellow (orange) signal flare</strong> every 30 seconds from the position of the first alive unit. Flares stop automatically when the group is destroyed.</p>
 
             <h4>Template Examples (6&ndash;8 units each)</h4>
             <table>
@@ -579,6 +611,7 @@
             <tr><td><code>DGSS.MAX_SPAWNS_PER_CYCLE</code></td><td>3</td><td>Max groups spawned per 5-min check</td></tr>
             <tr><td><code>DGSS.CHECK_ZONES_INTERVAL</code></td><td>300 s</td><td>Seconds between spawn sweeps</td></tr>
             <tr><td><code>DGSS.CLEANUP_INTERVAL</code></td><td>120 s</td><td>Dead group cleanup frequency</td></tr>
+            <tr><td><code>DGSS.FLARE_INTERVAL</code></td><td>30 s</td><td>Seconds between yellow flare launches per group</td></tr>
         </table>
 
         <h4>DCS Unit Types Used</h4>
@@ -650,6 +683,7 @@
                 <span class="badge badge-red">RED</span> &harr; <span class="badge badge-neutral">NEUTRAL</span> &harr; <span class="badge badge-blue">BLUE</span>
             </p>
             <p>Ground units inside a capture zone shift ownership over consecutive scan ticks (<strong>3 scans &times; 180 s = 9 minutes to capture</strong>). Airbases swap coalition when captured. Coloured circle + text markers appear on the F10 map.</p>
+            <p><span class="badge badge-red">FLARE</span> Every RED-owned capture zone and every active (not yet destroyed) destroy zone fires a <strong>red signal flare</strong> every 30 seconds. Flares stop automatically when the zone is captured/neutralised or destroyed.</p>
         </div>
 
         <div class="card green">
@@ -726,6 +760,7 @@
             <tr><td><code>ABC.CHECK_INTERVAL</code></td><td>180 s</td><td>Seconds between capture scans</td></tr>
             <tr><td><code>ABC.CAPTURE_TICKS</code></td><td>3</td><td>Consecutive scans to capture (&times; 180 s = 9 min)</td></tr>
             <tr><td><code>ABC.MIN_CAPTURE_UNITS</code></td><td>1</td><td>Minimum ground units inside zone</td></tr>
+            <tr><td><code>ABC.FLARE_INTERVAL</code></td><td>30 s</td><td>Seconds between red flare launches per zone</td></tr>
         </table>
 
         <div class="back-top"><a href="#">&uarr; Back to top</a></div>
@@ -739,7 +774,7 @@
         <table>
             <tr><th>Zone Name(s)</th><th>Used By</th><th>Type</th></tr>
             <tr><td><code>BlueCTLD</code></td><td>CAP/CTLD/GCI &mdash; logistics load zone</td><td>Circle</td></tr>
-            <tr><td><code>RED_ZONE_ROTA</code>, <code>RED_ZONE_NORTH</code>, <code>RED_ZONE_SOUTH</code></td><td>GCI (RED defense sectors)</td><td>Circle</td></tr>
+            <tr><td><code>RED_ZONE_ROTA</code>, <code>RED_ZONE_CHARONKANOA</code>, <code>RED_ZONE_USHI</code>, <code>RED_ZONE_GURGUAN</code>, <code>RED_ZONE_PAGAN</code></td><td>GCI (RED defense sectors)</td><td>Circle</td></tr>
             <tr><td><code>BLUE_ZONE_AGANA</code>, <code>BLUE_ZONE_NORTH</code></td><td>GCI (BLUE defense sectors)</td><td>Circle</td></tr>
             <tr><td><code>ZONE1</code> &ndash; <code>ZONE18</code></td><td>DGSS (ground spawns)</td><td>Circle</td></tr>
             <tr><td><code>ConvoyZone1</code> &ndash; <code>ConvoyZone20</code></td><td>Red Convoys</td><td>Circle</td></tr>
@@ -756,7 +791,7 @@
             <tr><td><code>DESTROY_ZONE_Marpi</code>, <code>Kagman</code>, <code>Isley</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
             <tr><td><code>DESTROY_ZONE_Japanese_Fleet</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
         </table>
-        <p><strong>Total trigger zones needed:</strong> 1 + 3 + 2 + 18 + 20 + 6 (capture) + 15 (destroy) = <strong>65 circle zones</strong></p>
+        <p><strong>Total trigger zones needed:</strong> 1 + 5 + 2 + 18 + 20 + 6 (capture) + 15 (destroy) = <strong>67 circle zones</strong></p>
 
         <div class="back-top"><a href="#">&uarr; Back to top</a></div>
     </section>
@@ -770,12 +805,19 @@
         <h3>Late-Activated Air Groups</h3>
         <table>
             <tr><th>Group Name(s)</th><th>Side</th><th>Script / Section</th></tr>
-            <tr><td><code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>, <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></td><td><span class="badge badge-red">RED</span></td><td>CAP (Section A)</td></tr>
-            <tr><td><code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></td><td><span class="badge badge-red">RED</span></td><td>Bombers (Section B)</td></tr>
+            <tr><td><code>CAPNorth</code>, <code>CAPNorth2</code>, <code>CAPNorth3</code>, <code>CAPSouth</code>, <code>CAPEast</code>, <code>CAPWest</code></td><td><span class="badge badge-red">RED</span></td><td>CAP &mdash; Rota (Section A)</td></tr>
+            <tr><td><code>CAPCharonKanoa</code>, <code>CAPCharonKanoa2</code></td><td><span class="badge badge-red">RED</span></td><td>CAP &mdash; Charon Kanoa (Section A)</td></tr>
+            <tr><td><code>CAPUshi</code>, <code>CAPUshi2</code></td><td><span class="badge badge-red">RED</span></td><td>CAP &mdash; Ushi (Section A)</td></tr>
+            <tr><td><code>CAPGurguan</code>, <code>CAPGurguan2</code></td><td><span class="badge badge-red">RED</span></td><td>CAP &mdash; Gurguan Point (Section A)</td></tr>
+            <tr><td><code>CAPPagan</code>, <code>CAPPagan2</code></td><td><span class="badge badge-red">RED</span></td><td>CAP &mdash; Pagan (Section A)</td></tr>
+            <tr><td><code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></td><td><span class="badge badge-red">RED</span></td><td>Bombers &mdash; Rota (Section B)</td></tr>
+            <tr><td><code>FBCharonKanoa</code>, <code>FBUshi</code>, <code>FBGurguan</code>, <code>FBPagan</code></td><td><span class="badge badge-red">RED</span></td><td>Fighter-Bombers &mdash; new bases (Section B)</td></tr>
             <tr><td><code>NorthCAP</code>, <code>NorthCAP2</code>, <code>HomeCAP</code>, <code>Bomb_CoastalGun</code>, <code>Bomb_RadioTower</code>, <code>Bomb_RotaAirfield</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Support F10 (Section C)</td></tr>
-            <tr><td><code>RED_AIR_ROTA_01</code> through <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
-            <tr><td><code>RED_AIR_NORTH_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
-            <tr><td><code>RED_AIR_SOUTH_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI (Section F)</td></tr>
+            <tr><td><code>RED_AIR_ROTA_01</code> through <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Rota (Section F)</td></tr>
+            <tr><td><code>RED_AIR_CHARONKANOA_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Charon Kanoa (Section F)</td></tr>
+            <tr><td><code>RED_AIR_USHI_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Ushi (Section F)</td></tr>
+            <tr><td><code>RED_AIR_GURGUAN_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Gurguan Point (Section F)</td></tr>
+            <tr><td><code>RED_AIR_PAGAN_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Pagan (Section F)</td></tr>
             <tr><td><code>BLUE_AIR_AGANA_01</code> through <code>_06</code></td><td><span class="badge badge-blue">BLUE</span></td><td>GCI (Section F)</td></tr>
             <tr><td><code>BLUE_AIR_NORTH_01</code> through <code>_04</code></td><td><span class="badge badge-blue">BLUE</span></td><td>GCI (Section F)</td></tr>
         </table>
