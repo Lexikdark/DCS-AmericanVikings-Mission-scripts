@@ -23,6 +23,19 @@ Simple Repo for the Scripts we at AmericanVikings DCS Multiplayer server make an
 - [Mission Systems](#mission-systems)
   - [AirBaseCapture (Syria) v1.0](#airbasecapture-syria-v10)
   - [MissionStatePersistence v4.0](#missionstatepersistence-v40)
+  - [RedCoalitionLock](#redcoalitionlock)
+- [WWII Marianas Mission Scripts](#wwii-marianas-mission-scripts)
+  - [WWII Marianas CAP / CTLD / GCI v1.0](#wwii-marianas-cap--ctld--gci-v10)
+  - [WWII Marianas DGSS v1.0](#wwii-marianas-dgss-v10)
+  - [WWII Marianas Red Convoy Spawn v1.0](#wwii-marianas-red-convoy-spawn-v10)
+  - [WWII Marianas Airbase Capture v1.0](#wwii-marianas-airbase-capture-v10)
+- [Weather](#weather)
+  - [DCS Dynamic Weather Cycle](#dcs-dynamic-weather-cycle)
+  - [DCS Dynamic Weather Preset](#dcs-dynamic-weather-preset)
+- [Race Script](#race-script)
+  - [RaceScript v4.0](#racescript-v40)
+- [Nuke Script](#nuke-script)
+  - [MiG-21 Nuclear Bomb Effects](#mig-21-nuclear-bomb-effects)
 
 ---
 
@@ -283,4 +296,229 @@ Serialises and restores critical mission state across DCS server restarts, preve
 - On mission load, the script detects existing state files and restores all saved values before any other scripts run
 - Safe fallback: if no state files are found (first run) the mission starts fresh with default values
 - Requires MIST.lua (no MOOSE dependency)
+
+---
+
+### RedCoalitionLock
+
+**File:** `mission-systems/RedCoalitionLock/RedCoalitionLock.lua`
+**Docs:** `mission-systems/RedCoalitionLock/RedCoalitionLock_DOCS.html`
+
+Prevents human players from occupying Red coalition slots on a multiplayer server. Red is reserved for AI-only forces.
+
+**Key features:**
+- Periodically scans all connected players using `net.*` functions; anyone found on Red (coalition 1) is forced to Spectators
+- `CHECK_INTERVAL = 5` sec scan frequency
+- Custom kick message sent to the affected player via `net.send_chat_to`
+- Multiplayer only — silently skips enforcement in single-player or ME preview (no errors)
+- **Standalone** — no dependencies, load via DO SCRIPT FILE at Mission Start
+
+---
+
+## WWII Marianas Mission Scripts
+
+A complete suite of scripts for a WWII-era mission on the DCS Marianas map. Blue coalition (US forces) vs Red coalition (Imperial Japanese forces). All scripts except the Airbase Capture script require MIST.
+
+**Docs:** `WorldWar2 mission Scripts/WWII_Marianas_Mission_Guide.html` — comprehensive HTML guide covering all four scripts, ME setup, zone checklists, and group naming conventions.
+
+**Load order in Mission Editor:**
+1. `mist_4_5_126.lua`
+2. `WWII_Marianas_CAP_CTLD_GCI.lua`
+3. `WWII_Marianas_DGSS.lua`
+4. `WWII_Marianas_RedConvoySpawn.lua`
+5. `WWII_Marianas_AirbaseCapture.lua`
+
+---
+
+### WWII Marianas CAP / CTLD / GCI v1.0
+
+**File:** `WorldWar2 mission Scripts/WWII_Marianas_CAP_CTLD_GCI.lua`
+
+Combined air-combat, logistics, and ground-controlled intercept script with six integrated sections:
+
+**Section A — Red CAP Flights:**
+- Auto-respawns Red patrol groups (`CAPNorth`, `CAPSouth`, `CAPEast`, `CAPWest`, etc.)
+- `capRespawnDelay = 120` sec, `capCheckInterval = 60` sec
+- Staggered spawn timers for `CAPNorth2`/`CAPNorth3` (300 sec delay)
+
+**Section B — Red Fighter-Bombers:**
+- Delayed-spawn Red attack aircraft (`FighterBomber`, `FighterBomber2`, `Bombers`, `Bombers2`)
+- `bomberRespawnDelay = 1800` sec (30 min), respawns after destruction or landing
+- Landing detection triggers cleanup and respawn cycle
+
+**Section C — Blue Radio-Call Support Spawning (F10 Menu):**
+- Blue players can spawn support flights via the F10 radio menu (`NorthCAP`, `HomeCAP`, `Bomb_CoastalGun`, `Bomb_RadioTower`, `Bomb_RotaAirfield`, etc.)
+- One active group per template — duplicates are blocked
+- Destroy menu to manually remove active support groups
+- Auto-cleanup of landed support aircraft
+
+**Section D — Aircraft Cleanup System:**
+- Monitors all CAP and bomber groups for stale/dead aircraft
+- Destroys aircraft below 15% health, below 5% fuel, or stalling at altitude
+- `maxFlightTime = 5400` sec (90 min) — long-lived groups are forcibly cleaned up
+
+**Section E — Lightweight TF-51D CTLD:**
+- Transport logistics using the TF-51D Mustang (the only whitelisted transport)
+- **Infantry:** load 1-3 infantry squads at `BlueCTLD` zone, drop anywhere, pick up within 50 m
+- **Vehicle crates:** spawn, sling-load, and assemble M4 Tractor (2 crates), M2A1 Halftrack (2 crates), or M4 Sherman (3 crates)
+- Full F10 radio menu for Load / Drop / Pickup / Assemble / Check Cargo operations
+- Logistics group prefix: `LogiTF51D`
+
+**Section F — GCI Intercept System:**
+- Zone-based scramble and RTB system for both Red and Blue fighter squadrons
+- Red squadrons: SHIDEN (Rota), HAYATE (North), RAIDEN (South)
+- Blue squadrons: HELLCAT (Agana), CORSAIR (North)
+- `UPDATE_INTERVAL = 10` sec, `GCI_FUEL_RTB_THRESHOLD = 0.20` (20% fuel triggers RTB)
+- Fighters scramble when hostile aircraft enter their zone, RTB when threats clear
+- `SCRAMBLE_THREAT_BUFFER = 30000` m, `INTERCEPT_LEASH_BUFFER = 60000` m
+
+---
+
+### WWII Marianas DGSS v1.0
+
+**File:** `WorldWar2 mission Scripts/WWII_Marianas_DGSS.lua`
+
+WWII Marianas variant of the Dynamic Ground Spawner System. Spawns Imperial Japanese Army ground forces across the island battlefields.
+
+**Key features:**
+- **20 Japanese templates** using WWII DCS assets: `soldier_mauser98` infantry, `Type_89_I_Go` medium tanks, `Type_98_Ke_Ni` light tanks, `Type_94_Truck` logistics, and `Type_96_25mm_AA` anti-aircraft guns
+- Templates of 6-8 units each, including: IJA Patrol, Ke-Ni Scout, I-Go Platoon, AA Position, Mixed Armour, Beach Defenders, Supply Convoy, Full Armour Section, and more
+- 18 named trigger zones (`ZONE1` – `ZONE18`) with configurable min/max group limits per zone (default: 1-3 per zone)
+- Shuffle-bag template selection ensures all 20 templates cycle before repeating
+- `MAX_SPAWNS_PER_CYCLE = 3`, `CHECK_ZONES_INTERVAL = 300` sec
+- F10 map markers at each spawn, auto-removed on group death
+- Automatic dead group cleanup (`CLEANUP_INTERVAL = 120` sec)
+- Country: Japan (RED side)
+- Requires MIST
+
+---
+
+### WWII Marianas Red Convoy Spawn v1.0
+
+**File:** `WorldWar2 mission Scripts/WWII_Marianas_RedConvoySpawn.lua`
+
+Autonomous Japanese convoy system for the Marianas map. Continuously generates enemy logistics columns between island zones.
+
+**Key features:**
+- **15 WWII Japanese convoy templates** using Type_94_Truck, Type_89_I_Go, Type_98_Ke_Ni, and infantry
+- `MAX_CONVOYS = 12`, `INITIAL_CONVOYS = 3` (staggered at `STAGGER_DELAY = 120` sec)
+- `CONVOY_SPEED = 18` m/s (~65 km/h)
+- 20 named convoy zones (`ConvoyZone1` – `ConvoyZone20`)
+- `MIN_TRAVEL_DISTANCE = 32000` m (~17 nm) minimum route length
+- Route building: Off Road → On Road → Off Road waypoints
+- Stall detection: `STALL_TIMEOUT = 300` sec — stuck convoys auto-despawn and are replaced
+- `SPAWN_LOOP_INTERVAL = 180` sec between spawn attempts
+- Country: Japan (RED side)
+- Requires MIST
+
+---
+
+### WWII Marianas Airbase Capture v1.0
+
+**File:** `WorldWar2 mission Scripts/WWII_Marianas_AirbaseCapture.lua`
+
+Dynamic airbase ownership and objective destruction system for the Marianas WWII mission. **Standalone** — no MIST or MOOSE required.
+
+**Key features:**
+- **Capture Zone System** — state machine: RED ↔ NEUTRAL ↔ BLUE, requiring consecutive scan ticks to confirm capture
+  - `CHECK_INTERVAL = 180` sec (3 min), `CAPTURE_TICKS = 3` consecutive scans, `MIN_CAPTURE_UNITS = 1`
+  - F10 map coloured circle + text markers per zone (colour-coded by owner)
+  - Airbase coalition swap on capture (ATC frequency changes)
+- **Destroy Zone System** — one-way RED → DESTROYED when all RED units inside are killed
+  - Permanently turns black on F10 map with "Destroyed" label
+  - Cannot be captured or recaptured
+- **Capture Zone Registry (6 zones):**
+  - RED: Rota Airfield, Charon Kanoa, Ushi, Gurguan Point, Pagan
+  - BLUE: Agana Airfield
+- **Destroy Zone Registry (15 zones):**
+  - EWR Sites 1-4, Factory 1-3, Radio Tower 1-3, Coastal Gun, Marpi, Kagman, Isley, Japanese Fleet
+- **Colour palette** matches the Syria mission: RED outline/fill, BLUE outline/fill, NEUTRAL white/gray, DESTROYED black
+- **Public API:** `ABC.getOwner()`, `ABC.forceCoalition()`, `ABC.setDestroyed()`, `ABC.redrawAll()`
+- **Total ME trigger zones:** 6 × `CAPTURE_ZONE_*` + 15 × `DESTROY_ZONE_*` = 21 zones
+
+---
+
+## Weather
+
+### DCS Dynamic Weather Cycle
+
+**File:** `weather/DCS_DynamicWeatherCycle.lua`
+**Docs:** `weather/DCS_DynamicWeatherCycle_DOCS.html`
+
+Narrative weather stage system that broadcasts ATIS-style weather reports aligned with DCS's built-in dynamic atmosphere engine. Does **not** set weather — it reads live conditions and labels them for pilots.
+
+**Key features:**
+- Named weather stages: Clear → Building → Thunderstorm → Clearing → Overcast → Clear (12-hour cycle)
+- Reads live wind, pressure, and temperature via `atmosphere.*` every 30 seconds
+- **ATIS broadcasts** every `ATIS_INTERVAL = 300` sec (5 min) with wind speed/direction, QNH, temperature, and current stage
+- `WARN_LEAD_TIME = 1800` sec (30 min) advance warnings before storm/clearing stage transitions
+- Wind trend tracking: reports rising/falling speed and veering/backing direction
+- On-demand ATIS via User Flag trigger (`ATIS_FLAG = 10`)
+- `BROADCAST_COALITION = 2` (Blue only by default)
+- `FORCE_PRESET` option to lock a specific weather preset for testing
+- **Standalone** — no dependencies, requires ME Atmosphere Type = Dynamic
+
+---
+
+### DCS Dynamic Weather Preset
+
+**File:** `weather/DCS_DynamicWeatherPreset.lua`
+**Docs:** `weather/DCS_DynamicWeatherPreset_DOCS.html`
+
+Generates a randomised 6-node weather forecast at mission start, giving pilots a full 12-hour outlook with meteorologically plausible transitions.
+
+**Key features:**
+- **6 weather archetypes:** CLEAR, BUILDING, STORMY (Thunderstorm), OVERCAST, CLEARING, FOGGY — each with defined ranges for wind, visibility, QNH, temperature, cloud presets, and hazards
+- Random starting state seeded from the real-world clock; walks through realistic transition rules for the remaining 5 nodes
+- `NODE_DURATION_HOURS = 2`, `NODE_COUNT = 6` — covers a full 12-hour mission cycle
+- Each node includes: VFR/MVFR/IFR/LIFR category, wind description, cloud description, visibility, and pilot NOTAMs
+- ATIS broadcasts every `ATIS_INTERVAL = 300` sec with live atmosphere data alongside the forecast
+- Wind history trend analysis (`WIND_HISTORY = 6` samples)
+- `BROADCAST_COALITION = 2` (Blue only by default)
+- **Standalone** — no dependencies, requires ME Atmosphere Type = Dynamic
+
+---
+
+## Race Script
+
+### RaceScript v4.0
+
+**File:** `RaceScript/RaceScript_V4.0.lua`
+**Docs:** `RaceScript/RaceScript_V4.0_Guide.html`
+
+Air race timing system that tracks players through a series of gates with high-precision stopwatch timing. Created by Lexik"ROBOT"dark & Eilliem"Six'O'Clock" for the American Vikings server.
+
+**Key features:**
+- **20 gate zones** (`Gate 1` – `Gate 20`) plus `StartingLine` and `FinishLine` trigger zones
+- Per-player stopwatch with hundredths-of-a-second precision
+- `altitudeLimit = 250` m AGL — players must stay below this altitude to register gate passes
+- `penaltyTime = 5` sec per missed gate
+- 2+ missed gates in a single race nullifies the run — pilot must restart
+- Real-time feedback when gates are missed (tells the player which gate)
+- **Per-group "Reset My Race"** radio command (F10 menu) — scoped to the requesting group only
+- Race times exported to `PlayerTimesLog.txt` in the DCS Saved Games folder
+- Anti-duplicate finish protection — sentinel flag prevents re-entry during the 5-second cleanup delay
+- Aircraft type tracking for leaderboard categorisation
+- All race state tables are globally scoped to survive script reloads mid-mission
+- **Standalone** — no dependencies
+
+---
+
+## Nuke Script
+
+### MiG-21 Nuclear Bomb Effects
+
+**File:** `Nuke Script/mig21_nuke_effects.lua`
+
+Visual effects script for the MiG-21's RN-28 tactical nuclear bomb. Creates a dramatic detonation sequence — DCS handles the actual weapon blast damage natively.
+
+**Key features:**
+- Listens for RN-28 weapon impacts via `S_EVENT_HIT` / `S_EVENT_DEAD` event handlers
+- Supported weapon type names: `RN-28`, `MBD3-U6-68_RN-28`, `RN-28_MiG-21`
+- **Detonation sequence:**
+  1. **Blinding white flash** — `illuminationBomb` at 500 million candela, 150 m AGL
+  2. **Stacked fireball** — 80 random explosions spread across 1200 m radius / 1800 m height + 40 dense ground-level blasts within 600 m
+  3. **Mushroom cloud** — 12-level rising smoke column to 8000 m with timed delays, topped by a 16-point smoke ring cap at 1200 m radius
+- Optional `NUKE_TEST` trigger zone for testing without a live drop
+- **Standalone** — no dependencies
 
