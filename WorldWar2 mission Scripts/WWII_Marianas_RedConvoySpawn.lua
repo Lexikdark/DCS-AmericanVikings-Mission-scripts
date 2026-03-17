@@ -26,7 +26,7 @@ CONVOY = {}
 --  CONFIGURATION
 -- ─────────────────────────────────────────────────────────────────────────────
 
-CONVOY.MAX_CONVOYS          = 12
+CONVOY.MAX_CONVOYS          = 7
 CONVOY.INITIAL_CONVOYS      = 3
 CONVOY.CONVOY_SPEED         = 18            -- m/s (~65 km/h)
 CONVOY.STAGGER_DELAY        = 120           -- seconds between initial spawns

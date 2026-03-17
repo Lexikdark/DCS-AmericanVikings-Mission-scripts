@@ -31,7 +31,7 @@ DGSS.CHECK_ZONES_INTERVAL       = 300    -- seconds between zone-check passes
 DGSS.CLEANUP_INTERVAL           = 120    -- dead group cleanup
 DGSS.MEMORY_CLEANUP_INTERVAL    = 1200   -- full state garbage collect
 DGSS.MARKER_CLEANUP_INTERVAL    = 300
-DGSS.ILLUM_INTERVAL             = 15     -- seconds between illumination flares
+DGSS.ILLUM_INTERVAL             = 120    -- seconds between illumination flares
 DGSS.SMOKE_INTERVAL             = 300    -- seconds between orange smoke refreshes
 DGSS.MIN_GROUP_SPACING          = 250    -- minimum metres between groups in same zone
 
@@ -73,7 +73,7 @@ DGSS.TEMPLATES = {
 
 DGSS.ZONES = {}
 for i = 1, 18 do
-    DGSS.ZONES["ZONE" .. i] = { minGroups = 1, maxGroups = 3 }
+    DGSS.ZONES["ZONE" .. i] = { minGroups = 1, maxGroups = 1 }
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────

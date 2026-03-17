@@ -25,12 +25,8 @@
 
 local capGroups = {
     -- Rota
-    "CAPNorth",
-    "CAPNorth2",
-    "CAPNorth3",
-    "CAPSouth",
-    "CAPEast",
-    "CAPWest",
+    "RotaCAPNorth",
+    "RotaCAPSouth",
     -- Charon Kanoa (Saipan)
     "CAPCharonKanoa",
     "CAPCharonKanoa2",
@@ -46,9 +42,7 @@ local capGroups = {
 }
 
 local capSpawnTimers = {
-    ["CAPNorth2"]       = 300,   -- 5 minutes
-    ["CAPNorth3"]       = 300,
-    ["CAPCharonKanoa2"] = 300,
+    ["CAPCharonKanoa2"] = 300,   -- 5 minutes
     ["CAPUshi2"]        = 300,
     ["CAPGurguan2"]     = 300,
     ["CAPPagan2"]       = 300,
@@ -58,12 +52,8 @@ local capSpawnTimers = {
 -- If ABC.getOwner(key) ~= "RED", the group will NOT spawn or respawn.
 local groupHomeBase = {
     -- Rota CAP
-    CAPNorth          = "RotaAirfield",
-    CAPNorth2         = "RotaAirfield",
-    CAPNorth3         = "RotaAirfield",
-    CAPSouth          = "RotaAirfield",
-    CAPEast           = "RotaAirfield",
-    CAPWest           = "RotaAirfield",
+    RotaCAPNorth      = "RotaAirfield",
+    RotaCAPSouth      = "RotaAirfield",
     -- New base CAP
     CAPCharonKanoa    = "CharonKanoa",
     CAPCharonKanoa2   = "CharonKanoa",
@@ -92,9 +82,75 @@ local function isBaseRed(groupName)
     return ABC.getOwner(key) == "RED"
 end
 
-local capRespawnDelay  = 120
-local capCheckInterval = 60
-local capSpawned       = {}
+-- Map each CAP group to the trigger zone it should patrol.
+-- After spawn, a scripted orbit + engagement-range cap replaces the ME
+-- waypoints so the AI won't fly across the map to help other flights.
+local capPatrolZone = {
+    RotaCAPNorth      = "RED_ZONE_ROTA",
+    RotaCAPSouth      = "RED_ZONE_ROTA",
+    CAPCharonKanoa    = "RED_ZONE_CHARONKANOA",
+    CAPCharonKanoa2   = "RED_ZONE_CHARONKANOA",
+    CAPUshi           = "RED_ZONE_USHI",
+    CAPUshi2          = "RED_ZONE_USHI",
+    CAPGurguan        = "RED_ZONE_GURGUAN",
+    CAPGurguan2       = "RED_ZONE_GURGUAN",
+    CAPPagan          = "RED_ZONE_PAGAN",
+    CAPPagan2         = "RED_ZONE_PAGAN",
+}
+
+local CAP_ORBIT_ALT   = 2500   -- metres
+local CAP_ORBIT_SPEED = 120    -- m/s  (~430 km/h)
+
+local function setCAPOrbitTask(groupName)
+    local zoneName = capPatrolZone[groupName]
+    if not zoneName then return end
+    local zd = trigger.misc.getZone(zoneName)
+    if not zd then return end
+    local grp = Group.getByName(groupName)
+    if not grp or not grp:isExist() then return end
+    local ctrl = grp:getController()
+    if not ctrl then return end
+    -- Engage hostiles inside the zone; orbit its centre otherwise
+    ctrl:setTask({
+        id = "ComboTask",
+        params = {
+            tasks = {
+                {
+                    id = "EngageTargets",
+                    params = {
+                        maxDist     = zd.radius,
+                        targetTypes = { "Air" },
+                    },
+                },
+                {
+                    id = "Orbit",
+                    params = {
+                        pattern  = "Circle",
+                        speed    = CAP_ORBIT_SPEED,
+                        altitude = CAP_ORBIT_ALT,
+                        point    = { x = zd.point.x, y = zd.point.z },
+                    },
+                },
+            },
+        },
+    })
+end
+
+local capRespawnDelay     = 300
+local capCheckInterval    = 60
+local capMaxPerZone       = 3
+local capSpawned          = {}
+
+local function countAirborneInZone(zoneName)
+    local n = 0
+    for _, gn in ipairs(capGroups) do
+        if capPatrolZone[gn] == zoneName and capSpawned[gn] == true then
+            local g = Group.getByName(gn)
+            if g and g:isExist() then n = n + 1 end
+        end
+    end
+    return n
+end
 
 local function checkAndRespawnCAP()
     for _, groupName in ipairs(capGroups) do
@@ -105,17 +161,25 @@ local function checkAndRespawnCAP()
             capSpawned[groupName] = false
         else
             local group = Group.getByName(groupName)
+            local zn = capPatrolZone[groupName]
             if not capSpawned[groupName] then
                 if capSpawnTimers[groupName] then
                     capSpawned[groupName] = "pending"
-                else
+                elseif not zn or countAirborneInZone(zn) < capMaxPerZone then
                     mist.respawnGroup(groupName, true)
+                    mist.scheduleFunction(setCAPOrbitTask, {groupName}, timer.getTime() + 5)
                     capSpawned[groupName] = true
                 end
             elseif capSpawned[groupName] == true and (not group or not group:isExist()) then
+                capSpawned[groupName] = false   -- mark dead so zone count is accurate
                 mist.scheduleFunction(function()
                     if isBaseRed(groupName) then
-                        mist.respawnGroup(groupName, true)
+                        local z = capPatrolZone[groupName]
+                        if not z or countAirborneInZone(z) < capMaxPerZone then
+                            mist.respawnGroup(groupName, true)
+                            mist.scheduleFunction(setCAPOrbitTask, {groupName}, timer.getTime() + 5)
+                            capSpawned[groupName] = true
+                        end
                     end
                 end, {}, timer.getTime() + capRespawnDelay)
             end
@@ -126,8 +190,12 @@ end
 for groupName, spawnTime in pairs(capSpawnTimers) do
     mist.scheduleFunction(function()
         if isBaseRed(groupName) then
-            mist.respawnGroup(groupName, true)
-            capSpawned[groupName] = true
+            local zn = capPatrolZone[groupName]
+            if not zn or countAirborneInZone(zn) < capMaxPerZone then
+                mist.respawnGroup(groupName, true)
+                mist.scheduleFunction(setCAPOrbitTask, {groupName}, timer.getTime() + 5)
+                capSpawned[groupName] = true
+            end
         end
     end, {}, timer.getTime() + spawnTime)
 end
@@ -220,6 +288,7 @@ mist.scheduleFunction(checkAndRespawnBombers, {}, timer.getTime() + 901, bomberC
 CAP_SUPPORT = {}
 CAP_SUPPORT.BlueSupportTemplates = {
     "NorthCAP", "NorthCAP2", "HomeCAP",
+    "CAPEast", "CAPWest",
     "Bomb_CoastalGun", "Bomb_RadioTower", "Bomb_RotaAirfield",
 }
 CAP_SUPPORT.originalAI   = {}
@@ -279,21 +348,13 @@ function CAP_SUPPORT.spawnAI(name)
         trigger.action.outText("ERROR: " .. name .. " already has active units!", 10)
         return
     end
-    local tpl = CAP_SUPPORT.originalAI[name]
-    if not tpl then
+    if not CAP_SUPPORT.originalAI[name] then
         trigger.action.outText("ERROR: Template '" .. tostring(name) .. "' not found!", 10)
         return
     end
-    tpl = mist.utils.deepCopy(tpl)
-    local new = name .. "_AI_" .. mist.getNextGroupId()
-    tpl.name, tpl.groupName, tpl.groupId = new, new, mist.getNextGroupId()
-    for i, u in ipairs(tpl.units) do
-        u.unitId = mist.getNextUnitId()
-        u.name   = new .. "_u" .. i
-    end
-    mist.dynAdd(tpl)
-    table.insert(CAP_SUPPORT.activeGroups[name], new)
-    trigger.action.outText(name .. " spawned as " .. new, 10)
+    mist.respawnGroup(name, true)
+    CAP_SUPPORT.activeGroups[name] = { name }
+    trigger.action.outText(name .. " spawned.", 10)
 end
 
 function CAP_SUPPORT.destroyActiveGroups(templateName)
@@ -311,18 +372,31 @@ function CAP_SUPPORT.destroyActiveGroups(templateName)
     trigger.action.outText("Destroyed " .. ct .. " group(s) for " .. templateName, 10)
 end
 
+local capMenuGroups = {
+    "NorthCAP", "NorthCAP2", "HomeCAP", "CAPEast", "CAPWest",
+}
+local bomberMenuGroups = {
+    "Bomb_CoastalGun", "Bomb_RadioTower", "Bomb_RotaAirfield",
+}
+
 local function setupSupportMenus()
     if not missionCommands then return end
     local supportMenu = missionCommands.addSubMenuForCoalition(coalition.side.BLUE, "Support")
+    local capMenu     = missionCommands.addSubMenuForCoalition(coalition.side.BLUE, "CAP Flights",  supportMenu)
+    local bomberMenu  = missionCommands.addSubMenuForCoalition(coalition.side.BLUE, "Bombers",      supportMenu)
     local destroyMenu = missionCommands.addSubMenuForCoalition(coalition.side.BLUE, "Destroy Active Units", supportMenu)
-    for _, gn in ipairs(CAP_SUPPORT.BlueSupportTemplates) do
-        missionCommands.addCommandForCoalition(coalition.side.BLUE, "Spawn " .. gn, supportMenu, function()
+
+    local function addSpawnCmd(gn, parentMenu)
+        missionCommands.addCommandForCoalition(coalition.side.BLUE, "Spawn " .. gn, parentMenu, function()
             CAP_SUPPORT.spawnAI(gn)
         end)
         missionCommands.addCommandForCoalition(coalition.side.BLUE, "Destroy " .. gn, destroyMenu, function()
             CAP_SUPPORT.destroyActiveGroups(gn)
         end)
     end
+
+    for _, gn in ipairs(capMenuGroups)    do addSpawnCmd(gn, capMenu)    end
+    for _, gn in ipairs(bomberMenuGroups) do addSpawnCmd(gn, bomberMenu) end
 end
 
 mist.scheduleFunction(cleanupActiveGroups, {}, timer.getTime() + 30, 60)
@@ -335,7 +409,7 @@ mist.scheduleFunction(setupSupportMenus,   {}, timer.getTime() + 2)
 local AircraftCleanup = {}
 AircraftCleanup.monitoredGroups = {
     -- Rota CAP (existing)
-    "CAPNorth","CAPNorth2","CAPNorth3","CAPSouth","CAPEast","CAPWest",
+    "RotaCAPNorth","RotaCAPSouth",
     -- New base CAP
     "CAPCharonKanoa","CAPCharonKanoa2",
     "CAPUshi","CAPUshi2",
@@ -435,14 +509,6 @@ WWII_CTLD.loadedInfantry = {}
 WWII_CTLD.loadedCrate    = {}
 WWII_CTLD.worldCrates    = {}
 WWII_CTLD.spawnedTroops  = {}
-
-local function ctldDeepCopy(t)
-    if mist and mist.utils and mist.utils.deepCopy then return mist.utils.deepCopy(t) end
-    if type(t) ~= "table" then return t end
-    local copy = {}
-    for k, v in pairs(t) do copy[ctldDeepCopy(k)] = ctldDeepCopy(v) end
-    return copy
-end
 
 local function destroyStatic(name)
     local so = StaticObject.getByName(name)
@@ -732,8 +798,8 @@ mist.scheduleFunction(setupCTLDMenus, {}, timer.getTime() + 2)
 local GCI_CFG = {
     UPDATE_INTERVAL        = 10,
     RTB_LOITER_TIME        = 45,
-    SCRAMBLE_THREAT_BUFFER = 30000,
-    INTERCEPT_LEASH_BUFFER = 60000,
+    SCRAMBLE_THREAT_BUFFER = 0,
+    INTERCEPT_LEASH_BUFFER = 15000,
     INTERCEPT_ALTITUDE     = 3000,
     INTERCEPT_SPEED        = 450,
     GCI_FUEL_RTB_THRESHOLD = 0.20,
@@ -1129,7 +1195,7 @@ trigger.action.outText("WWII Marianas CAP/CTLD/GCI Script loaded.", 10)
 --       RED_ZONE_GURGUAN, RED_ZONE_PAGAN,
 --       BLUE_ZONE_AGANA, BLUE_ZONE_NORTH, BlueCTLD (for logistics).
 --  4. CAP groups (late-activated):
---       Rota (existing): CAPNorth, CAPNorth2, CAPNorth3, CAPSouth, CAPEast, CAPWest
+--       Rota (existing): RotaCAPNorth, RotaCAPSouth
 --       Charon Kanoa: CAPCharonKanoa, CAPCharonKanoa2
 --       Ushi: CAPUshi, CAPUshi2
 --       Gurguan Point: CAPGurguan, CAPGurguan2

@@ -392,7 +392,7 @@
         <!-- Section A -->
         <div class="card" id="s1a">
             <h3>Section A &mdash; Red CAP Flights <span class="badge badge-red">RED</span></h3>
-            <p><strong>What it does:</strong> Spawns RED combat air patrols that auto-respawn 120 seconds after death. Several groups have a 5-minute delayed first-spawn. CAP now covers all 5 RED airbases.</p>
+            <p><strong>What it does:</strong> Spawns RED combat air patrols that auto-respawn 300 seconds after death. A maximum of <strong>3 groups per zone</strong> are allowed airborne at any time. Several groups have a 5-minute delayed first-spawn. CAP now covers all 5 RED airbases. Each group is <strong>zone-locked</strong> &mdash; after spawn the script overrides ME waypoints with a scripted orbit over the group&rsquo;s home zone and caps its engagement range to that zone&rsquo;s radius, preventing flights from chasing threats across the map.</p>
 
             <h4>ME Setup</h4>
             <ul>
@@ -408,15 +408,19 @@
             </table>
             <ul>
                 <li>Set every group to <strong>Late Activation</strong></li>
-                <li>Give each group a full CAP waypoint route &mdash; the script uses <code>mist.respawnGroup</code> so the AI follows whatever route you drew</li>
+                <li>ME waypoint routes are <strong>ignored at runtime</strong> &mdash; the script pushes a zone-locked orbit task after every spawn. You still need at least one waypoint so the group is valid, but the AI will fly to its assigned zone centre automatically</li>
             </ul>
 
             <h4>Tuning</h4>
             <table>
                 <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
-                <tr><td><code>capRespawnDelay</code></td><td>120 s</td><td>Delay before respawning a dead CAP group</td></tr>
+                <tr><td><code>capRespawnDelay</code></td><td>300 s</td><td>Delay before respawning a dead CAP group</td></tr>
                 <tr><td><code>capCheckInterval</code></td><td>60 s</td><td>How often the script checks for dead groups</td></tr>
+                <tr><td><code>capMaxPerZone</code></td><td>3</td><td>Max CAP groups airborne per zone at any time</td></tr>
                 <tr><td><code>capSpawnTimers</code></td><td>300 s</td><td>Delayed first-spawn for specific groups</td></tr>
+                <tr><td><code>CAP_ORBIT_ALT</code></td><td>2,500 m</td><td>Orbit altitude for all CAP flights</td></tr>
+                <tr><td><code>CAP_ORBIT_SPEED</code></td><td>120 m/s (~430 km/h)</td><td>Orbit speed for all CAP flights</td></tr>
+                <tr><td><code>capPatrolZone</code></td><td><em>(table)</em></td><td>Maps each CAP group name &rarr; its patrol trigger zone. Engagement range = zone radius</td></tr>
             </table>
         </div>
 
@@ -575,8 +579,8 @@
 
         <div class="card">
             <h3>What It Does</h3>
-            <p>Fills 18 zones with random Japanese ground groups (infantry, tanks, AA, trucks) selected from 20 templates. Uses a <strong>shuffle-bag</strong> so you don&rsquo;t see the same template twice in a row. Marks each group on the F10 map; markers auto-clear when the group is killed. Maintains 1&ndash;3 groups per zone.</p>
-            <p><span class="badge badge-yellow">FLARE</span> Each alive group fires a <strong>yellow (orange) signal flare</strong> every 30 seconds from the position of the first alive unit. Flares stop automatically when the group is destroyed.</p>
+            <p>Fills 18 zones with random Japanese ground groups (infantry, tanks, AA, trucks) selected from 20 templates. Uses a <strong>shuffle-bag</strong> so you don&rsquo;t see the same template twice in a row. Marks each group on the F10 map; markers auto-clear when the group is killed. Maintains <strong>1 group per zone</strong> (18 total across the map).</p>
+            <p><span class="badge badge-yellow">SMOKE</span> Each alive group is marked with <strong>orange smoke</strong> placed 50 m from the lead unit (refreshed every 300 s). A bright <strong>white illumination bomb</strong> (<code>trigger.action.illuminationBomb</code>) is also fired straight up from the lead unit every 120 seconds, lighting up the area at night. Both markers stop automatically when the group is destroyed.</p>
 
             <h4>Template Examples (6&ndash;8 units each)</h4>
             <table>
@@ -607,11 +611,12 @@
         <table>
             <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
             <tr><td><code>DGSS.ZONES["ZONEn"].minGroups</code></td><td>1</td><td>Zone never drops below this</td></tr>
-            <tr><td><code>DGSS.ZONES["ZONEn"].maxGroups</code></td><td>3</td><td>Zone cap</td></tr>
+            <tr><td><code>DGSS.ZONES["ZONEn"].maxGroups</code></td><td>1</td><td>Zone cap</td></tr>
             <tr><td><code>DGSS.MAX_SPAWNS_PER_CYCLE</code></td><td>3</td><td>Max groups spawned per 5-min check</td></tr>
             <tr><td><code>DGSS.CHECK_ZONES_INTERVAL</code></td><td>300 s</td><td>Seconds between spawn sweeps</td></tr>
             <tr><td><code>DGSS.CLEANUP_INTERVAL</code></td><td>120 s</td><td>Dead group cleanup frequency</td></tr>
-            <tr><td><code>DGSS.FLARE_INTERVAL</code></td><td>30 s</td><td>Seconds between yellow flare launches per group</td></tr>
+            <tr><td><code>DGSS.SMOKE_INTERVAL</code></td><td>300 s</td><td>Seconds between orange smoke refreshes per group</td></tr>
+            <tr><td><code>DGSS.ILLUM_INTERVAL</code></td><td>120 s</td><td>Seconds between white illumination bomb launches per group</td></tr>
         </table>
 
         <h4>DCS Unit Types Used</h4>
@@ -630,7 +635,7 @@
 
         <div class="card">
             <h3>What It Does</h3>
-            <p>Automatically spawns Japanese supply convoys (trucks, tanks, infantry) that route between random zone pairs. Convoys use <strong>Off Road &rarr; On Road &rarr; Off Road</strong> waypoints. Stuck convoys are auto-detected and replaced. Convoys self-destruct upon arrival at their destination zone. Up to 12 active simultaneously.</p>
+            <p>Automatically spawns Japanese supply convoys (trucks, tanks, infantry) that route between random zone pairs. Convoys use <strong>Off Road &rarr; On Road &rarr; Off Road</strong> waypoints. Stuck convoys are auto-detected and replaced. Convoys self-destruct upon arrival at their destination zone. Up to 7 active simultaneously.</p>
             <p>RED coalition gets an F10 menu item <strong>"Convoy Status"</strong> showing active count.</p>
         </div>
 
@@ -658,7 +663,7 @@
         <h4>Tuning</h4>
         <table>
             <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
-            <tr><td><code>CONVOY.MAX_CONVOYS</code></td><td>12</td><td>Max simultaneous convoys</td></tr>
+            <tr><td><code>CONVOY.MAX_CONVOYS</code></td><td>7</td><td>Max simultaneous convoys</td></tr>
             <tr><td><code>CONVOY.INITIAL_CONVOYS</code></td><td>3</td><td>Spawned at mission start (staggered 2 min apart)</td></tr>
             <tr><td><code>CONVOY.CONVOY_SPEED</code></td><td>18 m/s</td><td>~65 km/h</td></tr>
             <tr><td><code>CONVOY.MIN_TRAVEL_DISTANCE</code></td><td>32,000 m</td><td>Minimum route length</td></tr>
