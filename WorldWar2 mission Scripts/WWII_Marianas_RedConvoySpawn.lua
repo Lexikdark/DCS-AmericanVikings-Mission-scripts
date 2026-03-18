@@ -46,19 +46,19 @@ CONVOY.COUNTRY       = country.id.JAPAN
 
 CONVOY.TEMPLATES = {
     { "Type_94_Truck", "Type_94_Truck", "Type_94_Truck" },
-    { "Type_94_Truck", "Type_94_Truck", "soldier_mauser98", "soldier_mauser98" },
+    { "Type_94_Truck", "Type_94_Truck", "Type_97_Chi_Ha", "Type_94_Truck" },
     { "Type_94_Truck", "Type_94_Truck", "Type_89_I_Go", "Type_94_Truck" },
     { "Type_89_I_Go", "Type_89_I_Go", "Type_94_Truck" },
-    { "Type_89_I_Go", "Type_94_Truck", "Type_94_Truck", "soldier_mauser98" },
-    { "Type_98_Ke_Ni", "Type_98_Ke_Ni", "Type_94_Truck", "Type_94_Truck" },
-    { "Type_98_Ke_Ni", "Type_94_Truck", "soldier_mauser98", "soldier_mauser98" },
-    { "Type_94_Truck", "soldier_mauser98", "soldier_mauser98", "soldier_mauser98" },
+    { "Type_89_I_Go", "Type_94_Truck", "Type_98_AA", "Type_97_Chi_Ha" },
+    { "Type_98_Ke_Ni", "Type_98_Ke_Ni", "Type_94_Truck", "Type_98_AA" },
+    { "Type_98_Ke_Ni", "Type_94_Truck", "Type_97_Chi_Ha", "Type_94_Truck" },
+    { "Type_94_Truck", "Type_98_AA", "Type_94_Truck", "Type_98_Ke_Ni" },
     { "Type_89_I_Go", "Type_98_Ke_Ni", "Type_94_Truck" },
-    { "Type_94_Truck", "Type_94_Truck", "Type_94_Truck", "Type_94_Truck" },
-    { "soldier_mauser98", "soldier_mauser98", "Type_98_Ke_Ni", "Type_94_Truck" },
+    { "Type_94_Truck", "Type_94_Truck", "Type_94_Truck", "Type_98_AA" },
+    { "Type_97_Chi_Ha", "Type_98_Ke_Ni", "Type_94_Truck", "Type_98_AA" },
     { "Type_89_I_Go", "Type_89_I_Go", "Type_98_Ke_Ni" },
     { "Type_94_Truck", "Type_98_Ke_Ni", "Type_98_Ke_Ni", "Type_94_Truck" },
-    { "soldier_mauser98", "Type_94_Truck", "Type_89_I_Go", "soldier_mauser98" },
+    { "Type_97_Chi_Ha", "Type_94_Truck", "Type_89_I_Go", "Type_98_AA" },
     { "Type_98_Ke_Ni", "Type_89_I_Go", "Type_89_I_Go", "Type_94_Truck" },
 }
 
@@ -81,12 +81,37 @@ local function dist2d(a, b)
     return math.sqrt(dx * dx + dz * dz)
 end
 
+-- Returns true if the given world‐coordinate is over water
+local function isOverWater(x, z)
+    local surface = land.getSurfaceType({ x = x, y = z })
+    -- SHALLOW_WATER = 2, WATER = 3
+    return surface == land.SurfaceType.SHALLOW_WATER
+        or surface == land.SurfaceType.WATER
+end
+
+-- Sample N points along the straight line from A to B;
+-- returns true if ANY sample sits over water.
+local function routeCrossesWater(startPt, endPt, samples)
+    samples = samples or 20
+    for i = 0, samples do
+        local t  = i / samples
+        local sx = startPt.x + (endPt.x - startPt.x) * t
+        local sz = startPt.z + (endPt.z - startPt.z) * t
+        if isOverWater(sx, sz) then return true end
+    end
+    return false
+end
+
 local function discoverZones()
     for i = 1, CONVOY.ZONE_COUNT do
         local zName = CONVOY.ZONE_PREFIX .. i
         local zd    = trigger.misc.getZone(zName)
         if zd then
-            CONVOY._zones[i] = { x = zd.point.x, z = zd.point.z }
+            if isOverWater(zd.point.x, zd.point.z) then
+                cvLog("Zone " .. zName .. " is over water – skipped.")
+            else
+                CONVOY._zones[i] = { x = zd.point.x, z = zd.point.z }
+            end
         end
     end
     local ct = 0; for _ in pairs(CONVOY._zones) do ct = ct + 1 end
@@ -98,20 +123,30 @@ local function pickRandomZonePair()
     for k, _ in pairs(CONVOY._zones) do keys[#keys + 1] = k end
     if #keys < 2 then return nil, nil end
 
-    local maxAttempts = 30
+    local maxAttempts = 50
     for _ = 1, maxAttempts do
         local a = keys[math.random(#keys)]
         local b = keys[math.random(#keys)]
         if a ~= b then
-            local d = dist2d(CONVOY._zones[a], CONVOY._zones[b])
-            if d >= CONVOY.MIN_TRAVEL_DISTANCE then return a, b end
+            local pa = CONVOY._zones[a]
+            local pb = CONVOY._zones[b]
+            local d  = dist2d(pa, pb)
+            if d >= CONVOY.MIN_TRAVEL_DISTANCE
+               and not routeCrossesWater(pa, pb) then
+                return a, b
+            end
         end
     end
-    -- Fallback: just pick any two different
-    local a = keys[math.random(#keys)]
-    local b
-    repeat b = keys[math.random(#keys)] until b ~= a
-    return a, b
+    -- Fallback: pick any two on the same landmass (no water crossing)
+    for _, a in ipairs(keys) do
+        for _, b in ipairs(keys) do
+            if a ~= b and not routeCrossesWater(CONVOY._zones[a], CONVOY._zones[b]) then
+                return a, b
+            end
+        end
+    end
+    cvLog("WARNING – no valid same-island zone pair found!")
+    return nil, nil
 end
 
 local function pickTemplate()
@@ -124,8 +159,13 @@ end
 
 local function buildRoute(startPt, endPt, speed)
     -- 3-waypoint route: start (Off Road) → midpoint (On Road) → end (Off Road)
-    local midX = (startPt.x + endPt.x) / 2 + math.random(-500, 500)
-    local midZ = (startPt.z + endPt.z) / 2 + math.random(-500, 500)
+    -- Re-roll midpoint up to 10 times to avoid placing it over water
+    local midX, midZ
+    for _ = 1, 10 do
+        midX = (startPt.x + endPt.x) / 2 + math.random(-500, 500)
+        midZ = (startPt.z + endPt.z) / 2 + math.random(-500, 500)
+        if not isOverWater(midX, midZ) then break end
+    end
 
     return {
         {

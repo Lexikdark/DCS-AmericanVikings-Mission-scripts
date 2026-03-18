@@ -470,6 +470,67 @@
             </ul>
         </div>
 
+        <!-- Section C2 -->
+        <div class="card blue" id="s1c2">
+            <h3>Section C2 &mdash; Blue Dynamic Bomber Missions (F10 Menu) <span class="badge badge-blue">BLUE</span></h3>
+            <p><strong>What it does:</strong> Players open <strong>F10 &rarr; Other &rarr; Bomber Missions</strong> and choose a bomber type + target island. The script finds all RED ground, naval, and static units inside that island&rsquo;s <code>BOMB_ZONE_*</code> trigger zone, then dispatches a bomber flight to attack up to 6 randomly chosen targets. After bombing, the flight returns to <strong>Agana</strong> airfield. Landed or destroyed flights free their slot for re-use.</p>
+
+            <h4>Bomber Types</h4>
+            <table>
+                <tr><th>Menu Label</th><th>Base Template</th><th>Altitude</th><th>Speed</th><th>Defense</th></tr>
+                <tr><td>Light Bombers</td><td><code>LightBombers</code></td><td>18,000 ft</td><td>300 kts</td><td>Fighter (can engage air threats)</td></tr>
+                <tr><td>Medium Bombers</td><td><code>MediumBombers</code></td><td>20,000 ft</td><td>250 kts</td><td>Turret only (bypass &amp; escape)</td></tr>
+                <tr><td>Heavy Bombers</td><td><code>HeavyBombers</code></td><td>25,000 ft</td><td>230 kts</td><td>Turret only (bypass &amp; escape)</td></tr>
+            </table>
+
+            <h4>Target Zones</h4>
+            <table>
+                <tr><th>Zone Name</th><th>Menu Label</th></tr>
+                <tr><td><code>BOMB_ZONE_ROTA</code></td><td>Rota</td></tr>
+                <tr><td><code>BOMB_ZONE_SAIPAN</code></td><td>Saipan</td></tr>
+                <tr><td><code>BOMB_ZONE_TINIAN</code></td><td>Tinian</td></tr>
+                <tr><td><code>BOMB_ZONE_PAGAN</code></td><td>Pagan</td></tr>
+                <tr><td><code>BOMB_ZONE_MAUG</code></td><td>Maug</td></tr>
+            </table>
+
+            <h4>ME Setup</h4>
+            <ul>
+                <li>Create <strong>BLUE</strong> air groups named exactly as shown below (all <strong>Late Activation</strong>):</li>
+            </ul>
+            <table>
+                <tr><th>Type</th><th>Slot Group Names</th><th>Max Simultaneous</th></tr>
+                <tr><td>Light Bombers</td><td><code>LightBombers</code>, <code>LightBombers_2</code>, <code>LightBombers_3</code></td><td>Up to 3</td></tr>
+                <tr><td>Medium Bombers</td><td><code>MediumBombers</code>, <code>MediumBombers_2</code>, <code>MediumBombers_3</code></td><td>Up to 3</td></tr>
+                <tr><td>Heavy Bombers</td><td><code>HeavyBombers</code>, <code>HeavyBombers_2</code>, <code>HeavyBombers_3</code></td><td>Up to 3</td></tr>
+            </table>
+            <ul>
+                <li>The base template (e.g. <code>LightBombers</code>) is required. The <code>_2</code> and <code>_3</code> copies are optional &mdash; they add extra simultaneous flight capacity</li>
+                <li>All copies should use the <strong>same aircraft type and loadout</strong> as the base template</li>
+                <li>ME waypoint routes are <strong>replaced at runtime</strong> &mdash; the script builds a dynamic route (ingress &rarr; attack &rarr; RTB to Agana)</li>
+                <li>The script auto-discovers available slots at startup and logs how many were found per type</li>
+            </ul>
+            <ul>
+                <li>Create <strong>trigger zones</strong> named <code>BOMB_ZONE_ROTA</code>, <code>BOMB_ZONE_SAIPAN</code>, <code>BOMB_ZONE_TINIAN</code>, <code>BOMB_ZONE_PAGAN</code>, <code>BOMB_ZONE_MAUG</code> covering each island&rsquo;s target area</li>
+            </ul>
+
+            <h4>Tuning</h4>
+            <table>
+                <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+                <tr><td><code>BOMBER_CMD.MAX_PER_TYPE</code></td><td>3</td><td>Max slot groups the script looks for per type (<code>_2</code> through <code>_N</code>)</td></tr>
+                <tr><td><code>BOMBER_CMD.RTB_AIRBASE</code></td><td>Agana</td><td>Airfield used for the RTB landing waypoint</td></tr>
+                <tr><td><code>altFt</code> / <code>speedKts</code></td><td>Per type</td><td>Bombing altitude and cruise speed (in template table)</td></tr>
+            </table>
+
+            <h4>How the Slot System Works</h4>
+            <ol>
+                <li>At startup, the script scans the MIST database for <code>&lt;template&gt;</code>, <code>&lt;template&gt;_2</code>, <code>&lt;template&gt;_3</code></li>
+                <li>Each found group becomes a &ldquo;slot&rdquo; that can be dispatched independently</li>
+                <li>When a player requests a bomber, the first free slot is activated via <code>mist.respawnGroup</code></li>
+                <li>5 seconds later, the script replaces the ME route with a dynamic bombing route using <code>mist.goRoute</code></li>
+                <li>When the flight lands at Agana or is destroyed, the slot is freed and can be dispatched again</li>
+            </ol>
+        </div>
+
         <!-- Section D -->
         <div class="card neutral" id="s1d">
             <h3>Section D &mdash; Aircraft Cleanup System</h3>
@@ -781,6 +842,7 @@
             <tr><td><code>BlueCTLD</code></td><td>CAP/CTLD/GCI &mdash; logistics load zone</td><td>Circle</td></tr>
             <tr><td><code>RED_ZONE_ROTA</code>, <code>RED_ZONE_CHARONKANOA</code>, <code>RED_ZONE_USHI</code>, <code>RED_ZONE_GURGUAN</code>, <code>RED_ZONE_PAGAN</code></td><td>GCI (RED defense sectors)</td><td>Circle</td></tr>
             <tr><td><code>BLUE_ZONE_AGANA</code>, <code>BLUE_ZONE_NORTH</code></td><td>GCI (BLUE defense sectors)</td><td>Circle</td></tr>
+            <tr><td><code>BOMB_ZONE_ROTA</code>, <code>BOMB_ZONE_SAIPAN</code>, <code>BOMB_ZONE_TINIAN</code>, <code>BOMB_ZONE_PAGAN</code>, <code>BOMB_ZONE_MAUG</code></td><td>Dynamic Bombers (Section C2)</td><td>Circle</td></tr>
             <tr><td><code>ZONE1</code> &ndash; <code>ZONE18</code></td><td>DGSS (ground spawns)</td><td>Circle</td></tr>
             <tr><td><code>ConvoyZone1</code> &ndash; <code>ConvoyZone20</code></td><td>Red Convoys</td><td>Circle</td></tr>
             <tr><td><code>CAPTURE_ZONE_RotaAirfield</code></td><td>Airbase Capture (capturable)</td><td>Circle</td></tr>
@@ -796,7 +858,7 @@
             <tr><td><code>DESTROY_ZONE_Marpi</code>, <code>Kagman</code>, <code>Isley</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
             <tr><td><code>DESTROY_ZONE_Japanese_Fleet</code></td><td>Airbase Capture (destroy-only)</td><td>Circle</td></tr>
         </table>
-        <p><strong>Total trigger zones needed:</strong> 1 + 5 + 2 + 18 + 20 + 6 (capture) + 15 (destroy) = <strong>67 circle zones</strong></p>
+        <p><strong>Total trigger zones needed:</strong> 1 + 5 + 2 + 5 + 18 + 20 + 6 (capture) + 15 (destroy) = <strong>72 circle zones</strong></p>
 
         <div class="back-top"><a href="#">&uarr; Back to top</a></div>
     </section>
@@ -818,6 +880,9 @@
             <tr><td><code>FighterBomber</code>, <code>FighterBomber2</code>, <code>Bombers</code>, <code>Bombers2</code></td><td><span class="badge badge-red">RED</span></td><td>Bombers &mdash; Rota (Section B)</td></tr>
             <tr><td><code>FBCharonKanoa</code>, <code>FBUshi</code>, <code>FBGurguan</code>, <code>FBPagan</code></td><td><span class="badge badge-red">RED</span></td><td>Fighter-Bombers &mdash; new bases (Section B)</td></tr>
             <tr><td><code>NorthCAP</code>, <code>NorthCAP2</code>, <code>HomeCAP</code>, <code>Bomb_CoastalGun</code>, <code>Bomb_RadioTower</code>, <code>Bomb_RotaAirfield</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Support F10 (Section C)</td></tr>
+            <tr><td><code>LightBombers</code>, <code>LightBombers_2</code>, <code>LightBombers_3</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Dynamic Bombers (Section C2)</td></tr>
+            <tr><td><code>MediumBombers</code>, <code>MediumBombers_2</code>, <code>MediumBombers_3</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Dynamic Bombers (Section C2)</td></tr>
+            <tr><td><code>HeavyBombers</code>, <code>HeavyBombers_2</code>, <code>HeavyBombers_3</code></td><td><span class="badge badge-blue">BLUE</span></td><td>Dynamic Bombers (Section C2)</td></tr>
             <tr><td><code>RED_AIR_ROTA_01</code> through <code>_06</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Rota (Section F)</td></tr>
             <tr><td><code>RED_AIR_CHARONKANOA_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Charon Kanoa (Section F)</td></tr>
             <tr><td><code>RED_AIR_USHI_01</code> through <code>_04</code></td><td><span class="badge badge-red">RED</span></td><td>GCI &mdash; Ushi (Section F)</td></tr>

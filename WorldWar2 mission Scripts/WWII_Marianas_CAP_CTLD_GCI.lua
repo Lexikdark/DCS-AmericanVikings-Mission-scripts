@@ -227,6 +227,17 @@ local bomberCheckInterval  = 30
 local bomberSpawned        = {}
 local bomberRespawnPending = {}
 
+-- Startup validation: warn about bomber groups missing from MIST DB
+for _, bomber in ipairs(bomberGroups) do
+    local data = mist.getGroupData(bomber.name)
+    if not data then
+        env.warning(string.format(
+            "[BOMBER] Group '%s' NOT found in MIST database! "
+            .. "Create it as a Late Activation group in the Mission Editor.",
+            bomber.name))
+    end
+end
+
 local function isGroupLanded(group)
     if not group or not group:isExist() then return false end
     for _, unit in ipairs(group:getUnits()) do
@@ -240,9 +251,15 @@ end
 for _, bomber in ipairs(bomberGroups) do
     mist.scheduleFunction(function()
         if isBaseRed(bomber.name) then
-            mist.respawnGroup(bomber.name, true)
-            bomberSpawned[bomber.name]        = true
-            bomberRespawnPending[bomber.name]  = false
+            local ok, err = pcall(mist.respawnGroup, bomber.name, true)
+            if ok then
+                bomberSpawned[bomber.name]        = true
+                bomberRespawnPending[bomber.name]  = false
+            else
+                env.warning(string.format(
+                    "[BOMBER] Failed to spawn '%s' – group may not exist as Late Activation in ME: %s",
+                    bomber.name, tostring(err)))
+            end
         end
     end, {}, timer.getTime() + bomber.spawnTime)
 end
@@ -256,6 +273,22 @@ local function checkAndRespawnBombers()
             if group and group:isExist() then group:destroy() end
             bomberSpawned[gName]        = false
             bomberRespawnPending[gName] = false
+        elseif not bomberSpawned[gName] and not bomberRespawnPending[gName]
+               and timer.getTime() > bomber.spawnTime + 60 then
+            -- Initial spawn failed or was skipped; retry
+            bomberRespawnPending[gName] = true
+            mist.scheduleFunction(function()
+                if isBaseRed(gName) then
+                    local ok, err = pcall(mist.respawnGroup, gName, true)
+                    if ok then
+                        bomberSpawned[gName] = true
+                    else
+                        env.warning(string.format(
+                            "[BOMBER] Retry failed for '%s': %s", gName, tostring(err)))
+                    end
+                end
+                bomberRespawnPending[gName] = false
+            end, {}, timer.getTime() + bomberRespawnDelay)
         elseif bomberSpawned[gName] then
             if (not group or not group:isExist()) and not bomberRespawnPending[gName] then
                 bomberRespawnPending[gName] = true
@@ -403,6 +436,412 @@ mist.scheduleFunction(cleanupActiveGroups, {}, timer.getTime() + 30, 60)
 mist.scheduleFunction(setupSupportMenus,   {}, timer.getTime() + 2)
 
 -- ─────────────────────────────────────────────────────────────────────────────
+--  SECTION C2 – BLUE DYNAMIC BOMBER MISSIONS (F10 Menu)
+--    Players choose a bomber type + target island.  The script finds Red
+--    ground / naval units inside the island's BOMB_ZONE trigger zone and
+--    dispatches a cloned bomber flight to attack them.
+--    Max 3 flights of each type airborne at once.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+BOMBER_CMD = {}
+
+BOMBER_CMD.templates = {
+    { name = "LightBombers",  label = "Light Bombers",  altFt = 18000, speedKts = 300, isFighter = true  },
+    { name = "MediumBombers", label = "Medium Bombers", altFt = 20000, speedKts = 250, isFighter = false },
+    { name = "HeavyBombers",  label = "Heavy Bombers",  altFt = 25000, speedKts = 230, isFighter = false },
+}
+
+-- lookup by template name for quick access
+BOMBER_CMD.profileByName = {}
+for _, t in ipairs(BOMBER_CMD.templates) do
+    BOMBER_CMD.profileByName[t.name] = t
+end
+
+BOMBER_CMD.zones = {
+    { name = "BOMB_ZONE_ROTA",    label = "Rota"    },
+    { name = "BOMB_ZONE_SAIPAN",  label = "Saipan"  },
+    { name = "BOMB_ZONE_TINIAN",  label = "Tinian"  },
+    { name = "BOMB_ZONE_PAGAN",   label = "Pagan"   },
+    { name = "BOMB_ZONE_MAUG",    label = "Maug"    },
+}
+
+BOMBER_CMD.MAX_PER_TYPE = 3
+
+-- RTB airfield on Guam (used for the landing waypoint)
+BOMBER_CMD.RTB_AIRBASE = "Agana"
+
+local function bomberLog(msg)  env.info("[BOMBER_CMD] " .. tostring(msg)) end
+
+-- ── helpers ──────────────────────────────────────────────────────────────────
+
+local function findRedTargetsInZone(zoneName)
+    local zone = trigger.misc.getZone(zoneName)
+    if not zone then
+        bomberLog("Zone not found: " .. tostring(zoneName))
+        return {}
+    end
+    local targets = {}
+    local r2 = zone.radius * zone.radius
+
+    -- Ground and naval units
+    for _, cat in ipairs({ Group.Category.GROUND, Group.Category.SHIP }) do
+        for _, grp in pairs(coalition.getGroups(coalition.side.RED, cat) or {}) do
+            if grp and grp:isExist() then
+                for _, unit in ipairs(grp:getUnits()) do
+                    if unit and unit:isExist() and unit:getLife() > 1 then
+                        local p  = unit:getPoint()
+                        local dx = p.x - zone.point.x
+                        local dz = p.z - zone.point.z
+                        if dx * dx + dz * dz <= r2 then
+                            targets[#targets + 1] = unit
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Static objects (buildings, fortifications, etc.)
+    for _, obj in pairs(coalition.getStaticObjects(coalition.side.RED) or {}) do
+        if obj and obj:isExist() and obj:getLife() > 1 then
+            local p  = obj:getPoint()
+            local dx = p.x - zone.point.x
+            local dz = p.z - zone.point.z
+            if dx * dx + dz * dz <= r2 then
+                targets[#targets + 1] = obj
+            end
+        end
+    end
+
+    return targets
+end
+
+local function shuffleTable(t)
+    for i = #t, 2, -1 do
+        local j = math.random(1, i)
+        t[i], t[j] = t[j], t[i]
+    end
+end
+
+-- ── slot discovery ───────────────────────────────────────────────────────────
+-- Look for ME groups: <template>, <template>_2, <template>_3, …
+-- Each discovered group is a "slot" that can be dispatched independently.
+-- With just the base template you get 1 flight per type; duplicate the group
+-- in the Mission Editor (e.g. LightBombers_2, LightBombers_3) for more.
+
+BOMBER_CMD.slots     = {}   -- [baseName] = { "LightBombers", "LightBombers_2", … }
+BOMBER_CMD.slotInUse = {}   -- [slotGroupName] = true/false
+
+for _, t in ipairs(BOMBER_CMD.templates) do
+    local found = {}
+    if mist.getGroupData(t.name) then
+        found[#found + 1] = t.name
+        BOMBER_CMD.slotInUse[t.name] = false
+    end
+    for i = 2, BOMBER_CMD.MAX_PER_TYPE do
+        local slotName = t.name .. "_" .. i
+        if mist.getGroupData(slotName) then
+            found[#found + 1] = slotName
+            BOMBER_CMD.slotInUse[slotName] = false
+        end
+    end
+    BOMBER_CMD.slots[t.name] = found
+    if #found > 0 then
+        bomberLog(string.format("%s: %d slot(s) available in ME", t.name, #found))
+    else
+        bomberLog("WARNING: no ME groups found for " .. t.name)
+    end
+end
+
+local function findFreeSlot(templateName)
+    local slots = BOMBER_CMD.slots[templateName]
+    if not slots then return nil end
+    for _, slotName in ipairs(slots) do
+        if not BOMBER_CMD.slotInUse[slotName] then
+            return slotName
+        end
+    end
+    return nil
+end
+
+-- ── spawn via mist.respawnGroup + mist.goRoute ──────────────────────────────
+-- Uses the same proven approach as Section A (CAP): activate the ME template
+-- group, then reassign the route + tasks via mist.goRoute.
+
+local function spawnBomberMission(templateName, slotName, targets, zoneName)
+    local profile   = BOMBER_CMD.profileByName[templateName]
+    local altM      = profile and (profile.altFt * 0.3048) or 6096
+    local spdMs     = (profile and profile.speedKts or 250) * 0.5144
+    local isFighter = profile and profile.isFighter or false
+
+    -- Pick up to 6 random targets for attack tasks
+    shuffleTable(targets)
+    local attackTasks = {}
+    local n = math.min(#targets, 6)
+    for i = 1, n do
+        if targets[i] and targets[i]:isExist() then
+            attackTasks[#attackTasks + 1] = {
+                id = "AttackUnit",
+                params = {
+                    unitId          = targets[i]:getID(),
+                    groupAttack     = true,
+                    weaponType      = 2147485694,
+                    altitudeEnabled = true,
+                    altitude        = altM,
+                },
+            }
+        end
+    end
+
+    if not isFighter then
+        table.insert(attackTasks, 1, {
+            id = "EngageTargets",
+            params = {
+                maxDist     = 305,
+                targetTypes = { "Air" },
+                priority    = 0,
+            },
+        })
+    end
+
+    if #attackTasks == 0 then
+        bomberLog("No valid attack tasks — aborting spawn")
+        return nil
+    end
+
+    -- Zone centre for ingress waypoint
+    local zone = trigger.misc.getZone(zoneName)
+    local zx   = zone and zone.point.x or targets[1]:getPoint().x
+    local zz   = zone and zone.point.z or targets[1]:getPoint().z
+
+    -- RTB airfield
+    local rtbBase = Airbase.getByName(BOMBER_CMD.RTB_AIRBASE)
+    local rtbPt   = rtbBase and rtbBase:getPoint()
+
+    -- ► Spawn via proven mist.respawnGroup (same as Section A CAP)
+    local ok, err = pcall(mist.respawnGroup, slotName, true)
+    if not ok then
+        bomberLog("respawnGroup ERROR for " .. slotName .. ": " .. tostring(err))
+        return nil
+    end
+
+    local grp = Group.getByName(slotName)
+    if not grp or not grp:isExist() then
+        bomberLog(slotName .. " did not appear after respawnGroup")
+        return nil
+    end
+    bomberLog("Spawned: " .. slotName)
+    BOMBER_CMD.slotInUse[slotName] = true
+
+    -- ► Assign dynamic route + attack tasks after DCS finishes initialising
+    mist.scheduleFunction(function()
+        local group = Group.getByName(slotName)
+        if not group or not group:isExist() then
+            BOMBER_CMD.slotInUse[slotName] = false
+            bomberLog(slotName .. " gone before route could be set — slot freed")
+            return
+        end
+
+        local unit1 = group:getUnit(1)
+        if not unit1 or not unit1:isExist() then return end
+        local pos = unit1:getPoint()
+
+        -- Build route points
+        local routePoints = {}
+        local wpIdx = 1
+
+        if pos.y < 100 and rtbBase then
+            -- Aircraft is on/near the ground → take off first
+            routePoints[wpIdx] = {
+                x           = pos.x,
+                y           = pos.z,
+                alt         = 13,
+                alt_type    = "BARO",
+                speed       = spdMs,
+                action      = "From Parking Area Hot",
+                type        = "TakeOffParkingHot",
+                aerodromeId = rtbBase:getID(),
+            }
+            wpIdx = wpIdx + 1
+        end
+
+        -- Ingress waypoint at target zone (carries attack tasks)
+        routePoints[wpIdx] = {
+            x        = zx,
+            y        = zz,
+            alt      = altM,
+            alt_type = "BARO",
+            speed    = spdMs,
+            action   = "Fly Over Point",
+            type     = "Turning Point",
+            task     = {
+                id = "ComboTask",
+                params = { tasks = attackTasks },
+            },
+        }
+        wpIdx = wpIdx + 1
+
+        -- RTB landing waypoint
+        if rtbPt then
+            routePoints[wpIdx] = {
+                x           = rtbPt.x,
+                y           = rtbPt.z,
+                alt         = 300,
+                alt_type    = "BARO",
+                speed       = 80,
+                action      = "Landing",
+                type        = "Land",
+                aerodromeId = rtbBase:getID(),
+            }
+        end
+
+        -- Apply the new route (replaces whatever the ME template had)
+        mist.goRoute(slotName, routePoints)
+
+        -- Set AI options
+        local ctrl = group:getController()
+        ctrl:setOption(AI.Option.Air.id.ROE,
+                       AI.Option.Air.val.ROE.OPEN_FIRE)
+        if isFighter then
+            ctrl:setOption(AI.Option.Air.id.REACTION_ON_THREAT,
+                           AI.Option.Air.val.REACTION_ON_THREAT.ALLOW_ABORT_MISSION)
+        else
+            ctrl:setOption(AI.Option.Air.id.REACTION_ON_THREAT,
+                           AI.Option.Air.val.REACTION_ON_THREAT.BYPASS_AND_ESCAPE)
+        end
+
+        bomberLog(string.format("%s tasked on %d targets at %d ft (%s)",
+                  slotName, #attackTasks, profile and profile.altFt or 20000,
+                  isFighter and "fighter defense" or "turret defense"))
+    end, {}, timer.getTime() + 5)
+
+    return slotName
+end
+
+-- Check if a bomber group has landed and stopped
+local function isBomberLanded(group)
+    if not group or not group:isExist() then return false end
+    for _, unit in ipairs(group:getUnits()) do
+        if unit and unit:isExist() then
+            local vel   = unit:getVelocity()
+            local speed = math.sqrt(vel.x^2 + vel.y^2 + vel.z^2)
+            if speed > 1 or unit:getPoint().y > 5 then return false end
+        end
+    end
+    return true
+end
+
+-- Check if every unit in the group is effectively dead (health < 15%)
+local function isBomberGroupDead(group)
+    if not group or not group:isExist() then return true end
+    for _, unit in ipairs(group:getUnits()) do
+        if unit and unit:isExist() and (unit:getLife() / unit:getLife0()) >= 0.15 then
+            return false
+        end
+    end
+    return true
+end
+
+-- Purge dead / landed flights from tracking and free slots
+local function cleanupBomberFlights()
+    for templateName, slots in pairs(BOMBER_CMD.slots) do
+        for _, slotName in ipairs(slots) do
+            if BOMBER_CMD.slotInUse[slotName] then
+                local group = Group.getByName(slotName)
+                if not group or not group:isExist() then
+                    BOMBER_CMD.slotInUse[slotName] = false
+                    bomberLog(slotName .. " no longer exists — slot freed")
+                elseif isBomberLanded(group) then
+                    group:destroy()
+                    BOMBER_CMD.slotInUse[slotName] = false
+                    bomberLog(slotName .. " landed — slot freed")
+                elseif isBomberGroupDead(group) then
+                    group:destroy()
+                    BOMBER_CMD.slotInUse[slotName] = false
+                    bomberLog(slotName .. " dead — slot freed")
+                end
+            end
+        end
+    end
+end
+
+-- ── dispatch ─────────────────────────────────────────────────────────────────
+
+function BOMBER_CMD.dispatch(templateName, templateLabel, zoneName, zoneLabel)
+    local slotName = findFreeSlot(templateName)
+    if not slotName then
+        local nSlots = #(BOMBER_CMD.slots[templateName] or {})
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            string.format("%s: all %d flight(s) already airborne!", templateLabel, nSlots), 10)
+        return
+    end
+
+    local targets = findRedTargetsInZone(zoneName)
+    if #targets == 0 then
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            "No enemy targets detected on " .. zoneLabel .. ".", 10)
+        return
+    end
+
+    local result = spawnBomberMission(templateName, slotName, targets, zoneName)
+    if not result then
+        trigger.action.outTextForCoalition(coalition.side.BLUE,
+            "ERROR: could not launch " .. templateLabel, 10)
+        return
+    end
+
+    local activeCount = 0
+    for _, sn in ipairs(BOMBER_CMD.slots[templateName]) do
+        if BOMBER_CMD.slotInUse[sn] then activeCount = activeCount + 1 end
+    end
+    local totalSlots = #BOMBER_CMD.slots[templateName]
+
+    trigger.action.outTextForCoalition(coalition.side.BLUE,
+        string.format("%s dispatched to %s  —  %d targets found  [%d/%d active]",
+            templateLabel, zoneLabel, #targets, activeCount, totalSlots), 15)
+    bomberLog(string.format("Dispatched %s → %s (%d targets)", slotName, zoneLabel, #targets))
+end
+
+-- ── F10 radio menu ───────────────────────────────────────────────────────────
+
+local function setupBomberMenus()
+    local mainMenu = missionCommands.addSubMenuForCoalition(
+                         coalition.side.BLUE, "Bomber Missions")
+
+    for _, tmpl in ipairs(BOMBER_CMD.templates) do
+        local typeMenu = missionCommands.addSubMenuForCoalition(
+                             coalition.side.BLUE, tmpl.label, mainMenu)
+        for _, z in ipairs(BOMBER_CMD.zones) do
+            local tName, tLabel, zName, zLabel = tmpl.name, tmpl.label, z.name, z.label
+            missionCommands.addCommandForCoalition(coalition.side.BLUE,
+                "Send to " .. zLabel, typeMenu,
+                function() BOMBER_CMD.dispatch(tName, tLabel, zName, zLabel) end)
+        end
+    end
+
+    missionCommands.addCommandForCoalition(coalition.side.BLUE,
+        "Flight Status", mainMenu, function()
+            local lines = { "=== Bomber Mission Status ===" }
+            for _, tmpl in ipairs(BOMBER_CMD.templates) do
+                local slots = BOMBER_CMD.slots[tmpl.name] or {}
+                local active = 0
+                for _, sn in ipairs(slots) do
+                    if BOMBER_CMD.slotInUse[sn] then active = active + 1 end
+                end
+                lines[#lines + 1] = string.format(
+                    "  %s: %d/%d active", tmpl.label, active, #slots)
+            end
+            trigger.action.outTextForCoalition(coalition.side.BLUE,
+                table.concat(lines, "\n"), 15)
+        end)
+
+    bomberLog("Radio menus created")
+end
+
+mist.scheduleFunction(setupBomberMenus,      {}, timer.getTime() + 3)
+mist.scheduleFunction(cleanupBomberFlights,  {}, timer.getTime() + 60, 60)
+
+-- ─────────────────────────────────────────────────────────────────────────────
 --  SECTION D – AIRCRAFT CLEANUP SYSTEM
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -478,311 +917,709 @@ mist.scheduleFunction(function()
 end, {}, timer.getTime() + 60)
 
 -- ─────────────────────────────────────────────────────────────────────────────
---  SECTION E – LIGHTWEIGHT TF-51D CTLD
+--  SECTION E – WWII TF-51D CTLD  (Troop & Crate Transport)
+--  Based on Syria DGSS-CTLD architecture: per-player menus, coalition.addGroup
+--  spawning, speed/altitude checks, crash cleanup.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 WWII_CTLD = {}
 
-WWII_CTLD.allowedTransports = { ["TF-51D"] = true }
-WWII_CTLD.INFANTRY_WEIGHT   = 120
-WWII_CTLD.CRATE_WEIGHT      = 300
-WWII_CTLD.logiZones         = { "BlueCTLD" }
-WWII_CTLD.ctldPlaneGroup    = "LogiTF51D"
+----------------------------------------------------------------
+-- CONFIGURATION
+----------------------------------------------------------------
 
-WWII_CTLD.transportLimits = {
-    ["TF-51D"] = { maxWeight = 3 * WWII_CTLD.INFANTRY_WEIGHT, maxCrates = 1 },
+WWII_CTLD.COUNTRY   = country.id.USA
+WWII_CTLD.COALITION = coalition.side.BLUE
+
+WWII_CTLD.ZONES = { { name = "BlueCTLD" } }
+
+WWII_CTLD.VALID_TRANSPORT = { ["TF-51D"] = true }
+WWII_CTLD.CAPACITY        = { ["TF-51D"] = 3 }
+
+WWII_CTLD.MAX_LOAD_SPEED    = 5.1   -- m/s  (~10 knots)
+WWII_CTLD.MAX_LOAD_ALTITUDE = 7.6   -- m AGL (~25 feet)
+
+----------------------------------------------------------------
+-- TROOP TEMPLATES  (category-organised, same style as Syria)
+----------------------------------------------------------------
+
+WWII_CTLD.TROOP_TEMPLATES = {
+    ["Infantry Squad"] = {
+        namePrefix  = "INF_SQUAD",
+        displayName = "Infantry Squad",
+        category    = "Infantry",
+        units = { "soldier_wwii_us", "soldier_wwii_us", "soldier_wwii_us" },
+    },
+    ["Infantry Fireteam"] = {
+        namePrefix  = "INF_FIRE",
+        displayName = "Infantry Fireteam",
+        category    = "Infantry",
+        units = { "soldier_wwii_us", "soldier_wwii_us" },
+    },
+    ["Single Soldier"] = {
+        namePrefix  = "INF_SOLO",
+        displayName = "Single Soldier",
+        category    = "Infantry",
+        units = { "soldier_wwii_us" },
+    },
 }
 
-WWII_CTLD.infantryOptions = {
-    { name = "1x Infantry", count = 1, weight = 1 * WWII_CTLD.INFANTRY_WEIGHT },
-    { name = "2x Infantry", count = 2, weight = 2 * WWII_CTLD.INFANTRY_WEIGHT },
-    { name = "3x Infantry", count = 3, weight = 3 * WWII_CTLD.INFANTRY_WEIGHT },
+----------------------------------------------------------------
+-- VEHICLE CRATE DEFINITIONS
+----------------------------------------------------------------
+
+WWII_CTLD.VEHICLE_CRATES = {
+    { name = "M4 Tractor",     type = "M4_Tractor",     cratesRequired = 2 },
+    { name = "M2A1 Halftrack", type = "M2A1_halftrack",  cratesRequired = 2 },
+    { name = "M4 Sherman",     type = "M4_Sherman",      cratesRequired = 3 },
 }
 
-WWII_CTLD.vehicleCrateOptions = {
-    { name = "M4 Tractor",     type = "M4_Tractor",     cratesRequired = 2, weight = 2 * WWII_CTLD.CRATE_WEIGHT },
-    { name = "M2A1 Halftrack", type = "M2A1_halftrack", cratesRequired = 2, weight = 2 * WWII_CTLD.CRATE_WEIGHT },
-    { name = "M4 Sherman",     type = "M4_Sherman",     cratesRequired = 3, weight = 3 * WWII_CTLD.CRATE_WEIGHT },
-}
+----------------------------------------------------------------
+-- INTERNAL STATE
+----------------------------------------------------------------
 
-WWII_CTLD.loadedInfantry = {}
-WWII_CTLD.loadedCrate    = {}
-WWII_CTLD.worldCrates    = {}
-WWII_CTLD.spawnedTroops  = {}
+WWII_CTLD.UNIT_MENUS      = {}   -- per-unit menu handles
+WWII_CTLD.AIRCRAFT_TROOPS = {}   -- unitName -> list of { id, templateName, count, units }
+WWII_CTLD.AIRCRAFT_CRATE  = {}   -- unitName -> { crateName, vehicleType }
+WWII_CTLD.SPAWNED_GROUPS  = {}   -- groupName -> { kind, templateName, id, count }
+WWII_CTLD.WORLD_CRATES    = {}   -- crateName -> { vehicleType, x, z }
+WWII_CTLD.GROUP_COUNTER   = 0
 
-local function destroyStatic(name)
-    local so = StaticObject.getByName(name)
-    if so and so:isExist() then so:destroy() end
+----------------------------------------------------------------
+-- UTILITY HELPERS
+----------------------------------------------------------------
+
+function WWII_CTLD.generateGroupName(prefix)
+    WWII_CTLD.GROUP_COUNTER = WWII_CTLD.GROUP_COUNTER + 1
+    return string.format("%s_%04d", prefix or "CTLD", WWII_CTLD.GROUP_COUNTER)
 end
 
-local function ctldGroupSize(g)
-    if not g or not g:isExist() then return 0 end
-    local n = 0
-    for _, u in ipairs(g:getUnits()) do if u:isExist() then n = n + 1 end end
-    return n
+local function ctldSqrDist(p1, p2)
+    local dx = p1.x - p2.x
+    local dz = p1.z - p2.z
+    return dx * dx + dz * dz
 end
 
-local function ctldGetTransportLimits(typeName)
-    return WWII_CTLD.transportLimits[typeName] or { maxWeight = math.huge, maxCrates = math.huge }
+----------------------------------------------------------------
+-- ZONE HELPERS
+----------------------------------------------------------------
+
+function WWII_CTLD.isInsideZone(point, zoneName)
+    local z
+    pcall(function() z = trigger.misc.getZone(zoneName) end)
+    if not z then return false end
+    if z.point and z.radius then
+        local dx = point.x - z.point.x
+        local dz = point.z - z.point.z
+        return dx * dx + dz * dz <= z.radius * z.radius
+    end
+    return false
 end
 
-local function ctldOffsetPoint(pos, hdg)
-    local d = math.random(10, 20)
-    return {
-        x = pos.x + d * math.cos(hdg - math.pi / 2),
-        y = pos.y,
-        z = pos.z + d * math.sin(hdg - math.pi / 2),
-    }
+function WWII_CTLD.isInsideAnyCTLDZone(point)
+    for _, z in ipairs(WWII_CTLD.ZONES) do
+        if WWII_CTLD.isInsideZone(point, z.name) then return true end
+    end
+    return false
 end
 
-local function ctldGetGroupsByPrefix(prefix)
-    local hits = {}
-    if mist and mist.DBs and mist.DBs.groupsByName then
-        for name, _ in pairs(mist.DBs.groupsByName) do
-            if name:sub(1, #prefix) == prefix then table.insert(hits, name) end
-        end
+----------------------------------------------------------------
+-- TRANSPORT VALIDATION
+----------------------------------------------------------------
+
+function WWII_CTLD.isValidTransport(unit)
+    if not unit or not unit:isExist() then return false end
+    return WWII_CTLD.VALID_TRANSPORT[unit:getTypeName()] == true
+end
+
+function WWII_CTLD.checkLoadUnloadConditions(unit, isLoad)
+    if not unit or not unit:isExist() then return false, "Unit not found" end
+    local vel   = unit:getVelocity()
+    local speed = math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z)
+    if speed > WWII_CTLD.MAX_LOAD_SPEED then
+        return false, string.format("Too fast! (%.0f kts, max 10 kts)", speed * 1.944)
+    end
+    local pos   = unit:getPoint()
+    local landY = land.getHeight({ x = pos.x, y = pos.z })
+    local agl   = pos.y - landY
+    if agl > WWII_CTLD.MAX_LOAD_ALTITUDE then
+        return false, string.format("Too high! (%.0f ft AGL, max 25 ft)", agl * 3.281)
+    end
+    return true, nil
+end
+
+----------------------------------------------------------------
+-- TROOP STORAGE HELPERS
+----------------------------------------------------------------
+
+local function ensureAircraftTroopTable(unitName)
+    if not WWII_CTLD.AIRCRAFT_TROOPS[unitName] then
+        WWII_CTLD.AIRCRAFT_TROOPS[unitName] = {}
+    end
+end
+
+----------------------------------------------------------------
+-- TROOPS: SPAWN / LOAD / UNLOAD
+----------------------------------------------------------------
+
+function WWII_CTLD.spawnTroopsAtUnit(unit, templateName)
+    if not unit or not unit:isExist() then return end
+    local pos = unit:getPoint()
+
+    if not WWII_CTLD.isInsideAnyCTLDZone(pos) then
+        trigger.action.outTextForUnit(unit:getID(),
+            "Must be inside a CTLD zone to spawn troops!", 5)
+        return
+    end
+
+    local template = WWII_CTLD.TROOP_TEMPLATES[templateName]
+    if not template then return end
+
+    local units = {}
+    for _, unitType in ipairs(template.units) do
+        table.insert(units, {
+            type    = unitType,
+            x       = pos.x + math.random(15, 20),
+            y       = pos.z + math.random(15, 20),
+            heading = math.random() * 6.28,
+        })
+    end
+
+    local groupName = WWII_CTLD.generateGroupName(template.namePrefix)
+    local group = coalition.addGroup(
+        WWII_CTLD.COUNTRY,
+        Group.Category.GROUND,
+        { name = groupName, units = units }
+    )
+
+    if group then
+        WWII_CTLD.SPAWNED_GROUPS[groupName] = {
+            kind         = "troops",
+            templateName = templateName,
+            id           = groupName,
+            count        = #units,
+        }
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format("Troops spawned: %s (%d)", template.displayName, #units), 5)
     else
-        for coa = 0, 2 do for cat = 0, 3 do
-            local grps = coalition.getGroups(coa, cat)
-            if grps then
-                for _, g in ipairs(grps) do
-                    local n = g:getName()
-                    if n and n:sub(1, #prefix) == prefix then hits[#hits + 1] = n end
+        trigger.action.outTextForUnit(unit:getID(), "Failed to spawn troops!", 5)
+    end
+end
+
+function WWII_CTLD.getNearbyTroopGroups(pos, maxDist)
+    local results = {}
+    local maxSq   = maxDist * maxDist
+
+    for groupName, data in pairs(WWII_CTLD.SPAWNED_GROUPS) do
+        if data.kind == "troops" then
+            local g = Group.getByName(groupName)
+            if g and g:isExist() then
+                local u = g:getUnit(1)
+                if u and u:isExist() then
+                    local d = ctldSqrDist(pos, u:getPoint())
+                    if d <= maxSq then
+                        table.insert(results, { name = groupName, meta = data, distSq = d })
+                    end
                 end
             end
-        end end
-    end
-    return hits
-end
-
-function WWII_CTLD.loadInfantry(planeGrp, optIdx)
-    local grp  = Group.getByName(planeGrp); if not grp then return end
-    local unit = grp:getUnit(1);            if not unit then return end
-    if not WWII_CTLD.allowedTransports[unit:getTypeName()] then
-        return trigger.action.outText("Aircraft cannot load troops.", 10) end
-    local inZone = false
-    for _, zn in ipairs(WWII_CTLD.logiZones) do
-        if mist.pointInZone(unit:getPoint(), zn) then inZone = true; break end
-    end
-    if not inZone then return trigger.action.outText("Not inside a Logi zone.", 10) end
-    if WWII_CTLD.loadedCrate[planeGrp] then
-        return trigger.action.outText("Crate already loaded.", 10) end
-    local opt = WWII_CTLD.infantryOptions[optIdx]
-    local lim = ctldGetTransportLimits(unit:getTypeName())
-    if opt.weight > lim.maxWeight then return trigger.action.outText("Too heavy.", 10) end
-    WWII_CTLD.loadedInfantry[planeGrp] = { count = opt.count, weight = opt.weight, type = opt.name }
-    trigger.action.outText("Loaded " .. opt.name, 10)
-end
-
-function WWII_CTLD.dropInfantry(pg)
-    local inf  = WWII_CTLD.loadedInfantry[pg]; if not inf then return end
-    local grp  = Group.getByName(pg); if not grp then return end
-    local unit = grp:getUnit(1);      if not unit then return end
-    local p    = ctldOffsetPoint(unit:getPoint(), unit:getHeading() or 0)
-    local gid  = mist.getNextGroupId()
-    local gname = "DroppedTroops_" .. gid
-    local units = {}
-    for i = 1, inf.count do
-        local uid = mist.getNextUnitId()
-        units[#units + 1] = {
-            type = "soldier_wwii_us", country = country.id.USA, skill = "Average",
-            x = p.x + (i - 1) * 2, y = p.y, z = p.z + (i - 1) * 2,
-            heading = 0, name = "Troop_" .. uid, unitId = uid,
-        }
-    end
-    mist.dynAdd({
-        visible = false, groupId = gid, country = country.id.USA,
-        category = Group.Category.GROUND, units = units,
-        name = gname, task = "Ground Nothing",
-    })
-    WWII_CTLD.spawnedTroops[pg] = WWII_CTLD.spawnedTroops[pg] or {}
-    table.insert(WWII_CTLD.spawnedTroops[pg], { groupName = gname })
-    WWII_CTLD.loadedInfantry[pg] = nil
-    trigger.action.outText("Infantry dropped!", 10)
-end
-
-function WWII_CTLD.pickupInfantry(pg)
-    local grp  = Group.getByName(pg); if not grp then return end
-    local unit = grp:getUnit(1);      if not unit then return end
-    local pos  = unit:getPoint()
-    local list = WWII_CTLD.spawnedTroops[pg] or {}
-    for i = #list, 1, -1 do
-        local g = Group.getByName(list[i].groupName)
-        if g and ctldGroupSize(g) > 0 then
-            if mist.utils.get2DDist({ x = pos.x, z = pos.z }, g:getUnit(1):getPoint()) < 50 then
-                local cnt = ctldGroupSize(g); g:destroy()
-                WWII_CTLD.loadedInfantry[pg] = {
-                    count = cnt, weight = cnt * WWII_CTLD.INFANTRY_WEIGHT,
-                    type = cnt .. "x Infantry",
-                }
-                table.remove(list, i)
-                return trigger.action.outText("Infantry picked up!", 10)
-            end
-        else
-            table.remove(list, i)
         end
     end
-    trigger.action.outText("No infantry within 50 m.", 10)
+
+    table.sort(results, function(a, b) return a.distSq < b.distSq end)
+    return results
 end
 
-function WWII_CTLD.spawnCrate(pg, optIdx)
-    local grp  = Group.getByName(pg); if not grp then return end
-    local unit = grp:getUnit(1);      if not unit then return end
-    local p    = ctldOffsetPoint(unit:getPoint(), unit:getHeading() or 0)
-    local opt  = WWII_CTLD.vehicleCrateOptions[optIdx]
-    local cname = "CTLD_Crate_" .. opt.type .. "_" .. mist.getNextGroupId()
-    mist.dynAddStatic({
-        country = country.id.USA, category = "Cargos",
-        shape_name = "uh1h_cargo", type = "uh1h_cargo",
-        unitId = mist.getNextUnitId(),
-        x = p.x, y = p.y, z = p.z, name = cname,
-        heading = unit:getHeading() or 0, canCargo = true,
+function WWII_CTLD.loadNearestTroops(unit)
+    if not unit or not unit:isExist() then return end
+
+    if not WWII_CTLD.isValidTransport(unit) then
+        trigger.action.outTextForUnit(unit:getID(),
+            "This aircraft cannot load troops.", 5)
+        return
+    end
+
+    local condOk, condMsg = WWII_CTLD.checkLoadUnloadConditions(unit, true)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local pos    = unit:getPoint()
+    local nearby = WWII_CTLD.getNearbyTroopGroups(pos, 75)
+
+    if #nearby == 0 then
+        trigger.action.outTextForUnit(unit:getID(),
+            "No nearby troops to load! (within 75 m)", 5)
+        return
+    end
+
+    local nearest = nearby[1]
+    local g = Group.getByName(nearest.name)
+    if not g or not g:isExist() then
+        WWII_CTLD.SPAWNED_GROUPS[nearest.name] = nil
+        return
+    end
+
+    local meta     = nearest.meta
+    local grpUnits = g:getUnits()
+    local count    = #grpUnits
+
+    local unitName = unit:getName()
+    local capacity = WWII_CTLD.CAPACITY[unit:getTypeName()] or 0
+    ensureAircraftTroopTable(unitName)
+
+    local currentCount = 0
+    for _, grp in ipairs(WWII_CTLD.AIRCRAFT_TROOPS[unitName]) do
+        currentCount = currentCount + (grp.count or 0)
+    end
+
+    if currentCount + count > capacity then
+        trigger.action.outTextForUnit(unit:getID(),
+            string.format("Not enough capacity! Onboard: %d/%d, group: %d",
+                currentCount, capacity, count), 6)
+        return
+    end
+
+    local unitTypes = {}
+    for _, u in ipairs(grpUnits) do table.insert(unitTypes, u:getTypeName()) end
+
+    table.insert(WWII_CTLD.AIRCRAFT_TROOPS[unitName], {
+        id           = meta.id,
+        templateName = meta.templateName,
+        count        = count,
+        units        = unitTypes,
     })
-    WWII_CTLD.worldCrates[cname] = { type = opt.type, x = p.x, z = p.z, pickedUp = false }
-    trigger.action.outText("Crate spawned: " .. opt.name, 10)
+
+    g:destroy()
+    WWII_CTLD.SPAWNED_GROUPS[nearest.name] = nil
+
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("Loaded %s (%d)", meta.templateName, count), 6)
 end
 
-function WWII_CTLD.pickupCrate(pg)
-    local grp = Group.getByName(pg); if not grp then return end
-    if WWII_CTLD.loadedCrate[pg] or WWII_CTLD.loadedInfantry[pg] then
-        return trigger.action.outText("Already carrying something.", 10) end
-    local unit = grp:getUnit(1); if not unit then return end
-    local pos  = unit:getPoint()
-    for name, data in pairs(WWII_CTLD.worldCrates) do
-        if not data.pickedUp and mist.utils.get2DDist({ x = pos.x, z = pos.z }, { x = data.x, z = data.z }) < 20 then
-            data.pickedUp = true; destroyStatic(name)
-            WWII_CTLD.loadedCrate[pg] = { crateName = name, type = data.type }
-            return trigger.action.outText("Crate loaded! Fly to destination and use 'Drop Loaded Crate'.", 10)
+function WWII_CTLD.unloadAllTroops(unit)
+    if not unit or not unit:isExist() then return end
+
+    local condOk, condMsg = WWII_CTLD.checkLoadUnloadConditions(unit, false)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local unitName = unit:getName()
+    local onboard  = WWII_CTLD.AIRCRAFT_TROOPS[unitName]
+    if not onboard or #onboard == 0 then
+        trigger.action.outTextForUnit(unit:getID(), "No troops onboard!", 5)
+        return
+    end
+
+    local pos        = unit:getPoint()
+    local totalCount = 0
+
+    for _, grp in ipairs(onboard) do
+        local units = {}
+        for _, unitType in ipairs(grp.units or {}) do
+            table.insert(units, {
+                type    = unitType,
+                x       = pos.x + math.random(15, 20),
+                y       = pos.z + math.random(15, 20),
+                heading = math.random() * 6.28,
+            })
+        end
+
+        local groupName = WWII_CTLD.generateGroupName("TROOPS")
+        local spawnedGrp = coalition.addGroup(
+            WWII_CTLD.COUNTRY,
+            Group.Category.GROUND,
+            { name = groupName, units = units }
+        )
+        if spawnedGrp then
+            WWII_CTLD.SPAWNED_GROUPS[groupName] = {
+                kind         = "troops",
+                templateName = grp.templateName,
+                id           = groupName,
+                count        = #units,
+            }
+        end
+        totalCount = totalCount + grp.count
+    end
+
+    WWII_CTLD.AIRCRAFT_TROOPS[unitName] = {}
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("Unloaded %d troops!", totalCount), 6)
+end
+
+----------------------------------------------------------------
+-- CRATES: SPAWN / PICKUP / DROP / ASSEMBLE
+----------------------------------------------------------------
+
+function WWII_CTLD.spawnCrate(unit, optIdx)
+    if not unit or not unit:isExist() then return end
+    local pos = unit:getPoint()
+
+    if not WWII_CTLD.isInsideAnyCTLDZone(pos) then
+        trigger.action.outTextForUnit(unit:getID(),
+            "Must be inside a CTLD zone to spawn crates!", 5)
+        return
+    end
+
+    local opt = WWII_CTLD.VEHICLE_CRATES[optIdx]
+    if not opt then return end
+
+    local crateName = WWII_CTLD.generateGroupName("CRATE_" .. opt.type)
+    local cx = pos.x + math.random(10, 20)
+    local cz = pos.z + math.random(10, 20)
+
+    mist.dynAddStatic({
+        country    = country.id.USA,
+        category   = "Cargos",
+        shape_name = "uh1h_cargo",
+        type       = "uh1h_cargo",
+        x          = cx,
+        y          = cz,
+        name       = crateName,
+        heading    = 0,
+        canCargo   = true,
+    })
+
+    WWII_CTLD.WORLD_CRATES[crateName] = { vehicleType = opt.type, x = cx, z = cz }
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("Crate spawned: %s (%d needed)", opt.name, opt.cratesRequired), 5)
+end
+
+function WWII_CTLD.pickupCrate(unit)
+    if not unit or not unit:isExist() then return end
+
+    if not WWII_CTLD.isValidTransport(unit) then
+        trigger.action.outTextForUnit(unit:getID(),
+            "This aircraft cannot transport crates.", 5)
+        return
+    end
+
+    local condOk, condMsg = WWII_CTLD.checkLoadUnloadConditions(unit, true)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local unitName = unit:getName()
+    if WWII_CTLD.AIRCRAFT_CRATE[unitName] then
+        trigger.action.outTextForUnit(unit:getID(), "Already carrying a crate!", 5)
+        return
+    end
+
+    local pos = unit:getPoint()
+    local nearestName, nearestDist = nil, 50 * 50
+
+    for name, data in pairs(WWII_CTLD.WORLD_CRATES) do
+        local d = ctldSqrDist(pos, { x = data.x, z = data.z })
+        if d < nearestDist then
+            nearestDist = d
+            nearestName = name
         end
     end
-    trigger.action.outText("No crate within 20 m.", 10)
+
+    if not nearestName then
+        trigger.action.outTextForUnit(unit:getID(), "No crate within 50 m!", 5)
+        return
+    end
+
+    local data = WWII_CTLD.WORLD_CRATES[nearestName]
+    WWII_CTLD.AIRCRAFT_CRATE[unitName] = {
+        crateName   = nearestName,
+        vehicleType = data.vehicleType,
+    }
+
+    local so = StaticObject.getByName(nearestName)
+    if so and so:isExist() then so:destroy() end
+    WWII_CTLD.WORLD_CRATES[nearestName] = nil
+
+    trigger.action.outTextForUnit(unit:getID(),
+        string.format("Crate loaded: %s", data.vehicleType), 5)
 end
 
-function WWII_CTLD.dropCrate(pg)
-    local c = WWII_CTLD.loadedCrate[pg]; if not c then return end
-    local grp  = Group.getByName(pg); if not grp then return end
-    local unit = grp:getUnit(1);      if not unit then return end
-    local p    = ctldOffsetPoint(unit:getPoint(), unit:getHeading() or 0)
-    local newName = c.crateName .. "_d" .. mist.getNextGroupId()
+function WWII_CTLD.dropCrate(unit)
+    if not unit or not unit:isExist() then return end
+
+    local condOk, condMsg = WWII_CTLD.checkLoadUnloadConditions(unit, false)
+    if not condOk then
+        trigger.action.outTextForUnit(unit:getID(), condMsg, 6)
+        return
+    end
+
+    local unitName = unit:getName()
+    local cData    = WWII_CTLD.AIRCRAFT_CRATE[unitName]
+    if not cData then
+        trigger.action.outTextForUnit(unit:getID(), "No crate onboard!", 5)
+        return
+    end
+
+    local pos     = unit:getPoint()
+    local newName = WWII_CTLD.generateGroupName("CRATE_" .. cData.vehicleType)
+    local cx      = pos.x + math.random(10, 20)
+    local cz      = pos.z + math.random(10, 20)
+
     mist.dynAddStatic({
-        country = country.id.USA, category = "Cargos",
-        shape_name = "uh1h_cargo", type = "uh1h_cargo",
-        unitId = mist.getNextUnitId(),
-        x = p.x, y = p.y, z = p.z, name = newName,
-        heading = unit:getHeading() or 0, canCargo = true,
+        country    = country.id.USA,
+        category   = "Cargos",
+        shape_name = "uh1h_cargo",
+        type       = "uh1h_cargo",
+        x          = cx,
+        y          = cz,
+        name       = newName,
+        heading    = 0,
+        canCargo   = true,
     })
-    WWII_CTLD.worldCrates[newName] = { type = c.type, x = p.x, z = p.z, pickedUp = false }
-    WWII_CTLD.loadedCrate[pg] = nil
-    trigger.action.outText("Crate dropped!", 10)
+
+    WWII_CTLD.WORLD_CRATES[newName] = { vehicleType = cData.vehicleType, x = cx, z = cz }
+    WWII_CTLD.AIRCRAFT_CRATE[unitName] = nil
+
+    trigger.action.outTextForUnit(unit:getID(), "Crate dropped!", 5)
 end
 
-function WWII_CTLD.assembleVehicle(pg)
-    local grp  = Group.getByName(pg); if not grp then return end
-    local unit = grp:getUnit(1);      if not unit then return end
-    local pos  = unit:getPoint()
-    for _, opt in ipairs(WWII_CTLD.vehicleCrateOptions) do
+function WWII_CTLD.assembleVehicle(unit)
+    if not unit or not unit:isExist() then return end
+    local pos = unit:getPoint()
+
+    for _, opt in ipairs(WWII_CTLD.VEHICLE_CRATES) do
         local stack = {}
-        for name, data in pairs(WWII_CTLD.worldCrates) do
-            if not data.pickedUp and data.type == opt.type and
-               mist.utils.get2DDist({ x = pos.x, z = pos.z }, { x = data.x, z = data.z }) < 30 then
-                stack[#stack + 1] = name
+        for name, data in pairs(WWII_CTLD.WORLD_CRATES) do
+            if data.vehicleType == opt.type then
+                local d = ctldSqrDist(pos, { x = data.x, z = data.z })
+                if d <= 50 * 50 then
+                    table.insert(stack, name)
+                end
             end
         end
+
         if #stack >= opt.cratesRequired then
             local sx, sz = 0, 0
             for i = 1, opt.cratesRequired do
-                sx = sx + WWII_CTLD.worldCrates[stack[i]].x
-                sz = sz + WWII_CTLD.worldCrates[stack[i]].z
-                destroyStatic(stack[i])
-                WWII_CTLD.worldCrates[stack[i]] = nil
-            end
-            local gid = mist.getNextGroupId(); local uid = mist.getNextUnitId()
-            mist.dynAdd({
-                visible = false, playerCanDrive = true,
-                groupId = gid, country = country.id.USA,
-                category = Group.Category.GROUND,
-                units = {{
-                    type = opt.type, country = country.id.USA, skill = "Average",
-                    x = sx / opt.cratesRequired, y = pos.y,
-                    z = sz / opt.cratesRequired, heading = 0,
-                    unitId = uid, name = opt.type .. "_" .. uid,
-                }},
-                name = opt.type .. "_Group_" .. gid, task = "Ground Nothing",
-            })
-            return trigger.action.outText(opt.name .. " assembled!", 10)
-        end
-    end
-    trigger.action.outText("Not enough crates nearby.", 10)
-end
-
-function WWII_CTLD.checkCargo(pg)
-    if WWII_CTLD.loadedInfantry[pg] then
-        local i = WWII_CTLD.loadedInfantry[pg]
-        return trigger.action.outText("Infantry: " .. i.type .. " (" .. i.weight .. " kg)", 10)
-    elseif WWII_CTLD.loadedCrate[pg] then
-        return trigger.action.outText("Crate: " .. WWII_CTLD.loadedCrate[pg].type, 10)
-    else
-        return trigger.action.outText("Cargo hold empty.", 10)
-    end
-end
-
-local function setupCTLDMenus()
-    if not missionCommands then return end
-    if _G.ctldLogiMenus then
-        for _, menu in ipairs(_G.ctldLogiMenus) do
-            pcall(function() missionCommands.removeItem(menu) end)
-        end
-    end
-    _G.ctldLogiMenus = {}
-
-    local ctldMenu = missionCommands.addSubMenu("CTLD")
-    table.insert(_G.ctldLogiMenus, ctldMenu)
-    local logiGroups = ctldGetGroupsByPrefix(WWII_CTLD.ctldPlaneGroup or "Logi")
-
-    if #logiGroups == 0 then
-        local cmd = missionCommands.addCommand("No logistics groups found!", ctldMenu, function() end)
-        table.insert(_G.ctldLogiMenus, cmd)
-    else
-        for _, groupName in ipairs(logiGroups) do
-            local infMenu = missionCommands.addSubMenu("Infantry (" .. groupName .. ")", ctldMenu)
-            table.insert(_G.ctldLogiMenus, infMenu)
-            for idx, opt in ipairs(WWII_CTLD.infantryOptions) do
-                table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                    "Load " .. opt.name .. " (" .. opt.weight .. " kg)", infMenu,
-                    function() WWII_CTLD.loadInfantry(groupName, idx) end))
-            end
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Pick Up Infantry", infMenu,
-                function() WWII_CTLD.pickupInfantry(groupName) end))
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Drop Infantry (" .. groupName .. ")", ctldMenu,
-                function() WWII_CTLD.dropInfantry(groupName) end))
-
-            local vehMenu = missionCommands.addSubMenu("Vehicle (" .. groupName .. ")", ctldMenu)
-            table.insert(_G.ctldLogiMenus, vehMenu)
-            for idx, opt in ipairs(WWII_CTLD.vehicleCrateOptions) do
-                table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                    "Spawn Crate for " .. opt.name, vehMenu,
-                    function() WWII_CTLD.spawnCrate(groupName, idx) end))
+                local d = WWII_CTLD.WORLD_CRATES[stack[i]]
+                sx = sx + d.x
+                sz = sz + d.z
+                local so = StaticObject.getByName(stack[i])
+                if so and so:isExist() then so:destroy() end
+                WWII_CTLD.WORLD_CRATES[stack[i]] = nil
             end
 
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Load Nearby Crate (" .. groupName .. ")", ctldMenu,
-                function() WWII_CTLD.pickupCrate(groupName) end))
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Drop Loaded Crate (" .. groupName .. ")", ctldMenu,
-                function() WWII_CTLD.dropCrate(groupName) end))
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Assemble Vehicle (nearby crates)", ctldMenu,
-                function() WWII_CTLD.assembleVehicle(groupName) end))
-            table.insert(_G.ctldLogiMenus, missionCommands.addCommand(
-                "Check Cargo (" .. groupName .. ")", ctldMenu,
-                function() WWII_CTLD.checkCargo(groupName) end))
+            local groupName = WWII_CTLD.generateGroupName("VEH_" .. opt.type)
+            coalition.addGroup(
+                WWII_CTLD.COUNTRY,
+                Group.Category.GROUND,
+                {
+                    name  = groupName,
+                    units = {{
+                        type    = opt.type,
+                        x       = sx / opt.cratesRequired,
+                        y       = sz / opt.cratesRequired,
+                        heading = math.random() * 6.28,
+                    }},
+                }
+            )
+
+            trigger.action.outTextForUnit(unit:getID(),
+                string.format("%s assembled!", opt.name), 6)
+            return
         end
     end
+
+    trigger.action.outTextForUnit(unit:getID(),
+        "Not enough matching crates nearby (within 50 m).", 5)
 end
 
-mist.scheduleFunction(setupCTLDMenus, {}, timer.getTime() + 2)
+----------------------------------------------------------------
+-- CHECK CARGO
+----------------------------------------------------------------
+
+function WWII_CTLD.checkCargo(unit)
+    if not unit or not unit:isExist() then return end
+    local unitName = unit:getName()
+    local troops   = WWII_CTLD.AIRCRAFT_TROOPS[unitName]
+    local crate    = WWII_CTLD.AIRCRAFT_CRATE[unitName]
+
+    local msg = "Cargo hold empty."
+    if troops and #troops > 0 then
+        local total = 0
+        for _, grp in ipairs(troops) do total = total + grp.count end
+        local cap = WWII_CTLD.CAPACITY[unit:getTypeName()] or 0
+        msg = string.format("Troops onboard: %d/%d", total, cap)
+    end
+    if crate then
+        msg = msg .. "\nCrate: " .. crate.vehicleType
+    end
+
+    trigger.action.outTextForUnit(unit:getID(), msg, 8)
+end
+
+----------------------------------------------------------------
+-- PER-PLAYER MENU CREATION  (Syria-style ForGroup menus)
+----------------------------------------------------------------
+
+function WWII_CTLD.createMenusForUnit(unit)
+    if not unit or not unit:isExist() then return end
+    if not unit:getPlayerName() then return end
+    if not WWII_CTLD.isValidTransport(unit) then return end
+
+    local unitName = unit:getName()
+    local group    = unit:getGroup()
+    if not group or not group:isExist() then return end
+    local groupId  = group:getID()
+
+    if WWII_CTLD.UNIT_MENUS[unitName] then return end
+    WWII_CTLD.UNIT_MENUS[unitName] = { groupId = groupId }
+
+    local ctldRoot = missionCommands.addSubMenuForGroup(groupId, "CTLD", nil)
+    WWII_CTLD.UNIT_MENUS[unitName].ctldRoot = ctldRoot
+
+    -- Troops submenu
+    local troopsMenu = missionCommands.addSubMenuForGroup(groupId, "Troops", ctldRoot)
+
+    for key, tpl in pairs(WWII_CTLD.TROOP_TEMPLATES) do
+        local label            = string.format("Spawn %s (%d)", tpl.displayName, #tpl.units)
+        local templateNameCopy = key
+        missionCommands.addCommandForGroup(groupId, label, troopsMenu,
+            function()
+                local u = Unit.getByName(unitName)
+                if u and u:isExist() then
+                    WWII_CTLD.spawnTroopsAtUnit(u, templateNameCopy)
+                end
+            end)
+    end
+
+    -- Vehicle Crates submenu
+    local cratesMenu = missionCommands.addSubMenuForGroup(groupId, "Vehicle Crates", ctldRoot)
+
+    for idx, opt in ipairs(WWII_CTLD.VEHICLE_CRATES) do
+        local optIdx = idx
+        local label  = string.format("Spawn %s Crate (%d needed)", opt.name, opt.cratesRequired)
+        missionCommands.addCommandForGroup(groupId, label, cratesMenu,
+            function()
+                local u = Unit.getByName(unitName)
+                if u and u:isExist() then
+                    WWII_CTLD.spawnCrate(u, optIdx)
+                end
+            end)
+    end
+
+    -- Load / Unload / Pickup / Drop / Assemble / Check
+    missionCommands.addCommandForGroup(groupId, "Load Nearby Troops", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.loadNearestTroops(u) end
+        end)
+
+    missionCommands.addCommandForGroup(groupId, "Unload Troops", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.unloadAllTroops(u) end
+        end)
+
+    missionCommands.addCommandForGroup(groupId, "Pick Up Crate", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.pickupCrate(u) end
+        end)
+
+    missionCommands.addCommandForGroup(groupId, "Drop Crate", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.dropCrate(u) end
+        end)
+
+    missionCommands.addCommandForGroup(groupId, "Assemble Vehicle", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.assembleVehicle(u) end
+        end)
+
+    missionCommands.addCommandForGroup(groupId, "Check Cargo", ctldRoot,
+        function()
+            local u = Unit.getByName(unitName)
+            if u and u:isExist() then WWII_CTLD.checkCargo(u) end
+        end)
+end
+
+function WWII_CTLD.cleanupMenusForUnit(unitName)
+    local menus = WWII_CTLD.UNIT_MENUS[unitName]
+    if not menus then return end
+    if menus.ctldRoot then
+        pcall(function() missionCommands.removeItem(menus.ctldRoot) end)
+    end
+    WWII_CTLD.UNIT_MENUS[unitName] = nil
+end
+
+----------------------------------------------------------------
+-- EVENT HANDLER  (crash cleanup + player enter/leave)
+----------------------------------------------------------------
+
+local CTLD_EVENT_HANDLER = {}
+function CTLD_EVENT_HANDLER:onEvent(event)
+    if not event or not event.id then return end
+    pcall(function()
+        if event.id == world.event.S_EVENT_PLAYER_LEAVE_UNIT then
+            local unit = event.initiator
+            if unit then
+                local ok, uName = pcall(function() return unit:getName() end)
+                if ok and uName then WWII_CTLD.cleanupMenusForUnit(uName) end
+            end
+
+        elseif event.id == world.event.S_EVENT_CRASH
+            or event.id == world.event.S_EVENT_DEAD then
+            local unit = event.initiator
+            if unit then
+                local ok, uName = pcall(function() return unit:getName() end)
+                if ok and uName then
+                    WWII_CTLD.AIRCRAFT_TROOPS[uName] = nil
+                    WWII_CTLD.AIRCRAFT_CRATE[uName]  = nil
+                    WWII_CTLD.cleanupMenusForUnit(uName)
+                end
+            end
+
+        elseif event.id == world.event.S_EVENT_PLAYER_ENTER_UNIT then
+            local unit = event.initiator
+            if unit and unit:isExist() and unit:getPlayerName() then
+                local uName   = unit:getName()
+                local grp     = unit:getGroup()
+                if grp and grp:isExist() then
+                    local gId = grp:getID()
+                    if WWII_CTLD.UNIT_MENUS[uName]
+                       and WWII_CTLD.UNIT_MENUS[uName].groupId ~= gId then
+                        WWII_CTLD.cleanupMenusForUnit(uName)
+                    end
+                    if not WWII_CTLD.UNIT_MENUS[uName] then
+                        WWII_CTLD.createMenusForUnit(unit)
+                    end
+                end
+            end
+        end
+    end)
+end
+world.addEventHandler(CTLD_EVENT_HANDLER)
+
+----------------------------------------------------------------
+-- MENU POLLER  (catches players already in aircraft at mission start)
+----------------------------------------------------------------
+
+local function ctldMenuPoller()
+    pcall(function()
+        local bluePlanes = coalition.getGroups(WWII_CTLD.COALITION, Group.Category.AIRPLANE) or {}
+        for _, grp in ipairs(bluePlanes) do
+            if grp and grp:isExist() then
+                for _, unit in ipairs(grp:getUnits()) do
+                    if unit and unit:isExist() and unit:getPlayerName() then
+                        if not WWII_CTLD.UNIT_MENUS[unit:getName()] then
+                            WWII_CTLD.createMenusForUnit(unit)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    mist.scheduleFunction(ctldMenuPoller, {}, timer.getTime() + 15)
+end
+
+mist.scheduleFunction(ctldMenuPoller, {}, timer.getTime() + 5)
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  SECTION F – GCI INTERCEPT SYSTEM  (Zone-Based Scramble for Marianas)
